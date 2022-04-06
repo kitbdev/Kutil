@@ -14,6 +14,7 @@ namespace Kutil {
             return root;
         }
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+            EditorGUI.BeginProperty(position, label, property);
             SerializedProperty layerProp = property.FindPropertyRelative(nameof(Layer.layerValue));
             int val = layerProp.intValue;
             int newval = EditorGUI.LayerField(position, label, val);
@@ -21,6 +22,7 @@ namespace Kutil {
                 layerProp.intValue = newval;
                 property.serializedObject.ApplyModifiedProperties();
             }
+            EditorGUI.EndProperty();
         }
     }
 }

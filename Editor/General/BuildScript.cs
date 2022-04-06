@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
+// todo build window with checkmarks and settings
 namespace Kutil {
     public class BuildScript {
 
@@ -21,31 +22,35 @@ namespace Kutil {
         }
 
         static string GetLocation(string platform) {
-            return $"{buildroot}{platform}/{gamename}{ver}_{platform}";
+            return Application.dataPath + "/.." + $"{buildroot}{platform}/{gamename}{ver}_{platform}/";
         }
 
         [MenuItem("File/Build Windows")]
         static void BuildWindows() {
             string platform = "win";
-            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, $"{buildroot}Windows/{gamename}{ver}_{platform}/{gamename}.exe", BuildTarget.StandaloneWindows, BuildOptions.None);
+            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, GetLocation(platform) + $"{gamename}.exe", BuildTarget.StandaloneWindows, BuildOptions.None);
+            EditorUtility.RevealInFinder(GetLocation(platform));
         }
 
         [MenuItem("File/Build Linux")]
         static void BuildLinux() {
             string platform = "linux";
-            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, $"{buildroot}Linux/{gamename}{ver}_{platform}/{gamename}.x86_64", BuildTarget.StandaloneLinux64, BuildOptions.None);
+            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, GetLocation(platform) + $"{gamename}.x86_64", BuildTarget.StandaloneLinux64, BuildOptions.None);
+            EditorUtility.RevealInFinder(GetLocation(platform));
         }
 
         [MenuItem("File/Build OS X")]
         static void BuildOSX() {
             string platform = "mac";
-            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, $"{buildroot}MacOSX/{gamename}{ver}_{platform}.x64", BuildTarget.StandaloneOSX, BuildOptions.None);
+            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, GetLocation(platform) + $"{gamename}.x64", BuildTarget.StandaloneOSX, BuildOptions.None);
+            EditorUtility.RevealInFinder(GetLocation(platform));
         }
 
         [MenuItem("File/Build WebGL")]
         static void BuildWebGL() {
             string platform = "web";
-            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, $"{buildroot}Web/{gamename}{ver}_{platform}", BuildTarget.WebGL, BuildOptions.None);
+            BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, GetLocation(platform), BuildTarget.WebGL, BuildOptions.None);
+            EditorUtility.RevealInFinder(GetLocation(platform));
         }
 
         static void PerformAssetBundleBuild() {
