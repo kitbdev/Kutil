@@ -16,8 +16,8 @@ namespace Kutil {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             // SerializedProperty selNameProp = property.FindPropertyRelative(nameof(ImplementsType<int>._selectedName));
             using (var scope = new EditorGUI.PropertyScope(position, label, property)) {
-                SerializedProperty typeprop = property.FindPropertyRelative(nameof(TypeSelector<int>._type));
-                SerializedProperty objprop = property.FindPropertyRelative(nameof(TypeSelector<int>._objvalue));
+                SerializedProperty typeprop = property.FindPropertyRelative("_type");//nameof(TypeSelector<int>._type)
+                SerializedProperty objprop = property.FindPropertyRelative("_objvalue");//nameof(TypeSelector<int>._objvalue)
 
                 Rect typepos = position;
                 typepos.height = EditorGUIUtility.singleLineHeight;
@@ -62,7 +62,7 @@ namespace Kutil {
             }
         }
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            SerializedProperty objprop = property.FindPropertyRelative(nameof(TypeSelector<int>._objvalue));
+            SerializedProperty objprop = property.FindPropertyRelative("_objvalue");//nameof(TypeSelector<int>._objvalue)
             return EditorGUIUtility.singleLineHeight * (show ? 1 : 0)
                 + EditorGUI.GetPropertyHeight(objprop, objprop.isExpanded);
             // + base.GetPropertyHeight(objprop, label); // obj height
