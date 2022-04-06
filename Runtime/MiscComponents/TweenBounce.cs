@@ -1,11 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if DOTween
 using DG.Tweening;
+#endif
 
 namespace Kutil {
     // todo make better
     public class TweenBounce : MonoBehaviour {
+// requires dotween
+#if DOTween // is this the right symbol?
         // bob up and down
         // or shake around?
         [SerializeField] Vector3 targetPos = Vector3.up * 0.1f;
@@ -58,5 +62,6 @@ namespace Kutil {
                 // tween = null;
             }
         }
+#endif
     }
 }
