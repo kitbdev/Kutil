@@ -47,12 +47,14 @@ namespace Kutil {
         [SerializeField, ReadOnly] private int _height;//y
         [SerializeField] private Grid grid;
 
-        [SerializeField] protected TGridObject[] map;
+        [SerializeReference]
+        [SerializeField]
+        protected TGridObject[] map;
 
         [SerializeField]
-        Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc;
+        public Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc = null;
         [SerializeField]
-        Action<TGridObject, Vector3Int> destoryAction = null;
+        public Action<TGridObject, Vector3Int> destoryAction = null;
 
         public int width { get => _width; protected set => _width = value; }
         public int length { get => _length; protected set => _length = value; }
@@ -71,11 +73,12 @@ namespace Kutil {
         // todo manage chunks?
 
 
-        public GridMap(Vector3Int dimensions, Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc = null,
+        public GridMap(Vector3Int dimensions, Grid grid, Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc = null,
          Action<TGridObject, Vector3Int> destoryAction = null) {
             this.width = dimensions.x;
             this.height = dimensions.y;
             this.length = dimensions.z;
+            this.grid = grid;
 
             map = new TGridObject[volume];
             this.createFunc = createFunc;
@@ -83,7 +86,7 @@ namespace Kutil {
             RecreateMap();
         }
 
-        private void RecreateMap() {
+        public void RecreateMap() {
             if (createFunc != null) {
                 SetForEach((pos, ival) => createFunc.Invoke(this, pos));
             } else {
@@ -132,10 +135,10 @@ namespace Kutil {
         }
 
         public bool IsPosInBounds(int x, int y, int z) {
-            return (x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < length);
+            return IsPosInBounds(new Vector3Int(x, y, z));
         }
         public bool IsPosInBounds(Vector3Int pos) {
-            return IsPosInBounds(pos.x, pos.y, pos.z);
+            return (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height && pos.z >= 0 && pos.z < length);
         }
 
         int ToMapIndex(Vector3Int cellpos) {
@@ -166,7 +169,7 @@ namespace Kutil {
             int mapIndex = ToMapIndex(x, y, z);
             return map[mapIndex];
         }
-        public IEnumerable<TGridObject> GetAllCells() {
+        public TGridObject[] GetAllCells() {
             return map;
         }
         public void SetAllCells(TGridObject newValue) {
@@ -202,6 +205,15 @@ namespace Kutil {
                 Debug.LogWarning($"Invalid position {x},{y},{z}");
                 return false;
             }
+            if (destoryAction != null) {
+                int mpindex = ToMapIndex(x, y, z);
+                TGridObject original = map[mpindex];
+                Vector3Int pos = new Vector3Int(x, y, z);
+                if (original != null) {
+                    // Debug.Log($"clearing {original} {pos} nn{original != null} d{destoryAction}");
+                    destoryAction.Invoke(original, pos);
+                }
+            }
             map[ToMapIndex(x, y, z)] = newValue;
             OnAnyValueChanged?.Invoke();
             return true;
@@ -215,13 +227,15 @@ namespace Kutil {
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < length; z++) {
                     for (int x = 0; x < width; x++) {
-                        TGridObject original = map[ToMapIndex(x, y, z)];
+                        int mpindex = ToMapIndex(x, y, z);
+                        TGridObject original = map[mpindex];
                         Vector3Int pos = new Vector3Int(x, y, z);
-                        TGridObject newGridObject = action.Invoke(pos, original);
                         if (original != null) {
+                            // Debug.Log($"clearing {original} {pos} nn{original != null} d{destoryAction}");
                             destoryAction?.Invoke(original, pos);
                         }
-                        map[ToMapIndex(x, y, z)] = newGridObject;
+                        TGridObject newGridObject = action.Invoke(pos, original);
+                        map[mpindex] = newGridObject;
                     }
                 }
             }
