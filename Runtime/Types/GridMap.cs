@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using System.Runtime.Serialization;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -15,304 +15,308 @@ namespace Kutil {
     [System.Serializable]
     public abstract class GridCell<TGridType> {
 
-        // cant be serialized because circular dependency
-        [NonSerialized]
+        [SerializeReference]
         GridMap<TGridType> _map;
         [SerializeField, ReadOnly]
-        Vector2Int _pos;
+        Vector3Int _pos;
 
         public GridMap<TGridType> map { get => _map; private set => _map = value; }
-        public Vector2Int pos { get => _pos; private set => _pos = value; }
-        public Vector2Int worldPos => map?.originPos2 + pos ?? Vector2Int.zero;
+        public Vector3Int pos { get => _pos; private set => _pos = value; }
 
-        public GridCell(GridMap<TGridType> map, Vector2Int pos) {
+        public GridCell(GridMap<TGridType> map, Vector3Int pos) {
             this.map = map;
             this.pos = pos;
-        }
-        public void DeserializeSetMap(GridMap<TGridType> map) {
-            this.map = map;
         }
         public void TriggerUpdateEvent() {
             map.TriggerUpdateEvent();
         }
         public override string ToString() {
-            Vector2Int wpos = pos;
-            if (map != null) {
-                int index = map.ToGridIndex(pos.x, pos.y);
-                return $"Cell{index}{worldPos}({pos})";
-            } else {
-                return $"Lost Cell({pos})";
-            }
-            // Debug.Log(map.originPos2);
+            return $"{pos}";
         }
     }
 
-    public static class GridMap {
-        // static stuff
-        public static Vector2Int ToCellPos(Vector3 worldPos, float gridSize = 1) {
-            return ToCellPos(worldPos, Vector3.zero, gridSize);
-        }
-        public static Vector2Int ToCellPos(Vector3 worldPos, Vector3 originPos, float gridSize = 1) {
-            var localPos = worldPos - originPos;
-            Vector2Int cellPos = new Vector2Int(
-                        Mathf.FloorToInt(localPos.x / gridSize),
-                        Mathf.FloorToInt(localPos.z / gridSize)
-                    );
-            return cellPos;
-        }
-        public static Vector3 ToWorldPos(Vector2Int cellpos, float gridSize = 1) {
-            Vector3 wpos = new Vector3(cellpos.x, 0, cellpos.y) * gridSize;
-            return wpos;
-        }
-        // public static Vector2Int CellLocalToCellWorld(Vector2Int cellpos, float gridSize = 1) {
-        //     Vector3 wpos = new Vector3(cellpos.x, 0, cellpos.y) * gridSize;
-        //     return wpos;
-        // }
-    }
+    // public class GridMap {
+    // static stuff
+    // }
 
     [System.Serializable]
-    public class GridMap<TGridObject> : ISerializationCallbackReceiver {
+    public class GridMap<TGridObject> {
 
-        [SerializeField, ReadOnly] private int _width;
-        [SerializeField, ReadOnly] private int _height;
-        [SerializeField] private float _gridSize = 1;
-        [SerializeField] private Vector3 _originPos = Vector3.zero;
+        [SerializeField, ReadOnly] private int _width;//x
+        [SerializeField, ReadOnly] private int _length;//z
+        [SerializeField, ReadOnly] private int _height;//y
+        [SerializeField] private Grid grid;
 
-        [SerializeField] protected TGridObject[] grid;
+        [SerializeField] protected TGridObject[] map;
+
+        [SerializeField]
+        Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc;
+        [SerializeField]
+        Action<TGridObject, Vector3Int> destoryAction = null;
 
         public int width { get => _width; protected set => _width = value; }
+        public int length { get => _length; protected set => _length = value; }
         public int height { get => _height; protected set => _height = value; }
+        public Vector3Int dimensions => new Vector3Int(width, height, length);
 
-        public float gridSize { get => _gridSize; set => _gridSize = value; }
-        public Vector3 originPos { get => _originPos; set => _originPos = value; }
-        public Vector2Int originPos2 => new Vector2Int(Mathf.FloorToInt(_originPos.x), Mathf.FloorToInt(_originPos.z));
-
-        protected int volume => width * height;
+        protected int volume => width * length * height;
+        protected int floorArea => width * length;
 
         /// <summary>
         /// called when a value is changed
         /// map.OnAnyValueChanged += (o, args) => { };
         /// </summary>
-        public event EventHandler OnAnyValueChanged;
-        // public event EventHandler<OnGridValueChangedArgs> OnValueChanged;
-        // public class OnGridValueChangedArgs {
-        //     Vector2Int pos;
-        // }
+        public System.Action OnAnyValueChanged;
 
-        // public GridMap() {
-        //     grid = new TGridObject[volume];
-        // }
-        // public GridMap(int width, int height, float gridSize, Vector3 originPos) {
-        //     this.width = width;
-        //     this.height = height;
-        //     this.gridSize = gridSize;
-        //     this.originPos = originPos;
-        //     grid = new TGridObject[volume];
-        // }
-        public GridMap(int width, int height, Func<GridMap<TGridObject>, Vector2Int, TGridObject> createFunc = null, float gridSize = 1f) {
-            this.width = width;
-            this.height = height;
-            this.gridSize = gridSize;
-            grid = new TGridObject[volume];
+        // todo manage chunks?
+
+
+        public GridMap(Vector3Int dimensions, Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc = null,
+         Action<TGridObject, Vector3Int> destoryAction = null) {
+            this.width = dimensions.x;
+            this.height = dimensions.y;
+            this.length = dimensions.z;
+
+            map = new TGridObject[volume];
+            this.createFunc = createFunc;
+            this.destoryAction = destoryAction;
+            RecreateMap();
+        }
+
+        private void RecreateMap() {
             if (createFunc != null) {
                 SetForEach((pos, ival) => createFunc.Invoke(this, pos));
             } else {
-                // if (typeof(GridCell<TGridObject>).IsAssignableFrom(typeof(TGridObject))){
-                // ForEach((pos, ival) => new GridCell<TGridObject>(this, pos));
-                // (typeof(TGridObject) as GridCell<TGridObject> TCell)
-                // ForEach((pos, ival) => new TGridObject(this, pos));
-                // ! need a create func
-                // }else {
-                // ForEach((pos, ival) => default);
-                // }
+                // dont set, it can be done externally
+            }
+        }
+        public void ClearAll() {
+            SetForEach((pos, ival) => default);
+            // map is now filled with nulls (well defaults, if struct)
+            //? should set size to 0?
+        }
+        void ResizeMap(Vector3Int newDimensions, Vector3Int originalOffset = default) {
+            Vector3Int originalDimensions = dimensions;
+            BoundsInt origBounds = new BoundsInt(originalOffset, dimensions);
+            TGridObject[] originalMap = map;
+            this.width = newDimensions.x;
+            this.height = newDimensions.y;
+            this.length = newDimensions.z;
+            map = new TGridObject[volume];
+            if (createFunc != null) {
+                SetForEach((pos, ival) => {
+                    if (origBounds.Contains(pos)) {
+                        Vector3Int opos = pos - originalOffset;
+                        int oldIndex = opos.x + opos.z * originalDimensions.x + opos.y * originalDimensions.x * originalDimensions.z;
+                        return originalMap[oldIndex];
+                    } else {
+                        return createFunc.Invoke(this, pos);
+                    }
+                });
+            }
+            // destroy old ones that are now oob
+            for (int i = 0; i < originalMap.Length; i++) {
+                TGridObject item = originalMap[i];
+                // if not added to new one
+                if (!map.Contains(item)) {
+                    // not using index to pos func cause we are in the old map
+                    var oldpos = Vector3Int.zero;
+                    int index = i;
+                    oldpos.y = index / (originalDimensions.x * originalDimensions.z);
+                    index -= (oldpos.y * originalDimensions.x * originalDimensions.z);
+                    oldpos.z = index / originalDimensions.x;
+                    oldpos.x = index % originalDimensions.x;
+                    if (destoryAction != null) destoryAction.Invoke(item, oldpos);
+                }
             }
         }
 
-        public Vector3 GetWorldPos(Vector2Int pos) {
-            return GetWorldPos(pos.x, pos.y);
+        public bool IsPosInBounds(int x, int y, int z) {
+            return (x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < length);
         }
-        public Vector3 GetWorldPos(int x, int y) {
-            return new Vector3(x, 0, y) * gridSize + originPos;
-        }
-        public Vector2Int GetPos(Vector3 worldPos) {
-            var localPos = worldPos - originPos;
-            return new Vector2Int(
-                Mathf.FloorToInt(localPos.x / gridSize),
-                Mathf.FloorToInt(localPos.z / gridSize)
-            );
-        }
-        public bool IsPosInBounds(int x, int y) {
-            return (x >= 0 && y >= 0 && x < width && y < height);
-        }
-        public bool IsPosInBounds(Vector2Int pos) {
-            return IsPosInBounds(pos.x, pos.y);
+        public bool IsPosInBounds(Vector3Int pos) {
+            return IsPosInBounds(pos.x, pos.y, pos.z);
         }
 
-        public int ToGridIndex(int x, int y) {
-            return x + y * width;
+        int ToMapIndex(Vector3Int cellpos) {
+            return ToMapIndex(cellpos.x, cellpos.y, cellpos.z);
         }
-        Vector2Int ToXY(int gridIndex) {
-            var pos = Vector2Int.zero;
-            pos.y = gridIndex / width;
-            pos.x = gridIndex - pos.y;
+        int ToMapIndex(int x, int y, int z) {
+            if (!IsPosInBounds(x, y, z)) return -1;
+            return x + z * width + y * floorArea;
+        }
+        Vector3Int IndexToCellPos(int mapIndex) {
+            var pos = Vector3Int.zero;
+            pos.y = mapIndex / (width * length);
+            mapIndex -= (pos.y * width * length);
+            pos.z = mapIndex / width;
+            pos.x = mapIndex % width;
             return pos;
         }
 
-        public TGridObject GetCell(Vector2Int pos) {
-            return GetCell(pos.x, pos.y);
+        public TGridObject GetCell(Vector3Int pos) {
+            return GetCell(pos.x, pos.y, pos.z);
         }
-        /// <summary>
-        /// No safety checks
-        /// </summary>
-        public TGridObject GetCellRaw(int x, int y) {
-            return grid[ToGridIndex(x, y)];
-        }
-        public TGridObject GetCell(int x, int y) {
-            if (!IsPosInBounds(x, y)) {
+        public TGridObject GetCell(int x, int y, int z) {
+            if (!IsPosInBounds(x, y, z)) {
                 // invalid position
-                Debug.LogWarning($"Invalid position {x},{y}");
+                Debug.LogWarning($"Invalid position {x},{y},{z}");
                 return default;
             }
-            return grid[ToGridIndex(x, y)];
+            int mapIndex = ToMapIndex(x, y, z);
+            return map[mapIndex];
         }
-        public TGridObject[] GetAllCells() {
-            return grid;
+        public IEnumerable<TGridObject> GetAllCells() {
+            return map;
         }
         public void SetAllCells(TGridObject newValue) {
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    grid[ToGridIndex(x, y)] = newValue;
+                for (int z = 0; z < length; z++) {
+                    for (int x = 0; x < width; x++) {
+                        map[ToMapIndex(x, y, z)] = newValue;
+                    }
                 }
             }
-            OnAnyValueChanged?.Invoke(this, new EventArgs());
+            OnAnyValueChanged?.Invoke();
         }
-        public void SetCells(Vector2Int offset, TGridObject[,] newCells) {
-            int w = newCells.GetLength(0);//? switch these
-            int h = newCells.GetLength(1);
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; y < w; x++) {
-                    int gx = offset.x + x;
-                    int gy = offset.y + y;
-                    grid[ToGridIndex(gx, gy)] = newCells[x, y];
-                }
-            }
-            OnAnyValueChanged?.Invoke(this, new EventArgs());
-        }
+        // public void SetCells(Vector3Int offset, TGridObject[,,] newCells) {
+        // int w = newCells.GetLength(0);//? switch these
+        // int h = newCells.GetLength(1);
+        // for (int y = 0; y < h; y++) {
+        //     for (int x = 0; y < w; x++) {
+        //         int gx = offset.x + x;
+        //         int gy = offset.y + y;
+        //         int gz = offset.z + z;
+        //         grid[ToGridIndex(gx, gy, gz)] = newCells[x, y, z];
+        //     }
+        // }
+        // OnAnyValueChanged?.Invoke(this, new EventArgs());
+        // }
 
-        public bool SetCell(Vector2Int pos, TGridObject newValue) {
-            return SetCell(pos.x, pos.y, newValue);
+        public bool SetCell(Vector3Int pos, TGridObject newValue) {
+            return SetCell(pos.x, pos.y, pos.z, newValue);
         }
-        public bool SetCell(int x, int y, TGridObject newValue) {
-            if (!IsPosInBounds(x, y)) {
+        public bool SetCell(int x, int y, int z, TGridObject newValue) {
+            if (!IsPosInBounds(x, y, z)) {
                 // invalid position
-                Debug.LogWarning($"Invalid position {x},{y}");
+                Debug.LogWarning($"Invalid position {x},{y},{z}");
                 return false;
             }
-            grid[ToGridIndex(x, y)] = newValue;
-            OnAnyValueChanged?.Invoke(this, new EventArgs());
+            map[ToMapIndex(x, y, z)] = newValue;
+            OnAnyValueChanged?.Invoke();
             return true;
         }
 
-        public void SetForEach(System.Func<Vector2Int, TGridObject, TGridObject> action) {
+        /// <summary>
+        /// Set 
+        /// </summary>
+        /// <param name="action">cellpos, original value-> new value</param>
+        public void SetForEach(System.Func<Vector3Int, TGridObject, TGridObject> action) {
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    grid[ToGridIndex(x, y)] = action.Invoke(new Vector2Int(x, y), grid[ToGridIndex(x, y)]);
+                for (int z = 0; z < length; z++) {
+                    for (int x = 0; x < width; x++) {
+                        TGridObject original = map[ToMapIndex(x, y, z)];
+                        Vector3Int pos = new Vector3Int(x, y, z);
+                        TGridObject newGridObject = action.Invoke(pos, original);
+                        if (original != null) {
+                            destoryAction?.Invoke(original, pos);
+                        }
+                        map[ToMapIndex(x, y, z)] = newGridObject;
+                    }
                 }
             }
-            OnAnyValueChanged?.Invoke(this, new EventArgs());
+            OnAnyValueChanged?.Invoke();
         }
         public void ForEach(System.Action<TGridObject> action, bool triggerUpdate = true) {
             // ? try to allow early out
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    action.Invoke(grid[ToGridIndex(x, y)]);
+                for (int z = 0; z < length; z++) {
+                    for (int x = 0; x < width; x++) {
+                        action.Invoke(map[ToMapIndex(x, y, z)]);
+                    }
                 }
             }
             if (triggerUpdate) {
-                OnAnyValueChanged?.Invoke(this, new EventArgs());
+                OnAnyValueChanged?.Invoke();
             }
         }
-        public void ForEach(IEnumerable<Vector2Int> positions, System.Action<TGridObject> action, bool triggerUpdate = true) {
-            if (positions == null) return;
+        public void ForEach(IEnumerable<Vector3Int> positions, System.Action<TGridObject> action, bool triggerUpdate = true) {
             foreach (var pos in positions) {
                 if (!IsPosInBounds(pos)) {
                     Debug.LogWarning($"Invalid pos {pos} in map foreach!");
                     continue;
                 }
-                action.Invoke(grid[ToGridIndex(pos.x, pos.y)]);
+                action.Invoke(map[ToMapIndex(pos.x, pos.y, pos.z)]);
             }
             if (triggerUpdate) {
-                OnAnyValueChanged?.Invoke(this, new EventArgs());
+                OnAnyValueChanged?.Invoke();
             }
         }
 
         public void TriggerUpdateEvent() {
-            OnAnyValueChanged?.Invoke(this, new EventArgs());
+            OnAnyValueChanged?.Invoke();
         }
 
         public void DrawGizmosValues() {
-            if (grid == null) return;
+            if (map == null) return;
 #if UNITY_EDITOR
-        Handles.color = Color.gray;
-        // values
-        // todo only if in view
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                string text = grid[ToGridIndex(x, y)]?.ToString();
-                Vector3 pos = GetWorldPos(x, y);
-                Handles.Label(pos + new Vector3(gridSize, 0, gridSize) / 2f, text);
-            }
-        }
-        // grid
-        DrawGizmosGrid();
-        Handles.color = Color.white;
-#endif
-        }
-        public void DrawGizmosGrid() {
-            if (grid == null) return;
-#if UNITY_EDITOR
-        Handles.color = Color.gray;
-        // grid
-        for (int y = 0; y <= height; y++) {
-            Handles.DrawLine(GetWorldPos(0, y), GetWorldPos(width, y));
-        }
-        for (int x = 0; x <= width; x++) {
-            Handles.DrawLine(GetWorldPos(x, 0), GetWorldPos(x, height));
-        }
-        Handles.color = Color.white;
-#endif
-        }
-        public void DrawGizmosBounds() {
-            if (grid == null) return;
-#if UNITY_EDITOR
-
-        Vector3[] poses = new Vector3[]{
-             GetWorldPos(0, 0),
-             GetWorldPos(width, 0),
-             GetWorldPos(0, height),
-             GetWorldPos(width, height),
-             };
-        Handles.DrawLine(poses[0], poses[1]);
-        Handles.DrawLine(poses[0], poses[2]);
-        Handles.DrawLine(poses[2], poses[3]);
-        Handles.DrawLine(poses[1], poses[3]);
-#endif
-        }
-
-        public void OnBeforeSerialize() {
-            // throw new NotImplementedException();
-        }
-
-        public void OnAfterDeserialize() {
-            if (grid == null) return;
+            Handles.color = Color.gray;
+            // values
+            // todo only if in view
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    TGridObject gridObject = grid[ToGridIndex(x, y)];
-                    if (gridObject is GridCell<TGridObject> gridCell) {
-                        gridCell.DeserializeSetMap(this);
+                for (int z = 0; z < length; z++) {
+                    for (int x = 0; x < width; x++) {
+                        string text = map[ToMapIndex(x, y, z)]?.ToString();
+                        Vector3 pos = grid.CellToWorld(new Vector3Int(x, y, z));
+                        Handles.Label(pos, text);
                     }
                 }
             }
+            // grid
+            DrawGizmosGrid();
+            Handles.color = Color.white;
+#endif
         }
+        public void DrawGizmosGrid() {
+            if (map == null) return;
+#if UNITY_EDITOR
+            Handles.color = Color.gray;
+            // grid
+            // for (int y = 0; y <= width; y++) {
+            //     Handles.DrawLine(GetWorldPos(0, y), GetWorldPos(width, y,0));
+            // }
+            // for (int x = 0; x <= width; x++) {
+            //     Handles.DrawLine(GetWorldPos(x, 0), GetWorldPos(x, width,0));
+            // }
+            // for (int z = 0; z <= width; z++) {
+            //     Handles.DrawLine(GetWorldPos(x, 0), GetWorldPos(0, width, z));
+            // }
+            Handles.color = Color.white;
+#endif
+        }
+        public void DrawGizmosBounds() {
+            if (map == null) return;
+#if UNITY_EDITOR
+            Handles.color = Color.gray;
+
+            Vector3[] cornerPositions = new Vector3[]{
+             grid.CellToWorld(new Vector3Int(0,     0,      0)),
+             grid.CellToWorld(new Vector3Int(width, 0,      0)),
+             grid.CellToWorld(new Vector3Int(0,     height, 0)),
+             grid.CellToWorld(new Vector3Int(width, height, 0)),
+             grid.CellToWorld(new Vector3Int(0,     0,      length)),
+             grid.CellToWorld(new Vector3Int(width, 0,      length)),
+             grid.CellToWorld(new Vector3Int(0,     height, length)),
+             grid.CellToWorld(new Vector3Int(width, height, length)),
+             };
+            Handles.DrawLine(cornerPositions[0], cornerPositions[1]);
+            Handles.DrawLine(cornerPositions[0], cornerPositions[2]);
+            Handles.DrawLine(cornerPositions[2], cornerPositions[3]);
+            Handles.DrawLine(cornerPositions[1], cornerPositions[3]);
+            // todo
+            Handles.color = Color.white;
+#endif
+        }
+
     }
 }

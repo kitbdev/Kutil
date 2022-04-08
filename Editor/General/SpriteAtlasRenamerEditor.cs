@@ -7,16 +7,18 @@ using System.Collections.Generic;
 namespace Kutil {
     public class SpriteAtlasRenamerEditor : EditorWindow {
 
-        [MenuItem("Util/SpriteAtlasRenamer")]
+        [MenuItem("Kutil/SpriteAtlasRenamer")]
         private static void ShowWindow() {
             var window = GetWindow<SpriteAtlasRenamerEditor>();
             window.titleContent = new GUIContent("SpriteAtlasRenamer");
             window.Show();
         }
         public SerializedObject serializedObject;
-        // [Multiline]
+        [Multiline]
         public string csvtext;
         public Texture2D selectedTexture;
+        public string prefix = "";
+        public string suffix = "";
 
         private void OnEnable() {
             serializedObject = new SerializedObject(this);
@@ -27,6 +29,8 @@ namespace Kutil {
             serializedObject.Update();
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(selectedTexture)));
             SerializedProperty textprop = serializedObject.FindProperty(nameof(csvtext));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(prefix)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(suffix)));
             EditorGUILayout.PropertyField(textprop);
             // string r = EditorGUILayout.TextArea(textprop.stringValue,GUILayout.Height(EditorGUIUtility.singleLineHeight*5));
             // EditorGUI.BeginChangeCheck();
@@ -63,59 +67,74 @@ namespace Kutil {
             }
             Debug.Log("Updating names");
             List<string> newnameList = ParseCSV();
-            if (newnameList.Count == 0) {
-                Debug.Log("csv param is invalid");
-                return;
-            }
+            // if (newnameList.Count == 0) {
+            //     Debug.Log("csv param is invalid");
+            //     return;
+            // } 
             Debug.Log($"Found {newnameList.Count} names!");
             // get sprites
             string texpath = AssetDatabase.GetAssetPath(selectedTexture);
             TextureImporter textureImporter = AssetImporter.GetAtPath(texpath) as TextureImporter;
+            textureImporter.isReadable = true;
             SpriteMetaData[] spritesheet = textureImporter.spritesheet;
 
 
             // Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(texpath).OfType<Sprite>().ToArray();
             Debug.Log($"Found {spritesheet.Length} sprites!");
-            if (newnameList.Count != spritesheet.Length) {
+            if (newnameList.Count != spritesheet.Length && newnameList.Count > 0) {
                 Debug.Log("length mismatch!");
                 return;
             }
-            int rncnt = 0;
+            int numRenamed = 0;
             for (int i = 0; i < spritesheet.Length; i++) {
                 SpriteMetaData spr = spritesheet[i];
-                string nn = newnameList[i];
-                if (nn != "") {
-                    if (spritesheet[i].name == nn) {
+                string newname;
+                if (newnameList.Count > 0) {
+                    newname = prefix + newnameList[i] + suffix;
+                } else {
+                    newname = prefix + spr.name + suffix;
+                }
+                if (newname != "") {
+                    if (spritesheet[i].name == newname) {
                         continue;
                     }
                     // Debug.Log($"nm {nn}");
                     // check unique
                     bool isUnique = true;
                     for (int j = 0; j < i; j++) {
-                        if (spritesheet[j].name == nn) {
-                            Debug.Log($"Not unique {spr.name} to {nn}!");
+                        if (spritesheet[j].name == newname) {
+                            Debug.Log($"Not unique {spr.name} to {newname}!");
                             isUnique = false;
                             break;
                         }
                     }
                     if (isUnique) {
-                        Debug.Log($"Renaming {spr.name} to {nn}");
+                        Debug.Log($"Renaming {spr.name} to {newname}");
                         // Undo.RecordObject(tex, "rename sprite");
-                        spritesheet[i].name = nn;
+                        // spr.name = newname;
+                        // spritesheet[i] = spr;
+                        spritesheet[i].rect = spr.rect;
+                        spritesheet[i].name = newname;
                         // spr.name = nn;
-                        rncnt++;
+                        numRenamed++;
                     }
                 }
             }
             // Undo.RecordObject(tex, "rename sprite");
             // AssetDatabase.ImportAsset(texpath, ImportAssetOptions.ForceUpdate);
-            textureImporter.spritesheet = spritesheet;
-            if (rncnt > 0) {
+            if (numRenamed > 0) {
+                // Undo.RecordObject(textureImporter, $"renamed {numRenamed} sprites");
+                textureImporter.spritesheet = spritesheet;
+                // }
+                // if (numRenamed > 0) {
                 EditorUtility.SetDirty(textureImporter);
+                textureImporter.SaveAndReimport();
+                // AssetDatabase.ImportAsset(texpath, ImportAssetOptions.ForceUpdate);
+                Debug.Log($"Renamed {numRenamed} sprites!");
+            } else {
+                Debug.Log("no sprites to rename");
             }
-            textureImporter.SaveAndReimport();
             // selectedTexture.Apply();
-            Debug.Log($"Renamed {rncnt} sprites!");
         }
         List<string> ParseCSV() {
             List<string> list = new List<string>();
@@ -123,10 +142,15 @@ namespace Kutil {
                 return list;
             }
             string[] lines = csvtext.Split('\n');// no \n is ever found, convert to commas
-            Debug.Log($"{lines.Length} lines");
+            // Debug.Log($"{lines.Length} lines");
             int nml = 0;
             foreach (var line in lines) {
-                string[] nms = line.Split(',');
+                string[] nms;
+                if (line.Contains(',')) {
+                    nms = line.Split(',');
+                } else {
+                    nms = line.Split('\t');
+                }
                 if (nms.Length > 0) {
                     nml = nms.Length;
                 }
@@ -134,7 +158,7 @@ namespace Kutil {
                     list.Add(nm);
                 }
             }
-            Debug.Log($"{nml} columns");
+            // Debug.Log($"{nml} columns");
             return list;
         }
     }
