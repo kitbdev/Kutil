@@ -3,12 +3,7 @@ using UnityEngine;
 using System;
 
 namespace Kutil {
-#if UNITY_EDITOR
-    [UnityEditor.CustomPropertyDrawer(typeof(SerializedType))]
-    public class SerializedTypeDrawer : ShowAsChildPropertyDrawer {
-        public override string childName => nameof(SerializedType.assemblyName);
-    }
-#endif
+
     /// <summary>
     /// A serializable System.Type
     /// </summary>
@@ -16,7 +11,7 @@ namespace Kutil {
     public class SerializedType : ISerializationCallbackReceiver {
 
         [SerializeField, ReadOnly]
-        internal string assemblyName;
+        public string assemblyName;
         public Type type;
 
         public SerializedType() {

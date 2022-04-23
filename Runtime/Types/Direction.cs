@@ -5,12 +5,6 @@ using UnityEngine;
 
 namespace Kutil {
 
-#if UNITY_EDITOR
-    [UnityEditor.CustomPropertyDrawer(typeof(Direction))]
-    public class DirectionDrawer : ShowAsChildPropertyDrawer {
-        public override string childName => "dir";
-    }
-#endif
     /// <summary>
     /// A 2D compass direction
     /// </summary>

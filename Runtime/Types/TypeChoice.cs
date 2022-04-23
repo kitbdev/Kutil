@@ -6,12 +6,7 @@ using System;
 using System.Linq;
 
 namespace Kutil {
-#if UNITY_EDITOR
-    [UnityEditor.CustomPropertyDrawer(typeof(TypeChoice<>))]
-    public class TypeChoiceDrawer : ShowAsChildPropertyDrawer {
-        public override string childName => "_selectedType";
-    }
-#endif
+
     /// <summary>
     /// Holds a Type that implements or inherits a base type. Basically a dynamic enum for types.
     /// The type can be selected in the editor, otherwise cannot be changed

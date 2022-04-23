@@ -9,6 +9,7 @@ namespace Kutil {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             var root = new VisualElement();
             var field = new LayerField();
+            field.label = property.displayName;
             field.BindProperty(property);
             root.Add(field);
             return root;

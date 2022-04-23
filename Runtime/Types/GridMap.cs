@@ -41,6 +41,7 @@ namespace Kutil {
 
     [System.Serializable]
     public class GridMap<TGridObject> {
+        // todo use jagged array (faster, no mul needed to convert to index)
 
         [SerializeField, ReadOnly] private int _width;//x
         [SerializeField, ReadOnly] private int _length;//z
@@ -75,6 +76,7 @@ namespace Kutil {
 
         public GridMap(Vector3Int dimensions, Grid grid, Func<GridMap<TGridObject>, Vector3Int, TGridObject> createFunc = null,
          Action<TGridObject, Vector3Int> destoryAction = null) {
+            // todo use bounds and offset
             this.width = dimensions.x;
             this.height = dimensions.y;
             this.length = dimensions.z;
@@ -142,11 +144,11 @@ namespace Kutil {
         }
 
         int ToMapIndex(Vector3Int cellpos) {
-            return ToMapIndex(cellpos.x, cellpos.y, cellpos.z);
+            if (!IsPosInBounds(cellpos)) return -1;
+            return cellpos.x + cellpos.z * width + cellpos.y * floorArea;
         }
         int ToMapIndex(int x, int y, int z) {
-            if (!IsPosInBounds(x, y, z)) return -1;
-            return x + z * width + y * floorArea;
+            return ToMapIndex(new Vector3Int(x, y, z));
         }
         Vector3Int IndexToCellPos(int mapIndex) {
             var pos = Vector3Int.zero;
@@ -158,16 +160,16 @@ namespace Kutil {
         }
 
         public TGridObject GetCell(Vector3Int pos) {
-            return GetCell(pos.x, pos.y, pos.z);
-        }
-        public TGridObject GetCell(int x, int y, int z) {
-            if (!IsPosInBounds(x, y, z)) {
+            if (!IsPosInBounds(pos)) {
                 // invalid position
-                Debug.LogWarning($"Invalid position {x},{y},{z}");
+                Debug.LogWarning($"Invalid position {pos}");
                 return default;
             }
-            int mapIndex = ToMapIndex(x, y, z);
+            int mapIndex = ToMapIndex(pos);
             return map[mapIndex];
+        }
+        public TGridObject GetCell(int x, int y, int z) {
+            return GetCell(new Vector3Int(x, y, z));
         }
         public TGridObject[] GetAllCells() {
             return map;
@@ -197,26 +199,25 @@ namespace Kutil {
         // }
 
         public bool SetCell(Vector3Int pos, TGridObject newValue) {
-            return SetCell(pos.x, pos.y, pos.z, newValue);
-        }
-        public bool SetCell(int x, int y, int z, TGridObject newValue) {
-            if (!IsPosInBounds(x, y, z)) {
+            if (!IsPosInBounds(pos)) {
                 // invalid position
-                Debug.LogWarning($"Invalid position {x},{y},{z}");
+                Debug.LogWarning($"Invalid position {pos}");
                 return false;
             }
             if (destoryAction != null) {
-                int mpindex = ToMapIndex(x, y, z);
+                int mpindex = ToMapIndex(pos);
                 TGridObject original = map[mpindex];
-                Vector3Int pos = new Vector3Int(x, y, z);
                 if (original != null) {
                     // Debug.Log($"clearing {original} {pos} nn{original != null} d{destoryAction}");
                     destoryAction.Invoke(original, pos);
                 }
             }
-            map[ToMapIndex(x, y, z)] = newValue;
+            map[ToMapIndex(pos)] = newValue;
             OnAnyValueChanged?.Invoke();
             return true;
+        }
+        public bool SetCell(int x, int y, int z, TGridObject newValue) {
+            return SetCell(new Vector3Int(x, y, z), newValue);
         }
 
         /// <summary>
@@ -260,7 +261,7 @@ namespace Kutil {
                     Debug.LogWarning($"Invalid pos {pos} in map foreach!");
                     continue;
                 }
-                action.Invoke(map[ToMapIndex(pos.x, pos.y, pos.z)]);
+                action.Invoke(map[ToMapIndex(pos)]);
             }
             if (triggerUpdate) {
                 OnAnyValueChanged?.Invoke();

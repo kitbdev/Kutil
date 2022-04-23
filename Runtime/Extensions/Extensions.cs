@@ -37,6 +37,11 @@ namespace Kutil {
             return new T[] { t };
         }
     }
+    public static class BoundsIntExtensions {
+        public static bool ContainsBounds(this BoundsInt bounds, BoundsInt smaller){
+            return bounds.Contains(smaller.min) && bounds.Contains(smaller.max);
+        }
+    }
     public static class TransformExtensions {
         /// <summary>
         /// Destroy all children GameObjects on this Transform safely
