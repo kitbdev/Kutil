@@ -78,7 +78,8 @@ namespace Kutil {
         }
         protected bool IsValidTrig(Collider other) {
             bool isValid = true;
-            if (!((Layer)other.gameObject.layer).InLayerMask(checkLayerMask)) {
+            // if (!((Layer)other.gameObject.layer).IsInLayerMask(checkLayerMask)) {
+            if (!(checkLayerMask.HasLayer(other.gameObject.layer))) {
                 isValid = false;
             }
             if (checkTag.Length > 0) {

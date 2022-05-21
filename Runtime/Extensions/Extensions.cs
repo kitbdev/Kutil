@@ -38,6 +38,12 @@ namespace Kutil {
         }
     }
     public static class BoundsIntExtensions {
+        private static bool Intersects(this BoundsInt bounds, BoundsInt other) {
+            return AsBounds(bounds).Intersects(AsBounds(other));
+        }
+        private static Bounds AsBounds(this BoundsInt bounds) {
+            return new Bounds(bounds.center, bounds.size);
+        }
         public static bool ContainsBounds(this BoundsInt bounds, BoundsInt smaller){
             return bounds.Contains(smaller.min) && bounds.Contains(smaller.max);
         }

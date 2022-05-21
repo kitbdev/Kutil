@@ -19,7 +19,7 @@ namespace Kutil {
         [SerializeField] bool pauseOnStart = false;
         public bool blockPause = false;
         public bool allowUnpausing = true;
-        public bool autoPauseWhenFocusLost = true;
+        public bool autoPauseWhenFocusLost = false;
         public bool autoUnpauseWhenFocusGainedAfterAutoPause = false;
         [SerializeField, ReadOnly] bool didAutoPause = false;
 
@@ -27,6 +27,8 @@ namespace Kutil {
         [SerializeField] InputActionReference togglePauseButton;
 #endif
         IEnumerator pauseLerpCo;
+
+        [SerializeField] bool debug = true;
 
         [Header("Events")]
         public UnityEvent pauseEvent;
@@ -64,7 +66,9 @@ namespace Kutil {
             SetPaused(false);
         }
         public void SetPaused(bool pause = true) {
-            // Debug.Log($"received pause {pause} blocked:{blockPause}", this);
+            if (debug) {
+                Debug.Log($"{(pause ? "Pausing" : "Unpausing")} blocked:{blockPause}", this);
+            }
             if (blockPause) {
                 Debug.Log("pausing is blocked");
                 return;
@@ -106,10 +110,16 @@ namespace Kutil {
                 if (didAutoPause && autoUnpauseWhenFocusGainedAfterAutoPause) {
                     UnPause();
                     didAutoPause = false;
+                    if (debug) {
+                        Debug.Log($"auto unpaused", this);
+                    }
                 }
             } else {
                 if (autoPauseWhenFocusLost) {
                     Pause();
+                    if (debug) {
+                        Debug.Log($"auto paused", this);
+                    }
                     didAutoPause = true;
                 }
             }
