@@ -12,72 +12,255 @@ namespace Kutil {
     [DefaultExecutionOrder(1)]// after menu screens
     public class MenuScreenGroup : MonoBehaviour {
 
-        [SerializeField] bool hideAllOnStart = false;
-        // allow multiple option (for just management)
-        [SerializeField] private bool _allowMultipleShown = false;
+        [Tooltip("Hide all MenuScreens on start")]
+        [SerializeField] protected bool hideAllOnStart = false;
+        /// <summary>
+        /// Can multiple MenuScreens be shown at the same time
+        /// </summary>
+        [Tooltip("Can multiple MenuScreens be shown at the same time")]
+        [SerializeField] protected bool _allowMultipleShown = false;
+        /// <summary>
+        /// Should a history of MenuScreens shown be recorded
+        /// </summary>
+        [Tooltip("Should a history of MenuScreens shown be recorded")]
+        [SerializeField] protected bool _useHistory = true;
+        // todo option to clear history on scene load or something
 
-        List<MenuScreen> menuScreens = new List<MenuScreen>();
+        // all menu screens
+        protected List<MenuScreen> menuScreens = new List<MenuScreen>();
+        // does not include current
+        protected Stack<IEnumerable<MenuScreen>> menuScreenHistory = new Stack<IEnumerable<MenuScreen>>();
 
-        public IEnumerable<MenuScreen> shownMenuScreen => menuScreens.Where(ms => ms.isShown);
+        /// <summary>
+        /// All MenuScreens that are currently shown
+        /// </summary>
+        public IEnumerable<MenuScreen> shownMenuScreens => menuScreens.Where(ms => ms.isShown);
+        /// <summary>
+        /// All MenuScreens registered with this MenuScreenGroup
+        /// </summary>
         public IEnumerable<MenuScreen> allMenuScreens => menuScreens;
+
+        // todo subgroups? (for unified history, ?)
 
         public bool allowMultipleShown {
             get => _allowMultipleShown;
             set {
                 _allowMultipleShown = value;
-                if (!_allowMultipleShown) {
+                if (!_allowMultipleShown && menuScreens != null) {
                     // hide all but first
-                    HideAllScreensExcept(menuScreens.First(ms => ms.isShown));
+                    HideAllMenuScreensExcept(menuScreens.FirstOrDefault(ms => ms.isShown));
+                }
+            }
+        }
+
+        private void OnValidate() {
+            if (Application.isPlaying) {
+                if (!_allowMultipleShown && menuScreens != null) {
+                    HideAllMenuScreensExcept(menuScreens.FirstOrDefault(ms => ms.isShown), false);
                 }
             }
         }
 
         private void Start() {
             if (hideAllOnStart) {
-                HideAllScreens();
+                HideAllMenuScreens();
             }
+            UpdateHistory();
         }
-
-        public bool AnyScreensShown() {
+        /// <summary>
+        /// Are any MenuScreens currently shown?
+        /// </summary>
+        /// <returns></returns>
+        public bool AnyMenuScreensShown() {
             return menuScreens.Any(ms => ms.isShown);
         }
+        /// <summary>
+        /// Show some MenuScreens additively. Will not hide other screens.
+        /// Allow Multiple Shown must be true if there is more than one.
+        /// </summary>
+        /// <param name="showMenuScreens">The MenuScreens to Show</param>
+        public void ShowMenuScreensAdditively(IEnumerable<MenuScreen> showMenuScreens) {
+            ShowMenuScreens(showMenuScreens, false);
+        }
+        /// <summary>
+        /// Show some MenuScreens exclusively. Will hide other screens.
+        /// Allow Multiple Shown must be true if there is more than one.
+        /// </summary>
+        /// <param name="showMenuScreens">The MenuScreens to Show</param>
+        public void ShowMenuScreensExclusively(IEnumerable<MenuScreen> showMenuScreens) {
+            ShowMenuScreens(showMenuScreens, true);
+        }
+        /// <summary>
+        /// Show some MenuScreens.
+        /// Allow Multiple Shown must be true if there is more than one.
+        /// </summary>
+        /// <param name="showMenuScreens">The MenuScreens to Show</param>
+        /// <param name="exclusively">if allowMultiple, show show exlusively or additively?</param>
+        public void ShowMenuScreens(IEnumerable<MenuScreen> showMenuScreens, bool exclusively) {
+            int numSceensToShow = showMenuScreens.Count();
+            if (showMenuScreens == null || numSceensToShow == 0) {
+                HideAllMenuScreens();
+                return;
+            }
+            if (numSceensToShow == 1) {
+                ShowMenuScreen(showMenuScreens.First(), exclusively);
+                return;
+            }
+            if (!allowMultipleShown && numSceensToShow > 1) {
+                Debug.LogWarning($"Trying to show {numSceensToShow} MenuScreens but multiple MenuScreens are not allowed!", this);
+                return;
+            }
+            if (!allowMultipleShown || exclusively) {
+                HideAllMenuScreensNoHistory();
+            }
+            foreach (var ms in showMenuScreens) {
+                ms.SetShown(true, false);
+            }
+            UpdateHistory();
+        }
+        /// <summary>
+        /// Show a MenuScreen.
+        /// if allowMultiple, show additively. Will not hide other screens.
+        /// </summary>
+        /// <param name="menuScreen">The MenuScreen to Show</param>
         public void ShowMenuScreen(MenuScreen menuScreen) {
-            if (!allowMultipleShown) {
-                HideAllScreensExcept(menuScreen);
+            ShowMenuScreen(menuScreen, false);
+        }
+        /// <summary>
+        /// Show a MenuScreen.
+        /// if allowMultiple, show exlusively. Will hide other screens.
+        /// </summary>
+        /// <param name="menuScreen">The MenuScreen to Show</param>
+        public void ShowMenuScreenExlusively(MenuScreen menuScreen) {
+            ShowMenuScreen(menuScreen, true);
+        }
+        /// <summary>
+        /// Show a MenuScreen.
+        /// </summary>
+        /// <param name="menuScreen">The MenuScreen to Show</param>
+        /// <param name="exclusively">if allowMultiple, show show exlusively or additively?</param>
+        public void ShowMenuScreen(MenuScreen menuScreen, bool exclusively) {
+            if (shownMenuScreens.Count() > 0) {
+                if (!allowMultipleShown || exclusively) {
+                    HideAllMenuScreensExcept(menuScreen, false);
+                }
             }
             if (!menuScreen.isShown) {
                 menuScreen.SetShown(true, false);
+                UpdateHistory();
             }
         }
+        // public void HideMenuScreens(IEnumerable<MenuScreen> hideMenuScreens) {
+        // }
+        /// <summary>
+        /// Hide a MenuScreen.
+        /// </summary>
+        /// <param name="menuScreen">The MenuScreen to hide</param>
         public void HideMenuScreen(MenuScreen menuScreen) {
             if (menuScreen.isShown) {
                 menuScreen.SetShown(false, false);
+                UpdateHistory();
             }
         }
-        public void HideAllScreens() {
+        public void HideAllMenuScreens() {
+            HideAllMenuScreensNoHistory();
+            UpdateHistory();
+        }
+        protected void HideAllMenuScreensNoHistory() {
             foreach (var ms in menuScreens) {
-                ms.SetShown(false);
+                ms.SetShown(false, false);
             }
         }
-        void HideAllScreensExcept(params MenuScreen[] menuScreen) {
+        protected void HideAllMenuScreensExcept(MenuScreen menuScreen, bool updateHistory = true) {
+            HideAllMenuScreensExcept(new MenuScreen[] { menuScreen }, updateHistory);
+        }
+        protected void HideAllMenuScreensExcept(IEnumerable<MenuScreen> menuScreen, bool updateHistory = true) {
             foreach (var ms in menuScreens.Except(menuScreen)) {
-                ms.SetShown(false);
+                ms.SetShown(false, false);
+            }
+            if (updateHistory) {
+                UpdateHistory();
             }
         }
 
-        // for MenuScreen
-
-        public void NotifyMenuScreenOn(MenuScreen menuScreen) {
-            if (!allowMultipleShown) {
-                HideAllScreensExcept(menuScreen);
+        // public void GoBack() => GoBack(1);
+        /// <summary>
+        /// Go back in history and show a previous set of menu screens.
+        /// </summary>
+        /// <param name="steps">times to go back in history (default = 1)</param>
+        public void GoBack(int steps = 1) {
+            if (!_useHistory) return;
+            IEnumerable<MenuScreen> showScreens = null;
+            // pop the current screens and the prior ones (showing will re add to history the current)
+            for (int i = steps; i >= 0; i--) {
+                if (!menuScreenHistory.TryPop(out showScreens)) {
+                    // no more history!
+                    Debug.LogWarning($"MenuScreen Group cannot go back {steps} steps, no more history!", this);
+                    showScreens = null;
+                    // ? return instead?
+                    break;
+                }
+            }
+            if (showScreens != null && showScreens.Count() > 0) {
+                ShowMenuScreens(showScreens, true);
+            } else {
+                HideAllMenuScreens();
             }
         }
+        // todo go forward?
+        // public void GoFoward(int steps = 1){
+
+        // }
+        /// <summary>
+        /// Can we go back in MenuScreen for the number of steps?
+        /// </summary>
+        /// <param name="steps"></param>
+        /// <returns></returns>
+        public bool CanGoBack(int steps = 1) {
+            return menuScreenHistory.Count() > steps;
+        }
+        public int HistoryLength() {
+            // not including current
+            return menuScreenHistory.Count() - 1;
+        }
+
+        /// <summary>
+        /// Add the current MenuScreens to the history stack
+        /// </summary>
+        protected void UpdateHistory() {
+            if (!_useHistory) return;
+            IEnumerable<MenuScreen> curShownScreens = shownMenuScreens;
+            if (!menuScreenHistory.TryPeek(out var lastScreens) || lastScreens != curShownScreens) {
+                // either no history or the last entry was different
+                menuScreenHistory.Push(curShownScreens);
+            }
+        }
+        /// <summary>
+        /// Clear MenuScreen history
+        /// </summary>
+        public void ClearHistory() {
+            menuScreenHistory.Clear();
+            // add the current screens back
+            UpdateHistory();
+        }
+
+        // for MenuScreen to call
+
+        public void NotifyMenuScreenState(bool isOn, MenuScreen menuScreen) {
+            if (isOn) {
+                if (!allowMultipleShown) {
+                    HideAllMenuScreensExcept(menuScreen);
+                }
+            }
+            UpdateHistory();
+        }
+
         public void RegisterMenuScreen(MenuScreen menuScreen) {
             if (menuScreens.Contains(menuScreen)) {
                 Debug.LogWarning($"Menu Screen {menuScreen} cannot be registered, it is already registered");
                 return;
             }
-            bool anyShown = AnyScreensShown();
+            bool anyShown = AnyMenuScreensShown();
             menuScreens.Add(menuScreen);
             if (!allowMultipleShown) {
                 if (anyShown) {

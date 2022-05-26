@@ -3,11 +3,14 @@ using System;
 using System.Collections;
 
 namespace Kutil {
-    ///Original version of the ConditionalHideAttribute created by Brecht Lecluyse (www.brechtos.com)
-    ///Modified by: Sebastian Lague
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property
-        // | AttributeTargets.Class | AttributeTargets.Struct
-        , Inherited = true)]
+    // Original version of the ConditionalHideAttribute created by Brecht Lecluyse (www.brechtos.com)
+    // Modified by: Sebastian Lague
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true)]
+    // | AttributeTargets.Class | AttributeTargets.Struct
+    /// <summary>
+    /// Conditionally hide a serialized property in the inspector.
+    /// Can use properties or methods to get value, can use lambdas for more flexible behavior
+    /// </summary>
     public class ConditionalHideAttribute : PropertyAttribute {
 
         public string conditionalSourceField;
@@ -18,11 +21,6 @@ namespace Kutil {
             conditionalSourceField = boolVariableName;
             this.showIfTrue = showIfTrue;
         }
-        // todo? multiple bools
-        // public ConditionalHideAttribute(bool showIfTrueparams, bool And, string boolVariableNames) {
-        //     conditionalSourceField = boolVariableName;
-        //     this.showIfTrue = showIfTrue;
-        // }
 
         public ConditionalHideAttribute(string enumVariableName, params int[] enumIndices) {
             conditionalSourceField = enumVariableName;
