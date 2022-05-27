@@ -13,15 +13,28 @@ namespace Kutil {
         protected enum ShowAction {
             NONE, SHOW, HIDE
         }
+        protected enum FadeEasing {
+            Linear,
+            InOutSine,
+            // InSine is probably the best, given how the alpha seems kinda exp 
+            InSine,
+            OutSine,
+        }
 
-        [Tooltip("Should the MenuScreen Show or Hide on start?")]
+        [Tooltip("Should the MenuScreen Show or Hide on start")]
         [SerializeField] protected ShowAction showOnStart = ShowAction.NONE;
         [Tooltip("Should the MenuScreen be recentered? resets local position (for easier editing)")]
         [SerializeField] protected bool recenterOnAwake = true;
+        [Tooltip("Should the CanvasGroup be interactable and block raycasts")]
+        // ? split with block raycasts?
+        // ? max alpha value?
+        [SerializeField] protected bool interactable = true;
 
         [Space]
         [Tooltip("The Selectable to select when shown, like a button")]
         [SerializeField] protected Selectable selectOnShow;
+        // [Tooltip("Should we prevent other selectables from being selected while shown?")]
+        // [SerializeField] protected bool lockSelectionToChildren = false;
         [Tooltip("Show on top of other MenuScreen when shown? (moves to last sibling)")]
         [SerializeField] protected bool showOnTop = true;
 
@@ -33,8 +46,10 @@ namespace Kutil {
         bool inspectorShowFadeOptions => useFadeIn || useFadeOut;
 
         [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
+        [SerializeField] protected FadeEasing fadeEasing = FadeEasing.Linear;
+        [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
         [Tooltip("Duration (seconds) to fade")]
-        [SerializeField] protected float fadeDuration = 0.1f;
+        [SerializeField] protected float fadeDuration = 0.5f;
         [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
         [Tooltip("Should fading use unscalded time")]
         [SerializeField] protected bool fadeUnscaled = true;
@@ -52,7 +67,7 @@ namespace Kutil {
 
 
         [Header("Info")]
-        [ReadOnly] private bool _isShown = false;
+        [SerializeField, ReadOnly] private bool _isShown = false;
         public bool isShown { get => _isShown; protected set => _isShown = value; }
 
         [Header("Events")]
@@ -80,21 +95,26 @@ namespace Kutil {
 
         private void Awake() {
             canvasGroup = GetComponent<CanvasGroup>();
+            if (!interactable) {
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
             if (recenterOnAwake) {
                 RecenterPosition();
             }
-            if (autoFindMenuScreenGroup && _menuScreenGroup != null) {
+            if (autoFindMenuScreenGroup && menuScreenGroup == null) {
                 FindMenuScreenGroup();
             }
         }
         private void Start() {
             if (showOnStart == ShowAction.SHOW) {
-                // changed so will invoke event
+                // set manually to force change
                 isShown = false;
-                SetShown(true, true, false);
+                // show without fading, but with events
+                SetShown(true, true, false, true);
             } else if (showOnStart == ShowAction.HIDE) {
                 isShown = true;
-                SetShown(false, true, false);
+                SetShown(false, true, false, true);
             }
         }
         private void OnEnable() {
@@ -114,6 +134,7 @@ namespace Kutil {
             if (!Application.isPlaying) UnityEditor.Undo.RecordObject(this, "Find MenuScreenGroup");
 #endif
             menuScreenGroup = gameObject.GetComponentInParent<MenuScreenGroup>();
+            // Debug.Log("found menu group " + menuScreenGroup.name);
         }
         private void ClearMenuScreenGroup() {
 #if UNITY_EDITOR
@@ -134,22 +155,31 @@ namespace Kutil {
 
         [ContextMenu("Show")]
         void ShowEditorMode() {
+#if UNITY_EDITOR
             // in editor
             canvasGroup = GetComponent<CanvasGroup>();
-#if UNITY_EDITOR
-            if (!Application.isPlaying) UnityEditor.Undo.RecordObject(this, "Show MenuScreen");
-            if (!Application.isPlaying) UnityEditor.Undo.RecordObject(canvasGroup, "Show MenuScreen");
+            if (!Application.isPlaying) {
+                UnityEditor.Undo.RecordObject(this, "Show MenuScreen");
+                UnityEditor.Undo.RecordObject(canvasGroup, "Show MenuScreen");
+                SetShown(true, false, false, false);
+            } else {
+                // Debug.Log("show fade");
+                SetShown(true);
+            }
 #endif
-            SetShown(true, false, false, false);
         }
         [ContextMenu("Hide")]
         void HideEditorMode() {
-            canvasGroup = GetComponent<CanvasGroup>();
 #if UNITY_EDITOR
-            if (!Application.isPlaying) UnityEditor.Undo.RecordObject(this, "Show MenuScreen");
-            if (!Application.isPlaying) UnityEditor.Undo.RecordObject(canvasGroup, "Show MenuScreen");
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (!Application.isPlaying) {
+                UnityEditor.Undo.RecordObject(this, "Show MenuScreen");
+                UnityEditor.Undo.RecordObject(canvasGroup, "Show MenuScreen");
+                SetShown(false, false, false, false);
+            } else {
+                SetShown(false);
+            }
 #endif
-            SetShown(false, false, false, false);
         }
 
         public void Show() {
@@ -161,11 +191,16 @@ namespace Kutil {
         public void ToggleShown() {
             SetShown(!isShown);
         }
+        /// <summary>
+        /// Show or Hide the MenuScreen
+        /// </summary>
+        /// <param name="shown">Show or Hide</param>
         public void SetShown(bool shown) {
             SetShown(shown, true, true, true);
         }
         /// <summary>
-        /// Show or Hide the MenuScreen
+        /// Show or Hide the MenuScreen.
+        /// with extra options
         /// </summary>
         /// <param name="shown">Show or Hide</param>
         /// <param name="notifyGroup">should notify our group if we changed? (single screen at a time and history)</param>
@@ -189,8 +224,10 @@ namespace Kutil {
 
         protected void SetDirect(bool shown) {
             canvasGroup.alpha = shown ? 1f : 0f;
-            canvasGroup.blocksRaycasts = shown;
-            canvasGroup.interactable = shown;
+            if (interactable || !shown) {
+                canvasGroup.blocksRaycasts = shown;
+                canvasGroup.interactable = shown;
+            }
         }
 
         protected void AfterSet(bool wasShown, bool notifyGroup, bool sendEvents = true) {
@@ -226,8 +263,8 @@ namespace Kutil {
             float timer = 0;
             float progress = 0;
             canvasGroup.alpha = wasShown ? 1f : 0f;
-            if (isShown) {
-                // ? do before or after
+            if (isShown && interactable) {
+                // ? do this before
                 canvasGroup.blocksRaycasts = true;
                 canvasGroup.interactable = true;
             }
@@ -235,15 +272,34 @@ namespace Kutil {
                 yield return null;
                 timer += fadeUnscaled ? Time.unscaledDeltaTime : Time.deltaTime;
                 progress = Mathf.InverseLerp(0, fadeDuration, timer);
+                // todo more easings?
+                float val = progress;
+                if (fadeEasing == FadeEasing.InOutSine) {
+                    val = easeInOutSine(progress);
+                } else if (fadeEasing == FadeEasing.InSine) {
+                    val = easeInSine(progress);
+                } else if (fadeEasing == FadeEasing.OutSine) {
+                    val = easeOutSine(progress);
+                }
                 if (shown) {
-                    canvasGroup.alpha = progress;
+                    canvasGroup.alpha = val;
                 } else {
-                    canvasGroup.alpha = 1f - progress;
+                    canvasGroup.alpha = 1f - val;
                 }
             }
             SetDirect(shown);
             AfterSet(wasShown, invokeEvents, sendEvents);
             fadeCoroutine = null;
+        }
+        // https://easings.net/
+        float easeInOutSine(float x) {
+            return -(Mathf.Cos(Mathf.PI * x) - 1) / 2;
+        }
+        float easeInSine(float x) {
+            return 1 - Mathf.Cos((x * Mathf.PI) / 2);
+        }
+        float easeOutSine(float x) {
+            return Mathf.Sin((x * Mathf.PI) / 2);
         }
     }
 }

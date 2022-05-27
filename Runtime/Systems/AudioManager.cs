@@ -7,10 +7,30 @@ using UnityEngine.Audio;
 namespace Kutil {
     public class AudioManager : Singleton<AudioManager> {
 
+        // todo
+        public class AudioChannel {
+            public string paramName;
+            [SerializeField][Range(-80, 20)] 
+            public float minVol = -80;
+            [SerializeField][Range(-80, 20)] 
+            public float maxVol = 10;
+            public VolumeUI volumeUI;
+            // todo monobehavior ?
+            public struct VolumeUI {
+                // todo and auto assign onvalue change
+                public TMPro.TMP_Text label;
+                public Selectable Slider;
+                public InputField InputField;
+                public Toggle muteButton;// disables other 2
+            }
+        }
+
+        // ? prefab
+
         private const string musicVolParam = "VolumeMusic";
         private const string sfxVolParam = "VolumeSfx";
 
-        [SerializeField] [Range(-80, 20)] float maxVol = 10;
+        [SerializeField][Range(-80, 20)] float maxVol = 10;
         float minVol = -80;
         [SerializeField] AudioMixer mixer;
         [SerializeField] Slider musicSlider;

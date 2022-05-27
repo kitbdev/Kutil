@@ -27,9 +27,13 @@ namespace Kutil {
         // todo option to clear history on scene load or something
 
         // all menu screens
+        // [ReadOnly, SerializeField]
         protected List<MenuScreen> menuScreens = new List<MenuScreen>();
         // does not include current
-        protected Stack<IEnumerable<MenuScreen>> menuScreenHistory = new Stack<IEnumerable<MenuScreen>>();
+        protected Stack<MenuScreen[]> menuScreenHistory = new Stack<MenuScreen[]>();
+
+        [SerializeField]
+        protected bool debug = false;
 
         /// <summary>
         /// All MenuScreens that are currently shown
@@ -41,6 +45,15 @@ namespace Kutil {
         public IEnumerable<MenuScreen> allMenuScreens => menuScreens;
 
         // todo subgroups? (for unified history, ?)
+
+        // [System.Serializable]
+        // protected struct ScreenSet : System.IEquatable<ScreenSet> {
+        //     public MenuScreen[] menuScreens;
+
+        //     public bool Equals(ScreenSet other) {
+        //         return menuScreens == other.menuScreens;
+        //     }
+        // }
 
         public bool allowMultipleShown {
             get => _allowMultipleShown;
@@ -140,6 +153,7 @@ namespace Kutil {
         /// <param name="menuScreen">The MenuScreen to Show</param>
         /// <param name="exclusively">if allowMultiple, show show exlusively or additively?</param>
         public void ShowMenuScreen(MenuScreen menuScreen, bool exclusively) {
+            if (debug) Debug.Log($"showing {menuScreen.name} exl:{exclusively} curshown:{shownMenuScreens.Count()} multallowed:{allowMultipleShown}");
             if (shownMenuScreens.Count() > 0) {
                 if (!allowMultipleShown || exclusively) {
                     HideAllMenuScreensExcept(menuScreen, false);
@@ -183,17 +197,22 @@ namespace Kutil {
             }
         }
 
-        // public void GoBack() => GoBack(1);
+        // for ui unityevents
+        public void GoBack() => GoBack(1);
         /// <summary>
         /// Go back in history and show a previous set of menu screens.
         /// </summary>
         /// <param name="steps">times to go back in history (default = 1)</param>
         public void GoBack(int steps = 1) {
             if (!_useHistory) return;
+            if (debug) Debug.Log("History:"+
+                menuScreenHistory.ToStringFull(mss => mss.ToStringFull(ms => ms.name), true, true, ",\n"));
             IEnumerable<MenuScreen> showScreens = null;
             // pop the current screens and the prior ones (showing will re add to history the current)
             for (int i = steps; i >= 0; i--) {
-                if (!menuScreenHistory.TryPop(out showScreens)) {
+                if (menuScreenHistory.TryPop(out var screens)) {
+                    showScreens = screens;
+                } else {
                     // no more history!
                     Debug.LogWarning($"MenuScreen Group cannot go back {steps} steps, no more history!", this);
                     showScreens = null;
@@ -229,8 +248,8 @@ namespace Kutil {
         /// </summary>
         protected void UpdateHistory() {
             if (!_useHistory) return;
-            IEnumerable<MenuScreen> curShownScreens = shownMenuScreens;
-            if (!menuScreenHistory.TryPeek(out var lastScreens) || lastScreens != curShownScreens) {
+            MenuScreen[] curShownScreens = shownMenuScreens.ToArray();
+            if (!menuScreenHistory.TryPeek(out MenuScreen[] lastScreens) || !lastScreens.SequenceEqual(curShownScreens)) {
                 // either no history or the last entry was different
                 menuScreenHistory.Push(curShownScreens);
             }
