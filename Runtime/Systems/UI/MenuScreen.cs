@@ -20,6 +20,27 @@ namespace Kutil {
             InSine,
             OutSine,
         }
+        // protected enum TransitionMode {
+        //     Fade, Slide,
+        //     Dynamic//?
+        // }
+        // protected enum SlideMode {
+        //     // LEFT,RIGHT,
+        //     // UP,DOWN,
+        //     // CUBERIGHT,CUBELEFT,
+        //     Horizontal, Vertical,
+        //     // InFront,//?
+        //     // HorizontalCube
+        // }
+        // public struct MenuScreenNavigationSlide {
+        //     public enum Mode {
+        //         Vertical, Horizontal, Both, Automatic
+        //     }
+        //     public MenuScreen up;
+        //     public MenuScreen down;
+        //     public MenuScreen left;
+        //     public MenuScreen right;
+        // }
 
         [Tooltip("Should the MenuScreen Show or Hide on start")]
         [SerializeField] protected ShowAction showOnStart = ShowAction.NONE;
@@ -49,10 +70,25 @@ namespace Kutil {
         [SerializeField] protected FadeEasing fadeEasing = FadeEasing.Linear;
         [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
         [Tooltip("Duration (seconds) to fade")]
+        // [UnityEngine.Serialization.FormerlySerializedAs("fadeDuration")]
         [SerializeField] protected float fadeDuration = 0.5f;
         [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
         [Tooltip("Should fading use unscalded time")]
         [SerializeField] protected bool fadeUnscaled = true;
+
+        // todo other transition options
+        // [Header("Sliding")]
+        // [SerializeField] protected bool useSliding;
+        // // [ConditionalHide(nameof(useSliding), true)]
+        // // [Tooltip("Duration (seconds) to slide")]
+        // // [SerializeField] protected float fadeDuration = 0.5f;
+        // [ConditionalHide(nameof(useSliding), true)]
+        // [SerializeField] protected FadeEasing slideEasing = FadeEasing.Linear;
+        // // todo somehow dynamic
+        // [ConditionalHide(nameof(useSliding), true)]
+        // [SerializeField] protected SlideMode slideIn;
+        // [ConditionalHide(nameof(useSliding), true)]
+        // [SerializeField] protected SlideMode slideOut;
 
         [Space]
         [Tooltip("The MenuScreenGroup to use")]
@@ -232,7 +268,7 @@ namespace Kutil {
 
         protected void AfterSet(bool wasShown, bool notifyGroup, bool sendEvents = true) {
             if (isShown) {
-                selectOnShow?.Select();
+                if (selectOnShow != null) selectOnShow.Select();
                 if (showOnTop) {
                     // dont move in edit mode
                     if (Application.isPlaying) {

@@ -26,14 +26,19 @@ namespace Kutil {
         [SerializeField] protected bool _useHistory = true;
         // todo option to clear history on scene load or something
 
-        // all menu screens
-        // [ReadOnly, SerializeField]
-        protected List<MenuScreen> menuScreens = new List<MenuScreen>();
-        // does not include current
-        protected Stack<MenuScreen[]> menuScreenHistory = new Stack<MenuScreen[]>();
 
         [SerializeField]
         protected bool debug = false;
+
+
+        // all menu screens
+        // [SerializeField]
+        // [ConditionalHide(nameof(debug), true)]
+        protected List<MenuScreen> menuScreens = new List<MenuScreen>();
+        // does not include current
+        [SerializeField]
+        [ConditionalHide(nameof(debug), true)]
+        protected SerializableStack<ScreenSet> menuScreenHistory = new SerializableStack<ScreenSet>();
 
         /// <summary>
         /// All MenuScreens that are currently shown
@@ -46,14 +51,26 @@ namespace Kutil {
 
         // todo subgroups? (for unified history, ?)
 
-        // [System.Serializable]
-        // protected struct ScreenSet : System.IEquatable<ScreenSet> {
-        //     public MenuScreen[] menuScreens;
+        [System.Serializable]
+        protected struct ScreenSet : System.IEquatable<ScreenSet>, IEnumerable<MenuScreen> {
+            [SerializeReference]
+            public MenuScreen[] menuScreens;
 
-        //     public bool Equals(ScreenSet other) {
-        //         return menuScreens == other.menuScreens;
-        //     }
-        // }
+            public bool Equals(ScreenSet other) {
+                return menuScreens == other.menuScreens;
+            }
+            public IEnumerator<MenuScreen> GetEnumerator() {
+                return menuScreens.AsEnumerable().GetEnumerator();
+            }
+            IEnumerator IEnumerable.GetEnumerator() {
+                return menuScreens.GetEnumerator();
+            }
+
+            public static implicit operator MenuScreen[](ScreenSet s) => s.menuScreens;
+            public static implicit operator ScreenSet(MenuScreen[] s) => new ScreenSet() { menuScreens = s };
+            // public static implicit operator IEnumerable<MenuScreen>(ScreenSet s) => s.menuScreens;
+            // public static implicit operator ScreenSet(IEnumerable<MenuScreen> s) => new ScreenSet() { menuScreens = s.ToArray() };
+        }
 
         public bool allowMultipleShown {
             get => _allowMultipleShown;
@@ -205,8 +222,8 @@ namespace Kutil {
         /// <param name="steps">times to go back in history (default = 1)</param>
         public void GoBack(int steps = 1) {
             if (!_useHistory) return;
-            if (debug) Debug.Log("History:"+
-                menuScreenHistory.ToStringFull(mss => mss.ToStringFull(ms => ms.name), true, true, ",\n"));
+            if (debug) Debug.Log("History:" +
+                menuScreenHistory.ToStringFull(mss => mss.menuScreens.ToStringFull(ms => ms.name), true, true, ",\n"), this);
             IEnumerable<MenuScreen> showScreens = null;
             // pop the current screens and the prior ones (showing will re add to history the current)
             for (int i = steps; i >= 0; i--) {
@@ -249,9 +266,13 @@ namespace Kutil {
         protected void UpdateHistory() {
             if (!_useHistory) return;
             MenuScreen[] curShownScreens = shownMenuScreens.ToArray();
-            if (!menuScreenHistory.TryPeek(out MenuScreen[] lastScreens) || !lastScreens.SequenceEqual(curShownScreens)) {
+            if (!menuScreenHistory.TryPeek(out ScreenSet lastScreens) || !lastScreens.menuScreens.SequenceEqual(curShownScreens)) {
                 // either no history or the last entry was different
                 menuScreenHistory.Push(curShownScreens);
+            }
+            if (debug) {
+                Debug.Log("Updating History:" +
+                menuScreenHistory.ToStringFull(mss => mss.ToStringFull(ms => ms.name), true, true, ",\n"), this);
             }
         }
         /// <summary>

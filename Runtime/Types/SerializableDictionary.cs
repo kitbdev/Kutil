@@ -7,7 +7,8 @@ using UnityEngine;
 namespace Kutil {
     /// <summary>
     /// note: must inherit like so:
-	/// [System.Serializable] public class DictionaryStringVector2 : SerializableDictionary<string, Vector2> {}
+    /// [System.Serializable] public class DictionaryStringVector2 : SerializableDictionary<string, Vector2> {}
+    /// in versions before 2020.1 (I think)   
     /// </summary>
     [System.Serializable]
     public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver {
