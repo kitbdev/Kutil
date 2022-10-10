@@ -224,6 +224,18 @@ namespace Kutil {
         public void Hide() {
             SetShown(false);
         }
+        /// <summary>
+        /// Show immediately, without fading in
+        /// </summary>
+        public void ShowFast() {
+            SetShown(true, true, false, true);
+        }
+        /// <summary>
+        /// Hide immediately, without fading out
+        /// </summary>
+        public void HideFast() {
+            SetShown(false, true, false, true);
+        }
         public void ToggleShown() {
             SetShown(!isShown);
         }
