@@ -16,6 +16,10 @@ namespace Kutil {
     [DefaultExecutionOrder(4)]
     public class CameraControls : MonoBehaviour {
 
+
+        // [ConditionalHide(nameof(disableDragMovement), true)]
+        // [AddNote("Attach to camera", style: AddNoteAttribute.NoteStyle.HELPINFO, layout:AddNoteAttribute.NoteLayout.REPLACE)]
+        // [SerializeField] private bool dummy;
         // these can be set by other scripts to disable camera movement temporarily
         [SerializeField] public bool disableMovement = false;
         [SerializeField] public bool disableDragMovement = false;
@@ -110,15 +114,14 @@ namespace Kutil {
         [SerializeField] InputActionReference zoomBtnAction;
         [Tooltip("Button input")]
         [SerializeField] InputActionReference recenterAction;
-
-        [Header("Info")]
-        [SerializeField, ReadOnly] Vector3 camTargetOffset;
-
+        [Space]
         [SerializeField, ReadOnly] Vector2 moveInput = Vector2.zero;
         [SerializeField, ReadOnly] float zoomInput = 0f;
         [SerializeField, ReadOnly] bool dragStartInput;
         [SerializeField, ReadOnly] bool dragEndInput;
 
+        [Header("Info")]
+        [SerializeField, ReadOnly] Vector3 camTargetOffset;
         [SerializeField, ReadOnly] bool recentering = false;
         Vector3 recenterStartPos = Vector3.zero;
         float recenterStartTime = 0;
@@ -143,6 +146,15 @@ namespace Kutil {
 
         float DeltaTime => useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
 
+        public float ZoomInput {
+            get => zoomInput; 
+            set {
+                if (disableZoom) return;
+                zoomInput = value;
+            }
+        }
+        public Vector2 MoveInput { get => moveInput; set => moveInput = value; }
+
         private void Reset() {
             targetCam = Camera.main;
             camFollowTarget = transform;
@@ -160,91 +172,66 @@ namespace Kutil {
         }
         private void Start() {
             if (recenterOnStart) {
-                RecenterCam(false);
+                RecenterCamImm(false);
             }
         }
         private void OnEnable() {
-            if (moveAction != null) {
-                moveAction.action.Enable();
-                moveAction.action.performed += c => {
-                    moveInput = c.ReadValue<Vector2>();
-                };
-                moveAction.action.canceled += c => moveInput = Vector2.zero;
-            }
-            if (moveDragAction != null) {
-                moveDragAction.action.Enable();
-                moveDragAction.action.performed += c => {
-                    if (!useUnscaledTime && Time.timeScale == 0) return;
-                    if (disableMovement || disableDragMovement) return;
-                    // ignoreMouseUI = EventSystem.current.IsPointerOverGameObject();
-                    dragStartInput = true;
-                };
-                moveDragAction.action.canceled += c => {
-                    if (!useUnscaledTime && Time.timeScale == 0) return;
-                    if (disableMovement || disableDragMovement) return;
-                    dragEndInput = true;
-                };
-            }
-            if (zoomContAction != null) {
-                zoomContAction.action.Enable();
-                zoomContAction.action.performed += ZoomContInput();
-            }
-            if (zoomBtnAction != null) {
-                zoomBtnAction.action.Enable();
-                zoomBtnAction.action.performed += c => {
-                    if (disableZoom) return;
-                    zoomInput = c.ReadValue<float>();
-                };
-                zoomBtnAction.action.canceled += c => zoomInput = 0;
-            }
-            if (recenterAction != null) {
-                recenterAction.action.Enable();
-                recenterAction.action.performed += RecenterActionPerform();
-            }
+            moveAction.ActivateCallbacks(OnMoveAction, OnMoveActionCancelled);
+            moveDragAction.ActivateCallbacks(OnMoveDragAction, OnMoveDragActionCancelled);
+            zoomContAction.ActivateCallbacks(OnZoomContAction);
+            zoomBtnAction.ActivateCallbacks(OnZoomBtnAction, OnZoomBtnActionCancelled);
+            recenterAction.ActivateCallbacks(OnRecenterAction);
         }
-
-        private System.Action<InputAction.CallbackContext> RecenterActionPerform() => c => {
-            RecenterCam(true, recenterActionIncludeZoom);
-        };
-
-        // note when the action does anything more complex than setting an internal value (like using GO) 
-        // must unsubscribe to prevent domain nonreload errors
-        private System.Action<InputAction.CallbackContext> ZoomContInput() => c => {
-            if (!useUnscaledTime && Time.timeScale == 0) return;
-            if (!zoomContWhenMouseOverUI && isMouseOverUI) return;
-            Zoom(c.ReadValue<float>(), zoomContRate, false, false);
-            // zoomInput = c.ReadValue<float>();
-        };
 
         private void OnDisable() {
-            if (moveAction != null) {
-                moveAction.action.Disable();
-            }
-            if (moveDragAction != null) {
-                moveDragAction.action.Disable();
-            }
-            if (zoomContAction != null) {
-                zoomContAction.action.performed -= ZoomContInput();
-                zoomContAction.action.Disable();
-            }
-            if (zoomBtnAction != null) {
-                zoomBtnAction.action.Disable();
-            }
-            if (recenterAction != null) {
-                recenterAction.action.performed -= RecenterActionPerform();
-                recenterAction.action.Disable();
-            }
+            moveAction.DeactivateCallbacks(OnMoveAction, OnMoveActionCancelled);
+            moveDragAction.DeactivateCallbacks(OnMoveDragAction, OnMoveDragActionCancelled);
+            zoomContAction.DeactivateCallbacks(OnZoomContAction);
+            zoomBtnAction.DeactivateCallbacks(OnZoomBtnAction, OnZoomBtnActionCancelled);
+            recenterAction.DeactivateCallbacks(OnRecenterAction);
         }
+
+        private void OnMoveAction(InputAction.CallbackContext c) => MoveInput = c.ReadValue<Vector2>();
+        private void OnMoveActionCancelled(InputAction.CallbackContext c) => MoveInput = Vector2.zero;
+        private void OnMoveDragAction(InputAction.CallbackContext c) {
+            if (!useUnscaledTime && Time.timeScale == 0) return;
+            SetMoveDragStart();
+        }
+        private void OnMoveDragActionCancelled(InputAction.CallbackContext c) {
+            if (!useUnscaledTime && Time.timeScale == 0) return;
+            SetMoveDragEnd();
+        }
+        private void OnZoomContAction(InputAction.CallbackContext c) => SetZoomCont(c.ReadValue<float>());
+        private void OnZoomBtnAction(InputAction.CallbackContext c) => ZoomInput = c.ReadValue<float>();
+        private void OnZoomBtnActionCancelled(InputAction.CallbackContext c) => ZoomInput = 0;
+        private void OnRecenterAction(InputAction.CallbackContext c) => RecenterCameraAction();
+
+        public void SetMoveDragStart() {
+            if (disableMovement || disableDragMovement) return;
+            // ignoreMouseUI = EventSystem.current.IsPointerOverGameObject();
+            dragStartInput = true;
+        }
+        public void SetMoveDragEnd() {
+            if (disableMovement || disableDragMovement) return;
+            dragEndInput = true;
+        }
+        public void SetZoomCont(float delta) {
+            if (!useUnscaledTime && Time.timeScale == 0) return;
+            if (!zoomContWhenMouseOverUI && isMouseOverUI) return;
+            Zoom(delta, zoomContRate, false, false);
+            // zoomInput = c.ReadValue<float>();
+        }
+
         public void SetTargetOffset(Vector3 targetOffset, bool includeZ = false) {
             float oldHeight = camTargetOffset.z;
-            camTargetOffset = ClampPos(targetOffset);
+            camTargetOffset = ClampPosBounds(targetOffset);
             if (!includeZ) {
                 camTargetOffset.z = oldHeight;
             } else {
                 //handled in zoom
             }
         }
-        private Vector3 ClampPos(Vector3 newPos) {
+        private Vector3 ClampPosBounds(Vector3 newPos) {
             // var opos = newPos;
             float zoom = newPos.z;
             newPos.z = 0;
@@ -268,7 +255,9 @@ namespace Kutil {
             return newPos;
         }
 
-        public void RecenterCam(bool smooth = false, bool resetZoom = true) {
+
+        public void RecenterCameraAction() => RecenterCamImm(true, recenterActionIncludeZoom);
+        public void RecenterCamImm(bool smooth = false, bool resetZoom = true) {
             float oldHeight = camTargetOffset.z;
             camTargetOffset = Vector3.zero;
             camTargetOffset.z = oldHeight;
@@ -289,7 +278,7 @@ namespace Kutil {
                 recenterStartTime = Time.unscaledTime;
                 recenterStartPos = transform.position;
             } else {
-                transform.position = ClampPos(camFollowTarget.position + camTargetOffset);
+                transform.position = ClampPosBounds(camFollowTarget.position + camTargetOffset);
             }
         }
         private void FixedUpdate() {

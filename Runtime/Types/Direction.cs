@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Kutil {
 
     /// <summary>
-    /// A 2D compass direction
+    /// A 2D 4 way compass direction
     /// </summary>
     [System.Serializable]
     public class Direction {
