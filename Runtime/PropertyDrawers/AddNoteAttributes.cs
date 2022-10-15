@@ -8,16 +8,17 @@ namespace Kutil {
     public class AddNoteAttribute : PropertyAttribute {
 
         public enum NoteLayout {
-            BEFORE, REPLACE, AFTER, 
+            BEFORE, REPLACE, AFTER,
             NONE, LEFT, RIGHT
         }
         public enum NoteStyle {
-            DEFAULT, BOLD, CENTERGREY, MINI, LARGE, WHITE, 
+            DEFAULT, BOLD, CENTERGREY, MINI, LARGE, WHITE,
             HELP, HELPERROR, HELPWARN, HELPINFO
         }
 
+        public bool dynamic;
         public string noteLabel;
-        // public string conditionField;
+        public string sourceField;
         public NoteLayout noteLayout;
         public float labelWidth;
         public bool centered;
@@ -26,6 +27,17 @@ namespace Kutil {
 
         public AddNoteAttribute(string label = "note", NoteLayout layout = NoteLayout.BEFORE, float width = 50, bool centered = true, NoteStyle style = NoteStyle.DEFAULT) {
             this.noteLabel = label;
+            this.noteLayout = layout;
+            this.labelWidth = width;
+            this.style = style;
+            this.centered = centered;
+            // this.conditionField = conditionalField;
+            dynamic = false;
+        }
+        public AddNoteAttribute(string sourceField, int dynamic, NoteLayout layout = NoteLayout.BEFORE, float width = 50, bool centered = true, NoteStyle style = NoteStyle.DEFAULT) {
+            this.dynamic = true;
+            this.sourceField = sourceField;
+            this.noteLabel = "AddNote Property error";
             this.noteLayout = layout;
             this.labelWidth = width;
             this.style = style;

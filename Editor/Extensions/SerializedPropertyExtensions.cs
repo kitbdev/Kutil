@@ -22,6 +22,17 @@ namespace Kutil {
             }
             return default;
         }
+        public static bool TryGetValueOnPropRefl<T>(this SerializedProperty property, string fieldname, out T value) {
+            UnityEngine.Object targetObject = property.serializedObject.targetObject;
+            string path = fieldname == null ? property.propertyPath :
+                property.propertyPath.Replace(property.name, fieldname);
+            if (ReflectionHelper.TryGetValue<T>(targetObject, path, out var val)) {
+                value = val;
+                return true;
+            }
+            value = default;
+            return false;
+        }
         public static bool TrySetValueOnPropRefl(this SerializedProperty property,object value, string fieldname = null) {
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
             string path = fieldname == null ? property.propertyPath :

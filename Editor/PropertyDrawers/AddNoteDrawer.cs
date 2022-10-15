@@ -7,11 +7,15 @@ namespace Kutil {
     [CustomPropertyDrawer(typeof(AddNoteAttribute))]
     public class AddNoteDrawer : PropertyDrawer {
 
+        AddNoteAttribute anAtt => (AddNoteAttribute)attribute;
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
-            AddNoteAttribute anAtt = (AddNoteAttribute)attribute;
+            // AddNoteAttribute anAtt = (AddNoteAttribute)attribute;
             // for some reason label gets cleared after get height
             var proplabel = new GUIContent(label);
-            int numLines = anAtt.noteLabel.Count(c => c == '\n') + 1;
+            string noteText = GetNoteText(property);
+
+            int numLines = noteText.Count(c => c == '\n') + 1;
             float noteHeight = EditorGUIUtility.singleLineHeight * numLines;
             float propHeight = EditorGUI.GetPropertyHeight(property, proplabel);
             Rect noteRect = position;
@@ -20,12 +24,12 @@ namespace Kutil {
             propRect.height = propHeight;
 
             if (anAtt.noteLayout == AddNoteAttribute.NoteLayout.REPLACE) {
-                DrawNote(noteRect, anAtt, property);
+                DrawNote(noteRect, property, noteText);
                 return;
             }
             if (anAtt.noteLayout == AddNoteAttribute.NoteLayout.BEFORE) {
                 propRect.y += noteHeight;
-                DrawNote(noteRect, anAtt, property);
+                DrawNote(noteRect, property, noteText);
             }
             if (anAtt.noteLayout == AddNoteAttribute.NoteLayout.LEFT
             || anAtt.noteLayout == AddNoteAttribute.NoteLayout.RIGHT) {
@@ -37,11 +41,11 @@ namespace Kutil {
                 if (anAtt.noteLayout == AddNoteAttribute.NoteLayout.LEFT) {
                     propRect.x = labelWidth + spacing;
                     EditorGUI.indentLevel += 1;
-                    DrawNote(noteRect, anAtt, property);
+                    DrawNote(noteRect, property, noteText);
                 }
                 if (anAtt.noteLayout == AddNoteAttribute.NoteLayout.RIGHT) {
                     noteRect.x = propRect.width + spacing;
-                    DrawNote(noteRect, anAtt, property);
+                    DrawNote(noteRect, property, noteText);
                 }
             }
             EditorGUI.PropertyField(propRect, property, proplabel, true);
@@ -51,10 +55,10 @@ namespace Kutil {
             // EditorGUI.PropertyField(propRect, property, label, true);
             if (anAtt.noteLayout == AddNoteAttribute.NoteLayout.AFTER) {
                 noteRect.y += noteHeight;
-                DrawNote(noteRect, anAtt, property);
+                DrawNote(noteRect, property, noteText);
             }
         }
-        void DrawNote(Rect rect, AddNoteAttribute anAtt, SerializedProperty property) {
+        void DrawNote(Rect rect, SerializedProperty property, string noteText) {
             // if (anAtt.conditionField!=null){
             // }
             if (anAtt.style == AddNoteAttribute.NoteStyle.HELP ||
@@ -65,7 +69,7 @@ namespace Kutil {
                 if (anAtt.style == AddNoteAttribute.NoteStyle.HELPERROR) msg = MessageType.Error;
                 if (anAtt.style == AddNoteAttribute.NoteStyle.HELPWARN) msg = MessageType.Warning;
                 if (anAtt.style == AddNoteAttribute.NoteStyle.HELPINFO) msg = MessageType.Info;
-                EditorGUI.HelpBox(rect, anAtt.noteLabel, msg);
+                EditorGUI.HelpBox(rect, noteText, msg);
                 return;
             }
             GUIStyle style;
@@ -96,12 +100,13 @@ namespace Kutil {
             if (anAtt.centered) {
                 style.alignment = TextAnchor.UpperCenter;
             }
-            GUI.Label(rect, anAtt.noteLabel, style);
+            GUI.Label(rect, noteText, style);
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            AddNoteAttribute anAtt = (AddNoteAttribute)attribute;
-            int numLines = anAtt.noteLabel.Count(c => c == '\n') + 1;
+            // AddNoteAttribute anAtt = (AddNoteAttribute)attribute;
+            // todo cache?
+            int numLines = GetNoteText(property).Count(c => c == '\n') + 1;
             float lheight = EditorGUIUtility.singleLineHeight * numLines;
             float propHeight = EditorGUI.GetPropertyHeight(property, label);
 
@@ -114,6 +119,13 @@ namespace Kutil {
             float height = lheight + propHeight;
             return height;
         }
-
+        public string GetNoteText(SerializedProperty property) {
+            if (anAtt.dynamic) {
+                if (property.TryGetValueOnPropRefl<string>(anAtt.sourceField, out var v)) {
+                    return v;
+                }
+            }
+            return anAtt.noteLabel;
+        }
     }
 }
