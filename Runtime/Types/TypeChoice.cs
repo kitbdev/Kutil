@@ -20,6 +20,7 @@ namespace Kutil {
         [CustomDropDown(nameof(dropDownChoice))]
         private SerializedType _selectedType = new SerializedType();
         private bool _onlyIncludeConcreteTypes = true;
+        private bool _includeNoneOption = false;
 
         [NonSerialized]
         protected IEnumerable<Type> choicesTypes;// cache
@@ -42,6 +43,14 @@ namespace Kutil {
                 _onlyIncludeConcreteTypes = value;
             }
         }
+        public bool includeNoneOption {
+            get => _includeNoneOption; set {
+                if (_includeNoneOption != value) {
+                    ClearCache();
+                }
+                _includeNoneOption = value;
+            }
+        }
         public SerializedType selectedType { get => _selectedType; protected set => _selectedType = value; }
         public Type selectedRawType => selectedType;
 
@@ -56,7 +65,8 @@ namespace Kutil {
                     formatListFunc: formatListFunc,
                     onSelectCallback: onSelectCallback,
                     formatSelectedValueFunc: formatSelectedValueFunc,
-                    noElementsText: "No inherited or implemented types found!"
+                    noElementsText: $"[{typeof(T).Name}] No inherited or implemented types found",
+                    includeNullChoice: includeNoneOption
                 );
             }
         }
@@ -103,6 +113,7 @@ namespace Kutil {
         }
         protected void UpdateCache() {
             choicesTypes ??= GetAllAssignableTypes(typeof(T), onlyIncludeConcreteTypes);
+            // if (_includeNoneOption) choicesTypes.Append(null);
         }
         public IEnumerable<Type> GetAllChoiceTypes() {
             UpdateCache();

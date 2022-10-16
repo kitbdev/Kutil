@@ -33,5 +33,11 @@ namespace Kutil {
             if (includeBraces) str.Append("]");
             return str.ToString();
         }
+
+        public static void AddIfUnique<T>(this List<T> enumerable, T value) {
+            if (!enumerable.Contains(value)) {
+                enumerable.Add(value);
+            }
+        }
     }
 }

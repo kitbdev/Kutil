@@ -8,6 +8,10 @@ using System.Linq;
 using System;
 
 namespace Kutil {
+    // todo have UI toolkit version
+    /// <summary>
+    /// Draws a drop down menu according to CustomDropDownData
+    /// </summary>
     [CustomPropertyDrawer(typeof(CustomDropDownAttribute))]
     public class CustomDropDownDrawer : PropertyDrawer {
 
@@ -20,6 +24,12 @@ namespace Kutil {
         // object value;
         // [NonSerialized]
         // bool updateVal = false;
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            VisualElement root = new VisualElement();
+            root.Add(new Label("Test UITK"));
+            return root;
+        }
 
         void DrawDefGUI(Rect position, SerializedProperty property, GUIContent label) =>
             base.OnGUI(position, property, label);
@@ -85,41 +95,41 @@ namespace Kutil {
             // prop
             using (var scope = new EditorGUI.PropertyScope(position, label, property)) {
                 if (customDropDownData.data == null || customDropDownData.data.Length == 0) {
-                    numLines = 2;
-                    position.height /= 2;
+                    // numLines = 2;
+                    // position.height /= 2;
                     Rect labelrect = EditorGUI.IndentedRect(position);
+                    string warningText = label.text + ":  ";
                     if (customDropDownData.data == null) {
-                        string warningText;
                         if (customDropDownData.errorText != null) {
-                            warningText = customDropDownData.errorText + property.propertyPath;
+                            warningText += customDropDownData.errorText + property.propertyPath;
                         } else {
-                            warningText = $"{property.propertyPath} not found. Set choicesListSourceField to a string array!";
+                            warningText += $"{property.propertyPath} not found. Set choicesListSourceField to a string array!";
                         }
-                        EditorGUI.HelpBox(labelrect, warningText, MessageType.Warning);
-                        // Debug.LogWarning(text);
                     } else {
-                        string warningText = customDropDownData.noElementsText ?? "No choices found!";
-                        EditorGUI.HelpBox(labelrect, warningText, MessageType.Warning);
-                        // Debug.LogWarning(text);
+                        warningText += customDropDownData.noElementsText ?? "No choices found!";
                     }
+                    // Debug.LogWarning(warningText);
+                    EditorGUI.HelpBox(labelrect, warningText, MessageType.Warning);
+                    // Debug.Log("set height: " + numLines);
                     // backup textfield
-                    position.y += EditorGUIUtility.singleLineHeight;
-                    EditorGUI.PropertyField(position, property, label);
+                    // position.y += EditorGUIUtility.singleLineHeight;
+                    // EditorGUI.PropertyField(position, property, label);
                     return;
                 }
                 numLines = 1;
-                // create dropdown button
                 Rect dropdownrect = EditorGUI.PrefixLabel(position, scope.content);
+                // create dropdown button
                 GUIContent buttonContent = new GUIContent(selectedValueStr);
                 if (EditorGUI.DropdownButton(dropdownrect, buttonContent, FocusType.Passive)) {
                     // Debug.Log("clicked");
                     GenericMenu dmenu = new GenericMenu();
-                    if (customDropDownData.includeNullChoice) {
+                    if (customDropDownData.includeNullChoice) {//|| customDropDownData.data.Length == 0
                         bool isSet = selectedValue.Equals(null);
                         // bool isSet = selValue == null;
                         string content = "none";
                         if (isSet && customDropDownData.formatSelectedValueFunc != null) {
                             content = customDropDownData.formatSelectedValueFunc(content);
+                            if (content == null) content = "none";
                         }
                         dmenu.AddItem(new GUIContent(content), isSet, SetMenuItemEvent, new SetMenuItemEventData() {
                             property = property, value = null, action = () => {
@@ -152,6 +162,7 @@ namespace Kutil {
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
             // int numLines = (choices == null || choices.Count <= 0 ? 2 : 1);
+            Debug.Log("height: " + numLines);
             return EditorGUIUtility.singleLineHeight * numLines;
             // return base.GetPropertyHeight(property, label);
         }
