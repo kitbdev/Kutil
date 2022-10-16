@@ -19,5 +19,12 @@ namespace Kutil {
                 vec.z * val
             );
         }
+        public static Vector3Int Abs(this Vector3Int vec) {
+            return new Vector3Int(
+                Mathf.Abs(vec.x),
+                Mathf.Abs(vec.y),
+                Mathf.Abs(vec.z)
+            );
+        }
     }
 }
