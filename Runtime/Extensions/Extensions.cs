@@ -41,6 +41,11 @@ namespace Kutil {
             return new T[] { t };
         }
     }
+    public static class RectIntExtensions {
+        public static Rect AsRect(this RectInt rectInt) {
+            return new Rect(rectInt.position, rectInt.size);
+        }
+    }
     public static class BoundsIntExtensions {
         /// <summary>
         /// Converts BoundsInt to Bounds.

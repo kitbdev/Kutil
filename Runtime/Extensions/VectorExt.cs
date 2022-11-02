@@ -26,5 +26,13 @@ namespace Kutil {
                 Mathf.Abs(vec.z)
             );
         }
+        public static int ManhattanDistance(this Vector3Int vec) {
+            return Mathf.Abs(vec.x) + Mathf.Abs(vec.y) + Mathf.Abs(vec.z);
+        }
+    }
+    public static class Vector2IntExt {
+        public static int ManhattanDistance(this Vector2Int vec) {
+            return Mathf.Abs(vec.x) + Mathf.Abs(vec.y);
+        }
     }
 }
