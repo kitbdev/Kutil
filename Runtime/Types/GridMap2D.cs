@@ -12,7 +12,7 @@ namespace Kutil {
     /// <summary>
     /// Holds an array of values for a grid
     /// </summary>
-    /// <typeparam name="TCellObject"></typeparam>
+    /// <typeparam name="TCellObject">type of data for each cell</typeparam>
     [System.Serializable]
     public class GridMap2D<TCellObject> : IEnumerable<TCellObject> {
 
@@ -21,34 +21,34 @@ namespace Kutil {
         [SerializeField] protected TCellObject[] cells;
 
         [SerializeField] Func<GridMap2D<TCellObject>, Vector2Int, TCellObject> createFunc;
-        [SerializeField] Action<TCellObject, Vector2Int> destroyFunc;
+        [SerializeField] Action<TCellObject, Vector2Int> destroyAction;
 
         /// <summary>
         /// called when any value is set. wont handle internal object modifications
         /// </summary>
-        public Action OnValueSetEvent;
+        public event Action OnValueSetEvent;
 
         public RectInt Rect => rect;
         protected int area => rect.size.x * rect.size.y;
 
         public GridMap2D(RectInt rect, Grid grid,
             Func<GridMap2D<TCellObject>, Vector2Int, TCellObject> createFunc = null,
-            Action<TCellObject, Vector2Int> destroyFunc = null) {
+            Action<TCellObject, Vector2Int> destroyAction = null) {
             this.rect = rect;
             // this.offset = rect.position;
             // this.size = rect.size;
             this.grid = grid;
             this.createFunc = createFunc;
-            this.destroyFunc = destroyFunc;
+            this.destroyAction = destroyAction;
             cells = new TCellObject[area];
             RecreateCells();
         }
 
         public void RecreateCells() {
-            if (destroyFunc != null) {
+            if (destroyAction != null) {
                 ForEach((pos, ival) => {
                     if (ival is IEquatable<TCellObject> && !ival.Equals(default(TCellObject))) {
-                        destroyFunc(ival, pos);
+                        destroyAction(ival, pos);
                     }
                 }, true);
             }
@@ -57,8 +57,8 @@ namespace Kutil {
             }
         }
         public void ClearAllCells() {
-            if (destroyFunc != null) {
-                ForEach((pos, ival) => destroyFunc(ival, pos), true);
+            if (destroyAction != null) {
+                ForEach((pos, ival) => destroyAction(ival, pos), true);
             }
             // fill cells with nulls (or defaults if struct)
             SetForEach((pos, ival) => default);
@@ -86,20 +86,20 @@ namespace Kutil {
                 return default;
             });
             // destroy old cells that are now oob
-            if (destroyFunc != null) {
+            if (destroyAction != null) {
                 for (int i = 0; i < originalCells.Length; i++) {
                     TCellObject oldCell = originalCells[i];
                     // if not in the new cells map, destroy
                     if (!cells.Contains(oldCell)) {
                         // not using index to pos func cause we are in the old map
                         var oldpos = IndexToCoord(i, originalRect);
-                        destroyFunc.Invoke(oldCell, oldpos);
+                        destroyAction.Invoke(oldCell, oldpos);
                     }
                 }
             }
         }
         public GridMap2D<TCellObject> CopyConfig() {
-            return new GridMap2D<TCellObject>(rect, grid, createFunc, destroyFunc);
+            return new GridMap2D<TCellObject>(rect, grid, createFunc, destroyAction);
         }
         /// <summary>
         /// Returns a copy of the cells. use deep copy func if using references
@@ -168,7 +168,7 @@ namespace Kutil {
         public IEnumerable<TCellObject> GetCellNeighbors(Vector2Int coord, IEnumerable<Vector2Int> neighborDirs) {
             return neighborDirs.Where(v => IsCoordInBounds(v + coord)).Select(v => GetCellAtRaw(v + coord));
         }
-        public List<TCellObject> GetCellsAt(RectInt coords) {
+        public List<TCellObject> GetCellsInArea(RectInt coords) {
             // return cells.Where((c, i) => coords.Contains(IndexToCoord(i))).ToArray();
             List<TCellObject> cellObjects = new List<TCellObject>();
             foreach (var coord in coords.allPositionsWithin) {
@@ -187,13 +187,13 @@ namespace Kutil {
             }
             OnValueSetEvent?.Invoke();
         }
-        public void SetCells(TCellObject[] newCells, RectInt coords) {
-            if (newCells.Length != coords.size.x * coords.size.y) {
-                Debug.LogError($"Cannot SetCells, newcells length {newCells.Length} does not equal size of coords {coords.size.x * coords.size.y}");
+        public void SetCells(TCellObject[] newCells, RectInt area) {
+            if (newCells.Length != area.size.x * area.size.y) {
+                Debug.LogError($"Cannot SetCells, newcells length {newCells.Length} does not equal size of area {area.size.x * area.size.y}");
                 return;
             }
             int i = 0;
-            foreach (var coord in coords.allPositionsWithin) {
+            foreach (var coord in area.allPositionsWithin) {
                 // ignores all out of bounds coords
                 if (IsCoordInBounds(coord)) {
                     SetCellRaw(coord, newCells[i]);
@@ -220,7 +220,15 @@ namespace Kutil {
                 Debug.LogWarning($"Invalid position {coord}");
                 return false;
             }
-            cells[CoordToGridIndex(coord)] = newValue;
+            int gridindex = CoordToGridIndex(coord);
+            if (destroyAction != null) {
+                TCellObject original = cells[gridindex];
+                if (original != null) {
+                    // Debug.Log($"clearing {original} {coord} nn{original != null} d{destroyAction}");
+                    destroyAction.Invoke(original, coord);
+                }
+            }
+            cells[gridindex] = newValue;
             OnValueSetEvent?.Invoke();
             return true;
         }
@@ -228,6 +236,7 @@ namespace Kutil {
             cells[CoordToGridIndex(coord)] = newValue;
             //? OnValueSetEvent?.Invoke();
         }
+
         public void SetForEach(System.Func<Vector2Int, TCellObject, TCellObject> setFunc) {
             for (int i = 0; i < area; i++) {
                 cells[i] = setFunc.Invoke(IndexToCoord(i), cells[i]);

@@ -14,13 +14,14 @@ namespace Kutil {
     /// </summary>
     /// <typeparam name="TCellObject"></typeparam>
     [System.Serializable]
-    public class SparseGridMap<TCellObject> where TCellObject : class {
+    public class SparseGridMap<TCellObject> {// where TCellObject : class
         //: IEnumerable<TCellObject> 
         // literally just a dict with bounds calculation and maybe some util functions
 
         public Grid grid;
         [SerializeField] SerializableDictionary<Vector3Int, TCellObject> cells;
         [SerializeField] BoundsInt bounds = new BoundsInt();
+        public TCellObject defCellValue;
 
         public event Action OnBoundsUpdateEvent;
 
@@ -31,20 +32,28 @@ namespace Kutil {
         public Dictionary<Vector3Int, TCellObject> CellsDict => cells;
 
         public SparseGridMap() {
+            this.defCellValue = default;
             cells = new SerializableDictionary<Vector3Int, TCellObject>();
             RecalculateBounds();
         }
-        public SparseGridMap(Grid grid) {
+        public SparseGridMap(Grid grid, TCellObject defCellValue = default) {
             this.grid = grid;
+            this.defCellValue = defCellValue;
             cells = new SerializableDictionary<Vector3Int, TCellObject>();
             RecalculateBounds();
         }
 
         public bool HasCellValueAt(Vector3Int coord) => cells.ContainsKey(coord);
-        public bool TryGetCellAt(Vector3Int coord, out TCellObject val) => cells.TryGetValue(coord, out val);
-        public TCellObject GetCellAt(Vector3Int coord) => cells.GetValueOrDefault(coord);
+        // public bool TryGetCellAt(Vector3Int coord, out TCellObject val) => cells.TryGetValue(coord, out val);
+        // public TCellObject GetCellAt(Vector3Int coord) => cells.GetValueOrDefault(coord);
+        public bool TryGetCellAt(Vector3Int coord, out TCellObject val) {
+            bool hasVal = cells.TryGetValue(coord, out TCellObject valq);
+            val = hasVal ? valq : defCellValue;
+            return hasVal;
+        }
+        public TCellObject GetCellAt(Vector3Int coord) => HasCellValueAt(coord) ? cells.GetValueOrDefault(coord) : defCellValue;
         public IEnumerable<TCellObject> GetCellNeighbors(Vector3Int coord, IEnumerable<Vector3Int> neighborDirs) {
-            return neighborDirs.Select(v => v + coord).Where(v => cells.ContainsKey(v)).Select(v => GetCellAt(v));
+            return neighborDirs.Select(v => v + coord).Where(v => HasCellValueAt(v)).Select(v => GetCellAt(v));
         }
         public IEnumerable<TCellObject> GetAllCells() => cells.Select(kvp => kvp.Value);
 
@@ -161,7 +170,7 @@ namespace Kutil {
             int i = 0;
             foreach (var coord in coords.allPositionsWithin) {
                 if (!onlyIfExists || HasCellValueAt(coord)) {
-                    SetCell(coord, newCells?[i]);
+                    SetCell(coord, newCells[i]); //?  newCells?[i]
                     i++;
                 }
             }

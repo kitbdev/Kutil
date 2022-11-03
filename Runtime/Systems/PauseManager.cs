@@ -28,7 +28,7 @@ namespace Kutil {
 #endif
         IEnumerator pauseLerpCo;
 
-        [SerializeField] bool debug = true;
+        [SerializeField] bool debug = false;
 
         [Header("Events")]
         public UnityEvent pauseEvent;
