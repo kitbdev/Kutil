@@ -8,6 +8,58 @@ using UnityEditor;
 #endif
 
 namespace Kutil {
+    public static class GridMap {
+
+        public static Vector3Int[] v3dir6 = new Vector3Int[6]{
+            Vector3Int.up,
+            Vector3Int.down,
+            Vector3Int.left,
+            Vector3Int.right,
+            Vector3Int.forward,
+            Vector3Int.back,
+        };
+        /// <summary>
+        /// FloodFill algorithm
+        /// </summary>
+        /// <param name="startPos"></param>
+        /// <param name="checkBreakFunc">runs on every coord. return true to end flood</param>
+        /// <param name="neighborFunc">check pos -> neighbor positions to add. Must be restrictive!</param>
+        /// <param name="sortComparer">null or use to sort the frontier after adding neighbors</param>
+        public static void FloodFor(Vector3Int startPos,
+        Func<Vector3Int, bool> checkBreakFunc,
+        Func<Vector3Int, IEnumerable<Vector3Int>> neighborFunc,
+        Action failAction = null,
+        IComparer<Vector3Int> sortComparer = null
+        // bool debug = false
+        // out List<Vector3Int> allCheckedPos = null
+        ) {
+            List<Vector3Int> frontier = new();
+            List<Vector3Int> checkedPos = new();
+            
+            frontier.Add(startPos);
+            bool failed = true;
+            while (frontier.Count > 0) {
+                var checking = frontier[0];
+                frontier.RemoveAt(0);
+                checkedPos.Add(checking);
+                if (checkBreakFunc.Invoke(checking)) {
+                    failed = false;
+                    break;
+                }
+                frontier.AddRange(neighborFunc.Invoke(checking));
+                // todo dont use to list? its slow I think
+                frontier = frontier.Except(checkedPos).ToList();
+                if (sortComparer != null) {
+                    frontier.Sort(sortComparer);
+                }
+            }
+            // allCheckedPos = checkedPos;
+            if (failed) {
+                failAction?.Invoke();
+            }
+        }
+
+    }
     /// <summary>
     /// Holds an array of values for a 3d grid
     /// </summary>
@@ -159,6 +211,13 @@ namespace Kutil {
         public TCellObject GetCellAtRaw(Vector3Int coord) {
             return cells[CoordToGridIndex(coord)];
         }
+        public TCellObject GetCellAtSilent(Vector3Int coord) {
+            if (!IsCoordInBounds(coord)) {
+                // invalid position
+                return default;
+            }
+            return cells[CoordToGridIndex(coord)];
+        }
         public TCellObject GetCellAt(Vector3Int coord) {
             if (!IsCoordInBounds(coord)) {
                 // invalid position
@@ -183,6 +242,16 @@ namespace Kutil {
                 }
             }
             return cellObjects;
+        }
+        public List<Vector3Int> GetCellCoordsWhere(System.Func<Vector3Int, TCellObject, bool> condition) {
+            List<Vector3Int> conditionCells = new();
+            for (int i = 0; i < Volume; i++) {
+                Vector3Int coord = IndexToCoord(i);
+                if (condition.Invoke(coord, cells[i])) {
+                    conditionCells.Add(coord);
+                }
+            }
+            return conditionCells;
         }
 
 
@@ -245,9 +314,6 @@ namespace Kutil {
                 OnValueSetEvent?.Invoke();
             }
         }
-        public void TriggerSetEvent() {
-            OnValueSetEvent?.Invoke();
-        }
         public void ForEach(IEnumerable<Vector3Int> coords, System.Action<TCellObject> action, bool triggerUpdate = true) {
             foreach (var coord in coords) {
                 if (!IsCoordInBounds(coord)) {
@@ -259,6 +325,31 @@ namespace Kutil {
             if (triggerUpdate) {
                 OnValueSetEvent?.Invoke();
             }
+        }
+
+        public void TriggerSetEvent() {
+            OnValueSetEvent?.Invoke();
+        }
+
+
+        /// <summary>
+        /// Searches neighbor cells in 3 dimensions within bounds until a condition is reached
+        /// </summary>
+        /// <param name="startPos">position to start the search</param>
+        /// <param name="finishSearchingFunc">runs on every cell checked. return true to stop searching</param>
+        /// <param name="validNeighborFunc">should this neighbor be checked?</param>
+        /// <param name="failAction">what to do if our target was never found</param>
+        /// <param name="sortNeighborComparer">use this to sort all neighbors before each check</param>
+        public void SearchNeighbors(Vector3Int startPos,
+               Func<Vector3Int, bool> finishSearchingFunc,
+               Func<Vector3Int, TCellObject, bool> validNeighborFunc = null,
+               Action failAction = null,
+               IComparer<Vector3Int> sortNeighborComparer = null) {
+            GridMap.FloodFor(startPos,
+                             finishSearchingFunc,
+                             p => GridMap.v3dir6.Select(d => d + p).Where(p => IsCoordInBounds(p)).Where(p => validNeighborFunc?.Invoke(p, GetCellAtRaw(p)) ?? true),
+                             failAction,
+                             sortNeighborComparer);
         }
 
 
