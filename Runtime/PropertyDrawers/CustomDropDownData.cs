@@ -20,6 +20,7 @@ namespace Kutil {
         public bool includeNullChoice;
         public string noElementsText;
         public string errorText;
+        public bool showRawEditModeToggle = true;
 
         // public CustomDropDownData() { }
 
@@ -35,6 +36,7 @@ namespace Kutil {
         /// <param name="includeNullChoice">include a null choice at beginning? (default=false)</param>
         /// <param name="noElementsText">optional string used if choices has no elements</param>
         /// <param name="errorText">optional string used if an error is encountered finding the choices</param>
+        /// <param name="showRawEditModeToggle">should a toggle be shown to allow editing field normally</param>
         /// <typeparam name="T">type of data</typeparam>
         /// <returns>CustomDropDownData</returns>
         public static CustomDropDownData Create<T>(
@@ -46,14 +48,18 @@ namespace Kutil {
             Action<T> onSelectCallback = null,
             bool includeNullChoice = false,
             string noElementsText = null,
-            string errorText = null
+            string errorText = null,
+            bool showRawEditModeToggle = false
         ) {
+            if (dataValues == null) return null;
+
             CustomDropDownData customDropDownData = new CustomDropDownData() {
                 formatSelectedValueFunc = formatSelectedValueFunc,
                 formatListFunc = formatListFunc,
                 includeNullChoice = includeNullChoice,
                 noElementsText = noElementsText,
                 errorText = errorText,
+                showRawEditModeToggle = showRawEditModeToggle
             };
             // UnityEngine.Debug.Log($"new Cdd {typeof(T)} cast to obj");
 

@@ -35,7 +35,7 @@ namespace Kutil {
         ) {
             List<Vector3Int> frontier = new();
             List<Vector3Int> checkedPos = new();
-            
+
             frontier.Add(startPos);
             bool failed = true;
             while (frontier.Count > 0) {
@@ -58,8 +58,14 @@ namespace Kutil {
                 failAction?.Invoke();
             }
         }
-
     }
+    // public interface IGridMap<TCellObject> {
+    //     Grid grid { get; set; }
+    //     BoundsInt Bounds { get; }
+    //     TCellObject GetCellAt(Vector3Int coord);
+    //     TCellObject[] GetAllCells();
+    //     // void SetCell(Vector3Int coord, TCellObject newValue);
+    // }
     /// <summary>
     /// Holds an array of values for a 3d grid
     /// </summary>
@@ -71,7 +77,7 @@ namespace Kutil {
         [SerializeField] public Grid grid;
         [SerializeField] protected BoundsInt bounds = new BoundsInt();
 
-        [SerializeReference]
+        // [SerializeReference]
         [SerializeField]
         protected TCellObject[] cells;
 
@@ -85,7 +91,7 @@ namespace Kutil {
         /// </summary>
         public event System.Action OnValueSetEvent;
 
-        protected int Volume => bounds.x * bounds.z * bounds.y;
+        protected int Volume => bounds.size.x * bounds.size.z * bounds.size.y;
 
         public BoundsInt Bounds => bounds;
 
@@ -103,13 +109,17 @@ namespace Kutil {
         }
 
         public void RecreateMap() {
-            if (destroyAction != null) {
+            // Debug.Log("GridMap create " + cells + " " + Volume + " " + bounds);
+            if (destroyAction != null && cells != null) {
                 ForEach((coord, ival) => {
                     if (ival is IEquatable<TCellObject> && !ival.Equals(default(TCellObject))) {
                         destroyAction(ival, coord);
                     }
                 }, true);
             }
+            // if (cells == null) {
+            cells = new TCellObject[Volume];
+            // }
             if (createFunc != null) {
                 SetForEach((coord, ival) => createFunc.Invoke(this, coord));
                 // else dont set, it can be done externally
@@ -184,22 +194,22 @@ namespace Kutil {
         public bool IsCoordInBounds(Vector3Int coord) => IsCoordInBounds(coord, bounds);
         static bool IsCoordInBounds(Vector3Int coord, BoundsInt bounds) {
             coord -= bounds.position;
-            return (coord.x >= 0 && coord.x < bounds.x && coord.y >= 0 && coord.y < bounds.y && coord.z >= 0 && coord.z < bounds.z);
+            return (coord.x >= 0 && coord.x < bounds.size.x && coord.y >= 0 && coord.y < bounds.size.y && coord.z >= 0 && coord.z < bounds.size.z);
         }
 
         int CoordToGridIndex(Vector3Int coord) => CoordToGridIndex(coord, bounds);
         static int CoordToGridIndex(Vector3Int coord, BoundsInt bounds) {
             // assumes in bounds
             coord -= bounds.position;
-            return coord.x + coord.z * bounds.x + coord.y * bounds.x * bounds.z;
+            return coord.x + coord.z * bounds.size.x + coord.y * bounds.size.x * bounds.size.z;
         }
         Vector3Int IndexToCoord(int gridIndex) => IndexToCoord(gridIndex, bounds);
         static Vector3Int IndexToCoord(int gridIndex, BoundsInt bounds) {
             var coord = Vector3Int.zero;
-            coord.y = gridIndex / (bounds.x * bounds.z);
-            gridIndex -= (coord.y * bounds.x * bounds.z);
-            coord.z = gridIndex / bounds.x;
-            coord.x = gridIndex % bounds.x;
+            coord.y = gridIndex / (bounds.size.x * bounds.size.z);
+            gridIndex -= (coord.y * bounds.size.x * bounds.size.z);
+            coord.z = gridIndex / bounds.size.x;
+            coord.x = gridIndex % bounds.size.x;
             return coord + bounds.position;
         }
 
@@ -359,9 +369,9 @@ namespace Kutil {
             Handles.color = Color.gray;
             // values
             // todo only if in view
-            for (int y = 0; y < bounds.y; y++) {
-                for (int z = 0; z < bounds.z; z++) {
-                    for (int x = 0; x < bounds.x; x++) {
+            for (int y = 0; y < bounds.size.y; y++) {
+                for (int z = 0; z < bounds.size.z; z++) {
+                    for (int x = 0; x < bounds.size.x; x++) {
                         Vector3Int cellPos = new Vector3Int(x, y, z);
                         string text = cells[CoordToGridIndex(cellPos)]?.ToString();
                         Vector3 coord = grid.CellToWorld(cellPos);
@@ -379,14 +389,14 @@ namespace Kutil {
 #if UNITY_EDITOR
             Handles.color = Color.gray;
             // grid
-            // for (int y = 0; y <= bounds.x; y++) {
-            //     Handles.DrawLine(GetWorldCoord(0, y), GetWorldCoord(bounds.x, y,0));
+            // for (int y = 0; y <= bounds.size.x; y++) {
+            //     Handles.DrawLine(GetWorldCoord(0, y), GetWorldCoord(bounds.size.x, y,0));
             // }
-            // for (int x = 0; x <= bounds.x; x++) {
-            //     Handles.DrawLine(GetWorldCoord(x, 0), GetWorldCoord(x, bounds.x,0));
+            // for (int x = 0; x <= bounds.size.x; x++) {
+            //     Handles.DrawLine(GetWorldCoord(x, 0), GetWorldCoord(x, bounds.size.x,0));
             // }
-            // for (int z = 0; z <= bounds.x; z++) {
-            //     Handles.DrawLine(GetWorldCoord(x, 0), GetWorldCoord(0, bounds.x, z));
+            // for (int z = 0; z <= bounds.size.x; z++) {
+            //     Handles.DrawLine(GetWorldCoord(x, 0), GetWorldCoord(0, bounds.size.x, z));
             // }
             Handles.color = Color.white;
 #endif
@@ -396,25 +406,15 @@ namespace Kutil {
 #if UNITY_EDITOR
             Handles.color = Color.gray;
 
-            Vector3[] cornerCoords = new Vector3[]{
-             grid.CellToWorld(new Vector3Int(0,     0,      0)),
-             grid.CellToWorld(new Vector3Int(bounds.x, 0,      0)),
-             grid.CellToWorld(new Vector3Int(0,     bounds.y, 0)),
-             grid.CellToWorld(new Vector3Int(bounds.x, bounds.y, 0)),
-             grid.CellToWorld(new Vector3Int(0,     0,      bounds.z)),
-             grid.CellToWorld(new Vector3Int(bounds.x, 0,      bounds.z)),
-             grid.CellToWorld(new Vector3Int(0,     bounds.y, bounds.z)),
-             grid.CellToWorld(new Vector3Int(bounds.x, bounds.y, bounds.z)),
-             };
-            Handles.DrawLine(cornerCoords[0], cornerCoords[1]);
-            Handles.DrawLine(cornerCoords[0], cornerCoords[2]);
-            Handles.DrawLine(cornerCoords[2], cornerCoords[3]);
-            Handles.DrawLine(cornerCoords[1], cornerCoords[3]);
-            // todo
+            bounds.DrawGizmosBounds();
+
             Handles.color = Color.white;
 #endif
         }
 
+        public override string ToString() {
+            return $"GridMap({bounds}) of {typeof(TCellObject).Name}s";
+        }
     }
 
     /// <summary>

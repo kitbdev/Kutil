@@ -133,7 +133,7 @@ namespace Kutil {
         Vector2Int IndexToCoord(int gridIndex) => IndexToCoord(gridIndex, rect);
         static Vector2Int IndexToCoord(int gridIndex, RectInt rect) {
             var pos = Vector2Int.zero;
-            pos.y = gridIndex / rect.x;
+            pos.y = gridIndex / rect.size.x;
             pos.x = gridIndex - pos.y;
             return pos + rect.position;
         }

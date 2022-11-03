@@ -14,7 +14,7 @@ namespace Kutil {
     /// </summary>
     /// <typeparam name="TCellObject"></typeparam>
     [System.Serializable]
-    public class SparseGridMap<TCellObject> {// where TCellObject : class
+    public class SparseGridMap<TCellObject>{// where TCellObject : class
         //: IEnumerable<TCellObject> 
         // literally just a dict with bounds calculation and maybe some util functions
 
@@ -207,7 +207,7 @@ namespace Kutil {
         //     return cells.GetEnumerator();
         // }
         public override string ToString() {
-            return $"SparseGridCells({bounds}) of {typeof(TCellObject).Name}s";
+            return $"SparseGridMap({bounds}) of {typeof(TCellObject).Name}s";
         }
     }
 }

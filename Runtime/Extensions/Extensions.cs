@@ -53,6 +53,9 @@ namespace Kutil {
         public static Bounds AsBounds(this BoundsInt bounds) {
             return new Bounds(bounds.center, bounds.size);
         }
+        public static BoundsInt Copy(this BoundsInt bounds) {
+            return new BoundsInt(bounds.position, bounds.size);
+        }
         /// <summary>
         /// Converts Bounds to BoundsInt. expands volume if necessary
         /// </summary>
@@ -89,10 +92,29 @@ namespace Kutil {
         //     return bounds.Contains(point)||bounds;
         // }
         /// <summary>
+        /// grows bounds to include top right corner
+        /// </summary>
+        /// <returns>new boundsint</returns>
+        public static BoundsInt MakeInclusive(this BoundsInt bounds) {
+            BoundsInt b = new();
+            b.SetMinMax(bounds.min, bounds.max + Vector3Int.one);
+            return b;
+        }
+        /// <summary>
+        /// shrinks bounds to exclude top right corner
+        /// </summary>
+        /// <returns>new boundsint</returns>
+        public static BoundsInt MakeExclusive(this BoundsInt bounds) {
+            BoundsInt b = new();
+            b.SetMinMax(bounds.min, bounds.max - Vector3Int.one);
+            return b;
+        }
+        /// <summary>
         /// Returns true if the point is on the boundaries of the BoundsInt.
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="point"></param>
+        /// <param name="inclusive">are the bounds inclusive</param>
         /// <returns></returns>
         public static bool IsOnBorder(this BoundsInt bounds, Vector3Int point, bool inclusive = false) {
             int inc = inclusive ? -1 : 0;
@@ -185,6 +207,10 @@ namespace Kutil {
         }
         public static void DrawGizmosBounds(this BoundsInt bounds) {
             Vector3[] poses = bounds.CornerPositions().Select(p => (Vector3)p).ToArray();
+            DrawCube(poses);
+        }
+        public static void DrawGizmosBounds(this BoundsInt bounds, Grid grid) {
+            Vector3[] poses = bounds.CornerPositions().Select(p => grid.CellToWorld(p)).ToArray();
             DrawCube(poses);
         }
 

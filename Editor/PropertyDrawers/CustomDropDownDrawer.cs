@@ -20,6 +20,7 @@ namespace Kutil {
         [NonSerialized]
         int numLines = 1;
         string lastSelValStr;
+        bool rawEditModeToggle = false;
         // [NonSerialized]
         // object value;
         // [NonSerialized]
@@ -58,19 +59,21 @@ namespace Kutil {
                         return;
                     }
                 } else {
-                    customDropDownData = CustomDropDownData.Create<object>(
-                        property.GetValueOnPropRefl<object[]>(dropdownAtt.choicesListSourceField),
-                        null,
-                        formatListFunc: dropdownAtt.formatListFuncField == null ? null :
-                            property.GetNeighborProperty(dropdownAtt.formatListFuncField)?.GetValue<Func<string, string>>(),
-                        formatSelectedValueFunc: dropdownAtt.formatSelectedValueFuncField == null ? null :
-                            property.GetNeighborProperty(dropdownAtt.formatSelectedValueFuncField)?.GetValue<Func<string, string>>(),
-                        includeNullChoice: dropdownAtt.includeNullChoice,
-                        noElementsText: dropdownAtt.noElementsText,
-                        errorText: dropdownAtt.errorText
-                    );
+                    if (dropdownAtt.choicesListSourceField != null) {
+                        customDropDownData = CustomDropDownData.Create<object>(
+                            property.GetValueOnPropRefl<object[]>(dropdownAtt.choicesListSourceField),
+                            null,
+                            formatListFunc: dropdownAtt.formatListFuncField == null ? null :
+                                property.GetNeighborProperty(dropdownAtt.formatListFuncField)?.GetValue<Func<string, string>>(),
+                            formatSelectedValueFunc: dropdownAtt.formatSelectedValueFuncField == null ? null :
+                                property.GetNeighborProperty(dropdownAtt.formatSelectedValueFuncField)?.GetValue<Func<string, string>>(),
+                            includeNullChoice: dropdownAtt.includeNullChoice,
+                            noElementsText: dropdownAtt.noElementsText,
+                            errorText: dropdownAtt.errorText
+                        );
+                    }
                     if (customDropDownData == null) {
-                        Debug.LogError($"Invalid choicesListSourceField {dropdownAtt.choicesListSourceField}");
+                        // Debug.LogError($"Invalid choicesListSourceField {dropdownAtt.choicesListSourceField}");
                         DrawDefGUI(position, property, label);
                         return;
                     }
@@ -117,45 +120,58 @@ namespace Kutil {
                     return;
                 }
                 numLines = 1;
-                Rect dropdownrect = EditorGUI.PrefixLabel(position, scope.content);
-                // create dropdown button
-                GUIContent buttonContent = new GUIContent(selectedValueStr);
-                if (EditorGUI.DropdownButton(dropdownrect, buttonContent, FocusType.Passive)) {
-                    // Debug.Log("clicked");
-                    GenericMenu dmenu = new GenericMenu();
-                    if (customDropDownData.includeNullChoice) {//|| customDropDownData.data.Length == 0
-                        bool isSet = selectedValue.Equals(null);
-                        // bool isSet = selValue == null;
-                        string content = "none";
-                        if (isSet && customDropDownData.formatSelectedValueFunc != null) {
-                            content = customDropDownData.formatSelectedValueFunc(content);
-                            if (content == null) content = "none";
-                        }
-                        dmenu.AddItem(new GUIContent(content), isSet, SetMenuItemEvent, new SetMenuItemEventData() {
-                            property = property, value = null, action = () => {
-                                customDropDownData.onSelectCallback?.Invoke(null);
-                                customDropDownData = null;
+                Rect contentrect = EditorGUI.PrefixLabel(position, scope.content);
+                Rect dropdownrect = contentrect;
+                if (customDropDownData.showRawEditModeToggle) {
+                    float rawEditButtonWid = 20;
+                    float rawEditButtonSpacing = 2;
+                    Rect rawEditButtonRect = new Rect(contentrect.xMax - rawEditButtonWid, contentrect.y, rawEditButtonWid, contentrect.height);
+                    dropdownrect.width -= rawEditButtonRect.width + rawEditButtonSpacing;
+                    GUIContent rawEditToggleContent = new GUIContent("R", "Toggle Raw Edit Mode");
+                    rawEditModeToggle = GUI.Toggle(rawEditButtonRect, rawEditModeToggle, rawEditToggleContent, EditorStyles.miniButton);
+                }
+                if (rawEditModeToggle) {
+                    EditorGUI.PropertyField(dropdownrect, property, GUIContent.none);
+                } else {
+                    // create dropdown button
+                    GUIContent buttonContent = new GUIContent(selectedValueStr);
+                    if (EditorGUI.DropdownButton(dropdownrect, buttonContent, FocusType.Passive)) {
+                        // Debug.Log("clicked");
+                        GenericMenu dmenu = new GenericMenu();
+                        if (customDropDownData.includeNullChoice) {//|| customDropDownData.data.Length == 0
+                            bool isSet = selectedValue.Equals(null);
+                            // bool isSet = selValue == null;
+                            string content = "none";
+                            if (isSet && customDropDownData.formatSelectedValueFunc != null) {
+                                content = customDropDownData.formatSelectedValueFunc(content);
+                                if (content == null) content = "none";
                             }
-                        });
-                        dmenu.AddSeparator("");
-                    }
-                    for (int i = 0; i < customDropDownData.data.Length; i++) {
-                        CustomDropDownData.Data data = customDropDownData.data[i];
-                        object choice = data.value;
-                        bool isSet = selectedValue.Equals(choice);
-                        string content = customDropDownData.formatListFunc != null ? customDropDownData.formatListFunc(data.name) : data.name;
-                        if (isSet && customDropDownData.formatSelectedValueFunc != null) {
-                            content = customDropDownData.formatSelectedValueFunc(content);
+                            dmenu.AddItem(new GUIContent(content), isSet, SetMenuItemEvent, new SetMenuItemEventData() {
+                                property = property, value = null, action = () => {
+                                    customDropDownData.onSelectCallback?.Invoke(null);
+                                    customDropDownData = null;
+                                }
+                            });
+                            dmenu.AddSeparator("");
                         }
+                        for (int i = 0; i < customDropDownData.data.Length; i++) {
+                            CustomDropDownData.Data data = customDropDownData.data[i];
+                            object choice = data.value;
+                            bool isSet = selectedValue.Equals(choice);
+                            string content = customDropDownData.formatListFunc != null ? customDropDownData.formatListFunc(data.name) : data.name;
+                            if (isSet && customDropDownData.formatSelectedValueFunc != null) {
+                                content = customDropDownData.formatSelectedValueFunc(content);
+                            }
 
-                        dmenu.AddItem(new GUIContent(content), isSet, SetMenuItemEvent, new SetMenuItemEventData() {
-                            property = property, value = choice, action = () => {
-                                customDropDownData.onSelectCallback?.Invoke(choice);
-                                customDropDownData = null;
-                            }
-                        });
+                            dmenu.AddItem(new GUIContent(content), isSet, SetMenuItemEvent, new SetMenuItemEventData() {
+                                property = property, value = choice, action = () => {
+                                    customDropDownData.onSelectCallback?.Invoke(choice);
+                                    customDropDownData = null;
+                                }
+                            });
+                        }
+                        dmenu.DropDown(dropdownrect);
                     }
-                    dmenu.DropDown(dropdownrect);
                 }
             }
         }
