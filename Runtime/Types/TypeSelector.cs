@@ -1,10 +1,12 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 namespace Kutil {
     /// <summary>
     /// Holds a Type that implements or inherits a base type and an object of that type.
-    /// Uses a TypeChoice for editor inspector type selection
+    /// Uses a TypeChoice for editor inspector type selection.
+    /// Note: for better inspector fuctionality call OnValidate in your OnValidate for all type selectors.
     /// </summary>
     /// <typeparam name="T">base type</typeparam>
     [Serializable]
@@ -19,6 +21,10 @@ namespace Kutil {
         [SerializeReference]
         [ContextMenuItem("Update Object", nameof(UpdateObjectType))]
         internal T _objvalue;// todo not saving?
+        
+        // nonserialized object history
+        // wont save an unselected type over any reload, but just switching back and forth should work
+        Dictionary<SerializedType, object> objHistory = new Dictionary<SerializedType, object>();
 
         public TypeChoice<T> type {
             get => _type; set {
@@ -32,10 +38,16 @@ namespace Kutil {
             set => _objvalue = value;
         }
 
-        public TypeSelector() {
-            this._type = null;
-            // inspector doesnt initialize values like this
-            // this._type.onSelectCallback = (v) => { UpdateObjectType(); };
+        // public TypeSelector() {
+        //     this._type = null;
+        //     // inspector doesnt initialize values like this
+        //     // this._type.onSelectCallback = (v) => { UpdateObjectType(); };
+        // }
+        public TypeSelector(bool includeNoneOption) {
+            _type = new TypeChoice<T>() {
+                onlyIncludeConcreteTypes = true,
+                includeNoneOption = includeNoneOption
+            };
         }
         public TypeSelector(T objectData) {
             this._type = objectData.GetType();
@@ -47,13 +59,26 @@ namespace Kutil {
 
         private void UpdateObjectType() {
             Type selType = type?.selectedType;
-            if (selType != null && (objvalue == null || objvalue.GetType() != selType)) {
-                // todo? try to keep parts from old type? would need reflection
-                // Debug.Log($"Updating object type to {selType}");
-                type.TryCreateInstance(out _objvalue);
+            if (selType == null) {
+                objvalue = default;
+            }
+            Type oldType = objvalue?.GetType();
+            if (selType != null && (objvalue == null || oldType != selType)) {
+                // cache old objects and restore when changing types in editor
+                if (objHistory.ContainsKey(selType)) {
+                    objvalue = (T)objHistory[selType];
+                    objHistory.Remove(selType);
+                } else {
+                    objHistory.Add(oldType, objvalue);
+                    // Debug.Log($"Updating object type to {selType}");
+                    type.TryCreateInstance(out _objvalue);
+                }
             }
         }
 
+        /// <summary>
+        /// Call this in your OnValidate method so inspector updates properly
+        /// </summary>
         public void OnValidate() {
             // Debug.Log($"onval {type}");
             UpdateObjectType();
@@ -71,7 +96,7 @@ namespace Kutil {
             // at least it will only update when viewed
             if (!Application.isPlaying && useTicker) {
                 ticker++;
-                // Debug.Log(ticker);
+                // Debug.Log("huh ticker" + ticker);
                 const int frametarget = 70;
                 if (ticker >= frametarget) {
                     UpdateObjectType();

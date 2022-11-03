@@ -134,6 +134,7 @@ namespace Kutil {
                     EditorGUI.PropertyField(dropdownrect, property, GUIContent.none);
                 } else {
                     // create dropdown button
+                    // todo tooltip option
                     GUIContent buttonContent = new GUIContent(selectedValueStr);
                     if (EditorGUI.DropdownButton(dropdownrect, buttonContent, FocusType.Passive)) {
                         // Debug.Log("clicked");

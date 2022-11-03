@@ -33,7 +33,7 @@ namespace Kutil {
                         // Debug.Log("updated");
                         if (ReflectionHelper.TryGetValue<System.Object>(property.serializedObject.targetObject, objprop.propertyPath, out var typename)) {
                             // Debug.Log("got " + typeprop.type);
-                            string nTypeName = typename?.GetType()?.Name ?? "unknown";
+                            string nTypeName = typename?.GetType()?.Name ?? "None";
                             lastTypeName = nTypeName;
                             if (lastTypeName != nTypeName) {
                                 // keep checking until it updates
@@ -46,6 +46,7 @@ namespace Kutil {
                 if (show) {
                     EditorGUI.indentLevel += 1;
                     position.y += EditorGUIUtility.singleLineHeight;
+                    // string tooltip = typeprop.managedReferenceFullTypename;
                     GUIContent objContent = new GUIContent(lastTypeName ?? "unknown");
                     EditorGUI.PropertyField(position, objprop, objContent, true);
                     if (!objprop.isExpanded) {
