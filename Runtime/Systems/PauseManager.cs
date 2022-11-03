@@ -11,28 +11,36 @@ namespace Kutil {
     public class PauseManager : Singleton<PauseManager> {
         protected override bool destroyIfMultiple => true;
 
-        [ReadOnly] public bool isPaused = false;
+        [SerializeField, ReadOnly] bool isPaused = false;
+        [SerializeField] bool pauseOnStart = false;
         [Min(0)]
-        [SerializeField] float timeLerpDur = 0;
+        [SerializeField] float transitionTimeLerpDur = 0;
         [Min(0)]
         [SerializeField] float minTimeScale = 0f;
-        [SerializeField] bool pauseOnStart = false;
-        public bool blockPause = false;
-        public bool allowUnpausing = true;
+        public bool pauseLock = false;
+        public bool disableUnpause = false;
+        [Space]
+        public bool unpauseOnFocusGain = false;
         public bool autoPauseWhenFocusLost = false;
-        public bool autoUnpauseWhenFocusGainedAfterAutoPause = false;
+        [ConditionalHide(nameof(autoPauseWhenFocusLost), true)]
+        public bool autoUnpauseOnFocusAfterAutoPause = false;
+        [ConditionalHide(nameof(autoPauseWhenFocusLost), true)]
         [SerializeField, ReadOnly] bool didAutoPause = false;
 
 #if ENABLE_INPUT_SYSTEM
+        [Space]
         [SerializeField] InputActionReference togglePauseButton;
 #endif
-        IEnumerator pauseLerpCo;
-
+        [Space]
         [SerializeField] bool debug = false;
+
+        IEnumerator pauseLerpCo;
 
         [Header("Events")]
         public UnityEvent pauseEvent;
         public UnityEvent unpauseEvent;
+
+        public bool IsPaused => isPaused;
 
         protected void OnEnable() {
 #if ENABLE_INPUT_SYSTEM
@@ -67,19 +75,19 @@ namespace Kutil {
         }
         public void SetPaused(bool pause = true) {
             if (debug) {
-                Debug.Log($"{(pause ? "Pausing" : "Unpausing")} blocked:{blockPause}", this);
+                Debug.Log($"{(pause ? "Pausing" : "Unpausing")} locked:{pauseLock}", this);
             }
-            if (blockPause) {
-                Debug.Log("pausing is blocked");
+            if (pauseLock) {
+                Debug.Log("pausing is locked");
                 return;
             }
-            if (!pause && !allowUnpausing) {
+            if (!pause && disableUnpause) {
                 Debug.Log("unpausing disallowed");
                 return;
             }
             isPaused = pause;
             float targetScale = isPaused ? minTimeScale : 1;
-            if (timeLerpDur > 0) {
+            if (transitionTimeLerpDur > 0) {
                 StopCoroutine(pauseLerpCo);
                 pauseLerpCo = SetTimeScaleCo(targetScale);
                 StartCoroutine(pauseLerpCo);
@@ -96,7 +104,7 @@ namespace Kutil {
             float initial = Time.timeScale;
             float progress = 0;
             float interp = initial;
-            float scaleSpeed = 1f / timeLerpDur;
+            float scaleSpeed = 1f / transitionTimeLerpDur;
             while (progress < 1) {
                 yield return null;
                 progress += Time.unscaledDeltaTime * scaleSpeed;
@@ -107,7 +115,7 @@ namespace Kutil {
         }
         private void OnApplicationFocus(bool hasFocus) {
             if (hasFocus) {
-                if (didAutoPause && autoUnpauseWhenFocusGainedAfterAutoPause) {
+                if (unpauseOnFocusGain || (didAutoPause && autoUnpauseOnFocusAfterAutoPause)) {
                     UnPause();
                     didAutoPause = false;
                     if (debug) {

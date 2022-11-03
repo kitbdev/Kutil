@@ -14,7 +14,7 @@ namespace Kutil {
     /// </summary>
     /// <typeparam name="TCellObject"></typeparam>
     [System.Serializable]
-    public class SparseGridMap<TCellObject>{// where TCellObject : class
+    public class SparseGridMap<TCellObject> {// where TCellObject : class
         //: IEnumerable<TCellObject> 
         // literally just a dict with bounds calculation and maybe some util functions
 
@@ -199,9 +199,36 @@ namespace Kutil {
             }
         }
 
+        /// <summary>
+        /// Searches neighbor cells in 3 dimensions within bounds until a condition is reached
+        /// </summary>
+        /// <param name="startPos">position to start the search</param>
+        /// <param name="finishSearchingFunc">runs on every cell checked. return true to stop searching</param>
+        /// <param name="validNeighborFunc">should this neighbor be checked?</param>
+        /// <param name="failAction">what to do if our target was never found</param>
+        /// <param name="sortNeighborComparer">use this to sort all neighbors before each check</param>
+        public void SearchNeighbors(Vector3Int startPos,
+               Func<Vector3Int, bool> finishSearchingFunc,
+               Func<Vector3Int, TCellObject, bool> validNeighborFunc = null,
+               Action failAction = null,
+               IComparer<Vector3Int> sortNeighborComparer = null) {
+            GridMap.FloodFor(startPos,
+                             finishSearchingFunc,
+                             p => GridMap.v3dir6.Select(d => d + p).Where(p => bounds.Contains(p) && HasCellValueAt(p)).Where(p => validNeighborFunc?.Invoke(p, GetCellAt(p)) ?? true),
+                             failAction,
+                             sortNeighborComparer);
+        }
+
+
 
         public IEnumerator<TCellObject> GetEnumerator() {
             return cells.Select(kvp => kvp.Value).AsEnumerable().GetEnumerator();
+        }
+        public IEnumerable<Vector3Int> AllPositions() {
+            return cells.Select(kvp => kvp.Key).AsEnumerable();
+        }
+        public IEnumerable<(Vector3Int, TCellObject)> GetPosValueEnumerable() {
+            return cells.Select(kvp => (kvp.Key, kvp.Value)).AsEnumerable();
         }
         // IEnumerator IEnumerable.GetEnumerator() {
         //     return cells.GetEnumerator();

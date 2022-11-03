@@ -6,9 +6,31 @@ namespace Kutil {
     public static class Vector3Ext {
         public static Vector3 Floor(this Vector3 vec) {
             return new Vector3(
-            Mathf.Floor(vec.x),
-            Mathf.Floor(vec.y),
-            Mathf.Floor(vec.z));
+                Mathf.Floor(vec.x),
+                Mathf.Floor(vec.y),
+                Mathf.Floor(vec.z)
+            );
+        }
+        public static Vector3 Abs(this Vector3 vec) {
+            return new Vector3(
+                Mathf.Abs(vec.x),
+                Mathf.Abs(vec.y),
+                Mathf.Abs(vec.z)
+            );
+        }
+        public static Vector3 Div(this Vector3 vec, Vector3 other) {
+            return new Vector3(
+                vec.x / other.x,
+                vec.y / other.y,
+                vec.z / other.z
+            );
+        }
+        public static Vector3 Mod(this Vector3 vec, Vector3 other) {
+            return new Vector3(
+                vec.x % other.x,
+                vec.y % other.y,
+                vec.z % other.z
+            );
         }
     }
     public static class Vector3IntExt {

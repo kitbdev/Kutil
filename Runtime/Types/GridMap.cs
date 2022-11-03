@@ -93,6 +93,7 @@ namespace Kutil {
 
         protected int Volume => bounds.size.x * bounds.size.z * bounds.size.y;
 
+        /// <summary>exclusive bounds containing the cells</summary>
         public BoundsInt Bounds => bounds;
 
 
@@ -221,6 +222,9 @@ namespace Kutil {
         public TCellObject GetCellAtRaw(Vector3Int coord) {
             return cells[CoordToGridIndex(coord)];
         }
+        TCellObject GetCellAtRaw(int index) {
+            return cells[index];
+        }
         public TCellObject GetCellAtSilent(Vector3Int coord) {
             if (!IsCoordInBounds(coord)) {
                 // invalid position
@@ -242,9 +246,34 @@ namespace Kutil {
         public IEnumerable<TCellObject> GetCellNeighbors(Vector3Int coord, IEnumerable<Vector3Int> neighborDirs) {
             return neighborDirs.Where(v => IsCoordInBounds(v + coord)).Select(v => GetCellAtRaw(v + coord));
         }
+        /// <summary>
+        /// Gets all cells wihtin the boundsint area.
+        /// guaruntees size and order
+        /// </summary>
+        /// <param name="area"></param>
+        /// <returns></returns>
+        public TCellObject[] GetCellsInAreaEnc(BoundsInt area) {
+            TCellObject[] cellObjects = new TCellObject[area.Volume()];
+            // if (!bounds.ContainsBounds(area)) {
+            //     Debug.LogError("Area not in bounds " + area + " " + bounds);
+            //     return null;
+            // }
+            for (int y = 0; y < area.size.y; y++) {
+                for (int z = 0; z < area.size.z; z++) {
+                    for (int x = 0; x < area.size.x; x++) {
+                        Vector3Int gmCoord = new Vector3Int(x, y, z) + area.position;
+                        if (IsCoordInBounds(gmCoord)) {
+                            cellObjects[CoordToGridIndex(gmCoord, area)] = GetCellAtRaw(gmCoord);
+                            // otherwise leave default
+                        }
+                    }
+                }
+            }
+            return cellObjects;
+        }
         public List<TCellObject> GetCellsInArea(BoundsInt area) {
             // return cells.Where((c, i) => coords.Contains(IndexToCoord(i))).ToArray();
-            List<TCellObject> cellObjects = new List<TCellObject>();
+            List<TCellObject> cellObjects = new List<TCellObject>(area.Volume());
             foreach (var coord in area.allPositionsWithin) {
                 // ignores all out of bounds coords
                 if (IsCoordInBounds(coord)) {
@@ -265,6 +294,10 @@ namespace Kutil {
         }
 
 
+        public void SetAllCellsRaw(TCellObject[] newValues, BoundsInt newBounds) {
+            bounds = newBounds;
+            cells = newValues;
+        }
         public void SetAllCells(TCellObject newValue) {
             for (int i = 0; i < Volume; i++) {
                 cells[i] = newValue;

@@ -17,7 +17,7 @@ namespace Kutil {
     }
     public static class ObjectExtentions {
         /// <summary>
-        /// Destroys Object immediately if is playing otherwise normal destroy
+        /// Destroys Object immediately if in editor, normal Destroy if playing.
         /// Usage this.DestroySafe(obj);
         /// </summary>
         /// <param name="obj">The Unity Object to destroy</param>
@@ -84,6 +84,9 @@ namespace Kutil {
         /// </summary>
         public static bool ContainsBounds(this BoundsInt bounds, BoundsInt smaller) {
             return bounds.Contains(smaller.min) && bounds.Contains(smaller.max);
+        }
+        public static int Volume(this BoundsInt bounds) {
+            return bounds.size.x * bounds.size.y * bounds.size.z;
         }
         // /// <summary>
         // /// Returns true if this BoundsInt contains another entirely
