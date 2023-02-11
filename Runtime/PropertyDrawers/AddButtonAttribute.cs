@@ -16,7 +16,7 @@ namespace Kutil {
         public float btnWidth;
         // todo have multiple buttons next to each other?
 
-        public AddButtonAttribute(string buttonMethodName, string buttonLabel = "button", object[] parameters = null, ButtonLayout buttonLayout = ButtonLayout.AFTER, float btnWidth = 50) {
+        public AddButtonAttribute(string buttonMethodName, string buttonLabel = null, object[] parameters = null, ButtonLayout buttonLayout = ButtonLayout.REPLACE, float btnWidth = 50) {
             this.buttonMethodName = buttonMethodName;
             this.buttonLabel = buttonLabel;
             this.buttonLayout = buttonLayout;

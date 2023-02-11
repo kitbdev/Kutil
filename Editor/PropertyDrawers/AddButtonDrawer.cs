@@ -54,7 +54,8 @@ namespace Kutil {
             }
         }
         void DrawButton(Rect buttonRect, AddButtonAttribute butAtt, SerializedProperty property) {
-            if (GUI.Button(buttonRect, butAtt.buttonLabel)) {
+            string text = butAtt.buttonLabel ?? butAtt.buttonMethodName;
+            if (GUI.Button(buttonRect, text)) {
                 CallButtonMethod(butAtt, property);
             }
         }
@@ -80,6 +81,7 @@ namespace Kutil {
             string path = property.propertyPath.Replace(property.name, butAtt.buttonMethodName);
             Object targetObject = property.serializedObject.targetObject;
             ReflectionHelper.TryCallMethod(targetObject, path, butAtt.parameters);
+            // todo this doest work when selecting multiple!
         }
 
     }
