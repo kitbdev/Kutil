@@ -2,10 +2,47 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Kutil {
     [CustomPropertyDrawer(typeof(AddButtonAttribute))]
     public class AddButtonDrawer : PropertyDrawer {
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            var container = new VisualElement();
+            container.name = "AddButtonDrawer";
+            AddButtonAttribute btnData = (AddButtonAttribute)attribute;
+            FlexDirection fd = FlexDirection.Column;
+
+            var propField = new PropertyField(property);
+            if (btnData.buttonLayout != AddButtonAttribute.ButtonLayout.REPLACE) {
+                container.Add(propField);
+            }
+
+            Button btn = new Button();
+            btn.text = btnData.buttonLabel ?? btnData.buttonMethodName;
+            btn.name = btn.text + " Button";
+            btn.clicked += () => CallButtonMethod(btnData, property);
+            container.Add(btn);
+
+            if (btnData.buttonLayout == AddButtonAttribute.ButtonLayout.BEFORE
+            || btnData.buttonLayout == AddButtonAttribute.ButtonLayout.LEFT) {
+                btn.SendToBack();
+            }
+            if (btnData.buttonLayout == AddButtonAttribute.ButtonLayout.LEFT
+            || btnData.buttonLayout == AddButtonAttribute.ButtonLayout.RIGHT) {
+                // btn.style.width = $"{btnData.btnWidth}px";
+                fd = FlexDirection.Row;
+                btn.style.width = new StyleLength(new Length(btnData.btnWidth, btnData.lengthUnit));
+            }
+
+            container.style.flexDirection = new StyleEnum<FlexDirection>(fd);
+            container.style.justifyContent = new StyleEnum<Justify>(Justify.SpaceBetween);
+
+            return container;
+        }
+
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             AddButtonAttribute butAtt = (AddButtonAttribute)attribute;
@@ -77,11 +114,15 @@ namespace Kutil {
 
         void CallButtonMethod(AddButtonAttribute butAtt, SerializedProperty property) {
             // SerializedProperty sourcePropertyValue = null;
-            // use reflection should support arrays and nesting too
+            // use reflection to support arrays and nesting too
             string path = property.propertyPath.Replace(property.name, butAtt.buttonMethodName);
-            Object targetObject = property.serializedObject.targetObject;
-            ReflectionHelper.TryCallMethod(targetObject, path, butAtt.parameters);
-            // todo this doest work when selecting multiple!
+            Object[] targetObjects = property.serializedObject.targetObjects;
+            foreach (var targetObj in targetObjects) {
+                ReflectionHelper.TryCallMethod(targetObj, path, butAtt.parameters);
+                if (!butAtt.allowMultipleCalls){
+                    break;
+                }
+            }
         }
 
     }
