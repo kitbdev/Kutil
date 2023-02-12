@@ -2,6 +2,12 @@ using System;
 using UnityEngine;
 
 namespace Kutil {
+    /// <summary>
+    /// Add a button before the next field in the inspector.
+    /// Can have multiple in a row.
+    /// change position with buttonLayout = AddButtonAttribute.ButtonLayout.AFTER
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = true)]
     public class AddButtonAttribute : PropertyAttribute {
 
         public enum ButtonLayout {
@@ -19,9 +25,8 @@ namespace Kutil {
         /// <summary>when multiselecting, should the call go to all targets or just the first</summary>
         public bool allowMultipleCalls;
 
-        // todo have multiple buttons next to each other?
 
-        public AddButtonAttribute(string buttonMethodName, string buttonLabel = null, object[] parameters = null, ButtonLayout buttonLayout = ButtonLayout.REPLACE, float btnWidth = 50, UnityEngine.UIElements.LengthUnit lengthUnit = UnityEngine.UIElements.LengthUnit.Percent, bool allowMultipleCalls=true) {
+        public AddButtonAttribute(string buttonMethodName, string buttonLabel = null, object[] parameters = null, ButtonLayout buttonLayout = ButtonLayout.BEFORE, float btnWidth = 50, UnityEngine.UIElements.LengthUnit lengthUnit = UnityEngine.UIElements.LengthUnit.Percent, bool allowMultipleCalls = true) {
             this.buttonMethodName = buttonMethodName;
             this.buttonLabel = buttonLabel;
             this.buttonLayout = buttonLayout;

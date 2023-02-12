@@ -18,10 +18,11 @@ namespace Kutil {
     public static class ObjectExtentions {
         /// <summary>
         /// Destroys Object immediately if in editor, normal Destroy if playing.
-        /// Usage this.DestroySafe(obj);
+        /// Usage obj.DestroySafe();
         /// </summary>
         /// <param name="obj">The Unity Object to destroy</param>
-        public static void DestroySafe(this UnityEngine.Object o, UnityEngine.Object obj) {
+        public static void DestroySafe(this UnityEngine.Object obj) {
+            if (obj == null) return;
 #if UNITY_EDITOR
             if (Application.isPlaying) {
 #endif
