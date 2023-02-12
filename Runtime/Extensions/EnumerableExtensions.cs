@@ -39,5 +39,14 @@ namespace Kutil {
                 enumerable.Add(value);
             }
         }
+
+        // public static IEnumerable<T> SelectWhere<T, U>(this IEnumerable<U> enumerable, Func<U, T?> func) {
+        //     return enumerable.Select(func).Where(v => v != null);
+        // }
+        public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action) {
+            foreach (var v in enumerable) {
+                action.Invoke(v);
+            }
+        }
     }
 }

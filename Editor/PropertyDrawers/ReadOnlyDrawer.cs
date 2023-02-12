@@ -10,29 +10,40 @@ namespace Kutil {
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : PropertyDrawer {
 
+        string readonlyClass = "kutil-readonly-foldout";
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             var container = new VisualElement();
             container.name = "ReadOnlyDrawer";
             var propField = new PropertyField(property);
             // disabling directly disables opening foldouts
             // propField.SetEnabled(false);
-
             container.Add(propField);
+
+            // propField.Bind(property.serializedObject);
+
+            // set style temporarily so theres no delay
+            propField.SetEnabled(false);
+            // propField.AddToClassList("unity-disabled");
+
+            // var listView = propField.Query<ListView>().ToList();
+            // Debug.Log(listView.Count());//0
 
             // After prop field has binded
             _ = propField.schedule.Execute(() => {
-                // disable all visual elements without a Foldout in them
                 PropDisable(propField);
-
+                propField.SetEnabled(true);
+                // propField.RemoveFromClassList("unity-disabled");
             });
             return container;
             // return base.CreatePropertyGUI(property);
         }
 
+        // disable all visual elements without a Foldout in them
         void PropDisable(PropertyField propField) {
 
             // disable list size field, add/remove buttons, and rearranging
-            ListView listView = propField.Query().Children<ListView>();
+            ListView listView = propField.Children().OfType<ListView>().FirstOrDefault();
             if (listView != null) {
                 listView.reorderable = false;
                 listView.showAddRemoveFooter = false;
@@ -41,14 +52,23 @@ namespace Kutil {
             }
 
             // disable foldout label and register callback for references
+            // todo multiple foldouts on one prop, at the same level?
+            // todo dont go into other propertfields, recall this method
             Foldout foldout = propField.Q<Foldout>();
             if (foldout != null) {
-                Label foldoutLabel = foldout.Q<Label>();
-                if (!foldoutLabel.enabledSelf) {
+                if (foldout.ClassListContains(readonlyClass)) {
                     // already disabled
                     // Debug.Log($"{foldoutLabel.text} is already disabled! {foldout.bindingPath}");
                     return;
                 }
+                // if (listView != null) {
+                //     Debug.Log("disabling foldout on list " + listView.name);
+                // } else {
+                //     Debug.Log("disabling foldout " + foldout.name);
+                // }
+                foldout.AddToClassList(readonlyClass);
+
+                Label foldoutLabel = foldout.Q<Label>();
                 foldoutLabel.SetEnabled(false);
 
                 PropDisableChildren(foldout);
@@ -62,7 +82,23 @@ namespace Kutil {
         }
         void PropDisableChildren(Foldout foldout) {
             VisualElement foldoutContent = foldout.Q("unity-content");
-            foldoutContent.Query().Children<PropertyField>().ForEach(pf => PropDisable(pf));
+            ScrollView scrollView = foldoutContent.Children().OfType<ScrollView>().FirstOrDefault();
+
+            // Debug.Log($"disabling children of {foldout.name} sv:{scrollView != null} " + foldoutContent.Children().OfType<PropertyField>().ToStringFull(pf => pf.name, true, true) + " " + (scrollView != null ? (scrollView.Q("unity-content-container").Children().OfType<PropertyField>().ToStringFull(pf => pf.Children().FirstOrDefault()?.name ?? "??", true, true)) : "n/a"));
+
+            foldoutContent.Children().OfType<PropertyField>().ForEach(pf => PropDisable(pf));
+
+            if (scrollView != null) {
+                IEnumerable<PropertyField> scrollProps = scrollView.Q("unity-content-container").Children().OfType<PropertyField>();
+                if (scrollProps.Count() > 0) {
+                    scrollProps.ForEach(pf => PropDisable(pf));
+                } else {
+                    // delay to detect recursive properties
+                    _ = foldout.schedule.Execute(() => {
+                        scrollView.Q("unity-content-container").Children().OfType<PropertyField>().ForEach(pf => PropDisable(pf));
+                    });
+                }
+            }
         }
         void ToggleClickEventHandler(ClickEvent clickEvent, Foldout foldout) {
             // in case this creates new property drawers, we need to make sure they are still disabled
