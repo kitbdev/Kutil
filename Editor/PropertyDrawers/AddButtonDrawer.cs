@@ -25,10 +25,10 @@ namespace Kutil {
             btn.name = btn.text + " Button";
             btn.clicked += () => CallButtonMethod(btnData, property);
 
-            var stylelen = new StyleLength(new Length(btnData.btnWidth, btnData.lengthUnit));
+            // var stylelen = new StyleLength(new Length(btnData.btnWidth, btnData.lengthUnit));
 
-            VisualElement relPropContainer = RelativePropertyDrawer.CreateRelPropertyGUI(propField, btn, btnData.buttonLayout, btnData.btnWeight, stylelen);
-            relPropContainer.name = "AddButtonDrawerRel";
+            VisualElement relPropContainer = RelativePropertyDrawer.CreateRelPropertyGUI(propField, btn, btnData.buttonLayout, btnData.btnWeight);
+            relPropContainer.name = "AddButton" + relPropContainer.name;
             return relPropContainer;
             // container.Add(relPropContainer);
 

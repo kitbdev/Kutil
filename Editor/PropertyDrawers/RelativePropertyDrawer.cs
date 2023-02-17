@@ -23,64 +23,9 @@ namespace Kutil {
         /// <param name="relPropWeight"></param>
         /// <param name="widthLen"></param>
         /// <returns>a RelativePropertyVisualElement container</returns>
-        public static VisualElement CreateRelPropertyGUI(VisualElement basePropertyVE, VisualElement relativePropertyVE, PropLayout propLayout, float relPropWeight = 1, StyleLength? widthLen = null) {
-            var container = new RelativePropertyVisualElement();
-            container.name = "RelativePropertyDrawer";
-            // const string relPropClassName = "relative-property";
-            // container.AddToClassList(relPropClassName);
-
-            FlexDirection fd = FlexDirection.Column;
-            float totalWeight = relPropWeight;
-
-            if (propLayout != PropLayout.Replace) {
-                container.Add(basePropertyVE);
-                // totalWeight += basePropWeight;
-            } else {
-                container.weight = relPropWeight;
-                // container.style.flexGrow = relPropWeight;
-            }
-            container.Add(relativePropertyVE);
-
-            if (propLayout == PropLayout.Above
-            || propLayout == PropLayout.Left) {
-                relativePropertyVE.SendToBack();
-            }
-            if (propLayout == PropLayout.Left
-            || propLayout == PropLayout.Right) {
-                // btn.style.width = $"{btnData.btnWidth}px";
-                fd = FlexDirection.Row;
-                if (widthLen != null) {
-                    // relativePropertyVE.style.width = (StyleLength)widthLen;// ?? new StyleLength(new Length(50, LengthUnit.Percent));
-                    // basePropertyVE.style.width = widthLen ?? new StyleLength(new Length(50, LengthUnit.Percent));
-                }
-            }
-
-            container.style.flexDirection = new StyleEnum<FlexDirection>(fd);
-            container.style.justifyContent = new StyleEnum<Justify>(Justify.SpaceBetween);
-            relativePropertyVE.style.flexGrow = relPropWeight;
-            // container.style.flexGrow = 1;
-            // basePropertyVE.style.flexGrow = basePropWeight;
-
-            // after property has been binded, 
-            _ = basePropertyVE.schedule.Execute(() => {
-                // if the child is a RelPropVE, get the weight of it and set the flexgrow, so it expands properly 
-                float basePropWeight = 1;
-                RelativePropertyVisualElement baseChild = basePropertyVE.Children()
-                                                        .OfType<RelativePropertyVisualElement>()
-                                                        // .Where(c => c.ClassListContains(relPropClassName))
-                                                        .FirstOrDefault();
-                if (baseChild != null) {
-                    // basePropWeight = baseChild.style.flexGrow.value;
-                    basePropWeight = baseChild.weight;
-                }
-                // Debug.Log($"{relativePropertyVE.name} children: {basePropertyVE.Children().ToStringFull(ve => ve.name)} c{(baseChild != null ? baseChild.weight:0)} {basePropWeight}");
-                if (propLayout != PropLayout.Replace) {
-                    totalWeight += basePropWeight;
-                }
-                basePropertyVE.style.flexGrow = basePropWeight;
-                container.weight = totalWeight;
-            });
-
+        public static VisualElement CreateRelPropertyGUI(VisualElement basePropertyVE, VisualElement relativePropertyVE, PropLayout propLayout, float relPropWeight = 1) {
+            var container = new RelativePropertyVisualElement(basePropertyVE, relativePropertyVE, propLayout, relPropWeight);
+            container.name = "RelativeProperty" + propLayout.ToString();
             return container;
         }
 
@@ -143,28 +88,73 @@ namespace Kutil {
     }
 
     public class RelativePropertyVisualElement : VisualElement {
-        public new class UxmlFactory : UxmlFactory<RelativePropertyVisualElement, UxmlTraits> { }
-        public new class UxmlTraits : VisualElement.UxmlTraits {
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription {
-                get { yield break; }
-            }
-            public override void Init(VisualElement visualElement, IUxmlAttributes attributes, CreationContext creationContext) {
-                base.Init(visualElement, attributes, creationContext);
-                var element = visualElement as RelativePropertyVisualElement;
-                if (element != null) {
-
-                }
-            }
-        }
         public float weight = 1;
+        public VisualElement basePropertyVE;
+        public VisualElement relativePropertyVE;
+        public PropLayout propLayout;
+        public float relPropWeight;
 
-        // public RelativePropertyVisualElement() {
-        //     this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-        // }
+        public RelativePropertyVisualElement(VisualElement basePropertyVE, VisualElement relativePropertyVE, PropLayout propLayout, float relPropWeight = 1) {
+            this.weight = 1;
+            this.basePropertyVE = basePropertyVE;
+            this.relativePropertyVE = relativePropertyVE;
+            this.propLayout = propLayout;
+            this.relPropWeight = relPropWeight;
+            Add(basePropertyVE);
+            Add(relativePropertyVE);
+            this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            UpdateLayout();
+        }
 
-        // private void OnGeometryChanged(GeometryChangedEvent evt) {
+        public void UpdateLayout() {
 
-        // }
+            if (propLayout == PropLayout.Replace) {
+                Remove(basePropertyVE);
+                weight = relPropWeight;
+            } else {
+                Add(basePropertyVE);
+            }
+            if (propLayout == PropLayout.Above || propLayout == PropLayout.Left) {
+                // rel prop should be first
+                relativePropertyVE.SendToBack();
+            } else {
+                basePropertyVE.SendToBack();
+            }
+            FlexDirection fd = FlexDirection.Column;
+            if (propLayout == PropLayout.Left || propLayout == PropLayout.Right) {
+                fd = FlexDirection.Row;
+            }
+
+            style.flexDirection = new StyleEnum<FlexDirection>(fd);
+            style.justifyContent = new StyleEnum<Justify>(Justify.SpaceBetween);
+            // style.flexGrow = 0;
+            relativePropertyVE.style.flexGrow = relPropWeight;
+            basePropertyVE.style.flexGrow = 1;// temp until after bind
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt) {
+            UpdateWeight();
+            // Debug.Log(name+" geo changed");
+        }
+        public void UpdateWeight() {
+            // if the child is a RelPropVE, get the weight of it and set the flexgrow, so it expands properly 
+            float basePropWeight = 1;
+            RelativePropertyVisualElement baseChild = basePropertyVE.Children()
+                                                    .OfType<RelativePropertyVisualElement>()
+                                                    .FirstOrDefault();
+            if (baseChild != null) {
+                // updating children recursively in case they havent updated yet. if they have, oh well
+                baseChild.UpdateWeight();
+                basePropWeight = baseChild.weight;
+            }
+            // Debug.Log($"{relativePropertyVE.name} children: {basePropertyVE.Children().ToStringFull(ve => ve.name)} c{(baseChild != null ? baseChild.weight:0)} {basePropWeight}");
+            float totalWeight = relPropWeight;
+            if (propLayout != PropLayout.Replace) {
+                totalWeight += basePropWeight;
+            }
+            basePropertyVE.style.flexGrow = basePropWeight;
+            weight = totalWeight;
+        }
     }
 }
