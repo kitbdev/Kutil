@@ -32,7 +32,10 @@ namespace Kutil {
             // After prop field has binded
             _ = propField.schedule.Execute(() => {
                 PropDisable(propField);
-                propField.SetEnabled(true);
+                if (propField.Q<Foldout>() != null) {
+                    propField.SetEnabled(true);
+                    // Debug.Log("has foldout");
+                }
                 // propField.RemoveFromClassList("unity-disabled");
             });
             return container;

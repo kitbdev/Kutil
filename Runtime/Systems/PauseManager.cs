@@ -21,8 +21,10 @@ namespace Kutil {
         public bool disableUnpause = false;
         [Space]
         public bool unpauseOnFocusGain = false;
+        [Tooltip("Should we auto pause when focus is lost?")]
         public bool autoPauseWhenFocusLost = false;
         [ConditionalHide(nameof(autoPauseWhenFocusLost), true)]
+        [Tooltip("After autopausing, should we unpause on focus is gained? only after an autounpause")]
         public bool autoUnpauseOnFocusAfterAutoPause = false;
         [ConditionalHide(nameof(autoPauseWhenFocusLost), true)]
         [SerializeField, ReadOnly] bool didAutoPause = false;
