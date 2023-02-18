@@ -2,12 +2,30 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Kutil {
     [CustomPropertyDrawer(typeof(AddNoteAttribute))]
     public class AddNoteDrawer : PropertyDrawer {
 
         AddNoteAttribute anAtt => (AddNoteAttribute)attribute;
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            
+            var propField = new PropertyField(property);
+            
+            string noteText = GetNoteText(property);
+            Label note = new Label();
+            note.text = noteText;
+            note.AddToClassList("add-note-label");
+            // todo styling
+            
+            VisualElement relPropContainer = RelativePropertyDrawer.CreateRelPropertyGUI(propField, note, anAtt.labelLayout, anAtt.labelWeight);
+            relPropContainer.name = "AddButton" + relPropContainer.name;
+            return relPropContainer;
+        }
+
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             // AddNoteAttribute anAtt = (AddNoteAttribute)attribute;

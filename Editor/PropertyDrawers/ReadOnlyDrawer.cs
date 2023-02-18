@@ -30,6 +30,7 @@ namespace Kutil {
             // Debug.Log(listView.Count());//0
 
             // After prop field has binded
+            // todo custom ReadOnlyProperty VE OnGeoChange instead
             _ = propField.schedule.Execute(() => {
                 PropDisable(propField);
                 if (propField.Q<Foldout>() != null) {

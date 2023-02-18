@@ -10,11 +10,13 @@ namespace Kutil {
         public float height;
         public Color color;
         public bool normalize;
+        public bool clampOne;
 
-        public Vector2DDrawAttribute(float height = 70, bool normalize = true) {
+        public Vector2DDrawAttribute(float height = 70, bool normalize = false, bool clampOne = true) {
             this.height = height;
             // this.color = color;
             this.normalize = normalize;
+            this.clampOne = clampOne;
         }
     }
 }
