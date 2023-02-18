@@ -2,7 +2,7 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(FoldStartAttribute))]
     public class FoldStartDrawer : PropertyDrawer {
         // todo keep state?

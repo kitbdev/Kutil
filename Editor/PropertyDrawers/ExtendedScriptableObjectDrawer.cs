@@ -13,7 +13,7 @@ using UnityEditor;
 using Object = UnityEngine.Object;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     /// <summary>
     /// Extends how ScriptableObject object references are displayed in the inspector
     /// Shows you all values under the object reference

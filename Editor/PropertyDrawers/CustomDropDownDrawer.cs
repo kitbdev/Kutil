@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     // todo have UI toolkit version
     /// <summary>
     /// Draws a drop down menu according to CustomDropDownData

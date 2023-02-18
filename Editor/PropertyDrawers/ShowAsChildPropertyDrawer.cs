@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     /// <summary>
     /// Inherit this for an easy way to show as child.
     /// Use [CustomPropertyDrawer(typeof())] and override childName property.

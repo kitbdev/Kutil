@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(AddNoteAttribute))]
     public class AddNoteDrawer : PropertyDrawer {
 

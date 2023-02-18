@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(Vector2DDrawAttribute))]
     public class Vector2DDrawDrawer : PropertyDrawer {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
@@ -80,6 +80,8 @@ namespace Kutil {
         /// </summary>
         public class Vec2DDrawInput : BindableElement, INotifyValueChanged<Vector2> {
 
+            // todo uxml 
+            // todo uss
 
             private float _size = 100;
             public float spacing = 5;

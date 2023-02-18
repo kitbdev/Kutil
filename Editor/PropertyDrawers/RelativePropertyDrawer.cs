@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     /// <summary>
     /// generic relative property drawer with left,right,above,below,replace options
     /// </summary>

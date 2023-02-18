@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : PropertyDrawer {
 

@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(Layer))]
     public class LayerDrawer : PropertyDrawer {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {

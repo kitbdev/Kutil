@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     // [CustomPropertyDrawer(typeof(SerializableDictionary<,>))]
     public class SerializableDictionaryDrawer : PropertyDrawer {
         // public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {

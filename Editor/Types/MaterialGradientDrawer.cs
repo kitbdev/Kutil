@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     /// <summary>
     /// A Material Property Drawer for the [Gradient] attribute which lets you edit gradients 
     /// and adds them to the shader as textures. 

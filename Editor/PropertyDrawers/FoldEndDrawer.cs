@@ -2,7 +2,7 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     /// <summary>
     /// Ends a foldout section.
     /// Must be paired with a FoldStart!

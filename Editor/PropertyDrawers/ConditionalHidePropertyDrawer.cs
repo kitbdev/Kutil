@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.PropertyDrawers {
     ///Original version of the ConditionalHideAttribute created by Brecht Lecluyse (www.brechtos.com)
     ///Modified by: Sebastian Lague
 
