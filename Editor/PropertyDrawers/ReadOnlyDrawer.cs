@@ -10,37 +10,100 @@ namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : PropertyDrawer {
 
-        string readonlyClass = "kutil-readonly-foldout";
+        // string readonlyClass = "kutil-readonly-foldout";
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            var container = new VisualElement();
-            container.name = "ReadOnlyDrawer";
-            var propField = new PropertyField(property);
-            // disabling directly disables opening foldouts
+            var readonlyDrawer = new ReadOnlyPropertyField(property);
+            return readonlyDrawer;
+            // var container = new VisualElement();
+            // container.name = "ReadOnlyDrawer";
+            // var propField = new PropertyField(property);
+            // // disabling directly disables opening foldouts
+            // // propField.SetEnabled(false);
+            // container.Add(propField);
+            // // Debug.Log("rodn " + property.displayName); ;
+
+            // // propField.Bind(property.serializedObject);
+
+            // // set style temporarily so theres no delay
             // propField.SetEnabled(false);
-            container.Add(propField);
+            // // propField.AddToClassList("unity-disabled");
 
-            // propField.Bind(property.serializedObject);
+            // // var listView = propField.Query<ListView>().ToList();
+            // // Debug.Log(listView.Count());//0
 
-            // set style temporarily so theres no delay
-            propField.SetEnabled(false);
-            // propField.AddToClassList("unity-disabled");
+            // // After prop field has binded
+            // // todo custom ReadOnlyProperty VE OnGeoChange instead
+            // _ = propField.schedule.Execute(() => {
+            //     // PropDisable(propField);
+            //     if (propField.Q<Foldout>() != null) {
+            //         propField.SetEnabled(true);
+            //         // Debug.Log("has foldout");
+            //     }
+            //     // propField.RemoveFromClassList("unity-disabled");
+            // });
+            // container.Add(nrod);
+            // return container;
+            // // return base.CreatePropertyGUI(property);
+        }
 
-            // var listView = propField.Query<ListView>().ToList();
-            // Debug.Log(listView.Count());//0
 
-            // After prop field has binded
-            // todo custom ReadOnlyProperty VE OnGeoChange instead
-            _ = propField.schedule.Execute(() => {
-                PropDisable(propField);
-                if (propField.Q<Foldout>() != null) {
-                    propField.SetEnabled(true);
-                    // Debug.Log("has foldout");
-                }
-                // propField.RemoveFromClassList("unity-disabled");
-            });
-            return container;
-            // return base.CreatePropertyGUI(property);
+        // void ForEachChildRecursively(VisualElement root, System.Action<VisualElement> action, System.Func<VisualElement, bool> searchChildren = null) {
+        //     List<VisualElement> searched = new();
+        //     Queue<VisualElement> frontier = new();
+        //     frontier.Enqueue(root);
+        //     while (frontier.Count > 0) {
+        //         var cur = frontier.Dequeue();
+        //         searched.Add(cur);
+        //         action?.Invoke(cur);
+        //         if (searchChildren != null && !searchChildren.Invoke(cur)) {
+        //             continue;
+        //         }
+        //         foreach (var child in cur.Children()) {
+        //             if (!searched.Contains(child) && !frontier.Contains(child)) {
+        //                 frontier.Enqueue(child);
+        //             }
+        //         }
+        //     }
+        // }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+            // for some reason ignores other property drawers
+            // todo need to somehow work on other property drawers that already exist
+            // not https://forum.unity.com/threads/drawing-a-field-using-multiple-property-drawers.479377/ < uses attr only
+            // also for arrays, this operates on each element of the array, not the array itself
+
+            // var previousGUIState = GUI.enabled;
+            // GUI.enabled = false;
+            EditorGUI.BeginDisabledGroup(true);
+            // new EditorGUI.DisabledGroupScope()
+            EditorGUI.PropertyField(position, property, label, property.isExpanded);
+            // foreach (var drawer in allDrawers) {
+            //     allDrawers
+            // }
+            EditorGUI.EndDisabledGroup();
+            // GUI.enabled = previousGUIState;
+        }
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+            return EditorGUI.GetPropertyHeight(property, label, property.isExpanded);
+        }
+    }
+/// <summary>
+/// A PropertyField that can still open foldouts
+/// </summary>
+    public class ReadOnlyPropertyField : PropertyField {
+
+        static readonly string readonlyClass = "kutil-readonly-foldout";
+
+        public ReadOnlyPropertyField(SerializedProperty property) : base(property) {
+            name = "ReadOnly " + name;
+            this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt) {
+            // disabling directly disables opening foldouts, so only disable properties wihtout a foldout
+            PropDisable(this);
         }
 
         // disable all visual elements without a Foldout in them
@@ -112,47 +175,6 @@ namespace Kutil.PropertyDrawers {
                     PropDisableChildren(foldout);
                 });
             }
-        }
-
-        // void ForEachChildRecursively(VisualElement root, System.Action<VisualElement> action, System.Func<VisualElement, bool> searchChildren = null) {
-        //     List<VisualElement> searched = new();
-        //     Queue<VisualElement> frontier = new();
-        //     frontier.Enqueue(root);
-        //     while (frontier.Count > 0) {
-        //         var cur = frontier.Dequeue();
-        //         searched.Add(cur);
-        //         action?.Invoke(cur);
-        //         if (searchChildren != null && !searchChildren.Invoke(cur)) {
-        //             continue;
-        //         }
-        //         foreach (var child in cur.Children()) {
-        //             if (!searched.Contains(child) && !frontier.Contains(child)) {
-        //                 frontier.Enqueue(child);
-        //             }
-        //         }
-        //     }
-        // }
-
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
-            // for some reason ignores other property drawers
-            // todo need to somehow work on other property drawers that already exist
-            // not https://forum.unity.com/threads/drawing-a-field-using-multiple-property-drawers.479377/ < uses attr only
-            // also for arrays, this operates on each element of the array, not the array itself
-
-            // var previousGUIState = GUI.enabled;
-            // GUI.enabled = false;
-            EditorGUI.BeginDisabledGroup(true);
-            // new EditorGUI.DisabledGroupScope()
-            EditorGUI.PropertyField(position, property, label, property.isExpanded);
-            // foreach (var drawer in allDrawers) {
-            //     allDrawers
-            // }
-            EditorGUI.EndDisabledGroup();
-            // GUI.enabled = previousGUIState;
-        }
-
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            return EditorGUI.GetPropertyHeight(property, label, property.isExpanded);
         }
     }
 }
