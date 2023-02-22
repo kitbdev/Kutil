@@ -70,12 +70,10 @@ namespace Kutil {
                     overrideTogglePauseAction.action.Enable();
                     overrideTogglePauseAction.action.performed += TogglePauseInput;
                 } else {
-                    if (defaultPauseAction == null) {
-                        defaultPauseAction = new InputAction("DefaultPauseAction", InputActionType.Button);
-                        // defaultPauseAction.AddBinding("*/{menu}");
-                        defaultPauseAction.AddBinding("<Keyboard>/escape");
-                        defaultPauseAction.AddBinding("<Gamepad>/start");
-                    }
+                    defaultPauseAction = new InputAction("DefaultPauseAction", InputActionType.Button);
+                    // defaultPauseAction.AddBinding("*/{menu}");
+                    defaultPauseAction.AddBinding("<Keyboard>/escape");
+                    defaultPauseAction.AddBinding("<Gamepad>/start");
                     defaultPauseAction.Enable();
                     defaultPauseAction.performed += TogglePauseInput;
                 }
