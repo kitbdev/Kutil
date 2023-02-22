@@ -89,21 +89,26 @@ namespace Kutil.PropertyDrawers {
             return EditorGUI.GetPropertyHeight(property, label, property.isExpanded);
         }
     }
-/// <summary>
-/// A PropertyField that can still open foldouts
-/// </summary>
-    public class ReadOnlyPropertyField : PropertyField {
+    /// <summary>
+    /// A PropertyField that can still open foldouts
+    /// </summary>
+    public class ReadOnlyPropertyField : VisualElement {
 
+        // doesnt work if top level is a list
+
+        PropertyField propertyField;
         static readonly string readonlyClass = "kutil-readonly-foldout";
 
-        public ReadOnlyPropertyField(SerializedProperty property) : base(property) {
-            name = "ReadOnly " + name;
+        public ReadOnlyPropertyField(SerializedProperty property) {
+            name = "ReadOnlyField " + name;
+            propertyField = new PropertyField(property);
+            Add(propertyField);
             this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt) {
             // disabling directly disables opening foldouts, so only disable properties wihtout a foldout
-            PropDisable(this);
+            PropDisable(propertyField);
         }
 
         // disable all visual elements without a Foldout in them

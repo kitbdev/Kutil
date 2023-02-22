@@ -45,20 +45,40 @@ namespace Kutil {
             // todo automatically detect focus?
         }
         private void OnDisable() {
+            if (unlockAction != null) {
+                unlockAction.action.Disable();
+            }
+            if (lockAction != null) {
+                lockAction.action.Disable();
+            }
             if (toggleOnPause) {
                 PauseManager.Instance?.pauseEvent.RemoveListener(UnlockCursor);
                 PauseManager.Instance?.unpauseEvent.RemoveListener(LockCursor);
             }
         }
         private void Update() {
+            if (toggleOnMKey) {
 #if ENABLE_INPUT_SYSTEM
-            if (toggleOnMKey && (Keyboard.current?.mKey.wasPressedThisFrame ?? false)) {
+                bool mKeyPressed = Keyboard.current?.mKey.wasPressedThisFrame ?? false;
 #else
-            if (toggleOnMKey && Input.GetKeyDown(KeyCode.M)) {
+                bool mKeyPressed = Input.GetKeyDown(KeyCode.M);
 #endif
-                SetCursorLock(!isLocked);
+                if (mKeyPressed) {
+                    ToggleCursorLock();
+                }
             }
         }
+
+        public void ToggleCursorLock() {
+            SetCursorLock(!isLocked);
+        }
+        public void UnlockCursor() {
+            SetCursorLock(false);
+        }
+        public void LockCursor() {
+            SetCursorLock(true);
+        }
+
         public void SetCursorLock(bool locked) {
             isLocked = locked;
             if (locked) {
@@ -68,12 +88,6 @@ namespace Kutil {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
-        }
-        public void UnlockCursor() {
-            SetCursorLock(false);
-        }
-        public void LockCursor() {
-            SetCursorLock(true);
         }
     }
 }

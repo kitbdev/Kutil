@@ -64,6 +64,9 @@ namespace Kutil {
         public static LayerMask AddLayer(this LayerMask layerMask, Layer layer) {
             return layer.AddToLayerMask(layerMask);
         }
+        public static LayerMask AddLayerMasksInclusive(this LayerMask layerMask, LayerMask otherLayerMask) {
+            return layerMask | otherLayerMask;
+        }
         public static bool HasLayer(this LayerMask layerMask, Layer layer) {
             return layer.IsInLayerMask(layerMask);
         }

@@ -33,7 +33,8 @@ namespace Kutil {
             if (includeBraces) str.Append("]");
             return str.ToString();
         }
-
+        // public static string ToStringFull(this IEnumerable<GameObject> enumerable, Func<GameObject, string> toStrFunc = null, bool includeCount = false, bool includeBraces = true, string seperator = ",") {
+        // }
         public static void AddIfUnique<T>(this List<T> enumerable, T value) {
             if (!enumerable.Contains(value)) {
                 enumerable.Add(value);

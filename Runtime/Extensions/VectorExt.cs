@@ -32,6 +32,13 @@ namespace Kutil {
                 vec.z % other.z
             );
         }
+        public static float MinValue(this Vector3 vec) {
+            return Mathf.Min(vec.x, vec.y, vec.z);
+        }
+        public static float MaxValue(this Vector3 vec) {
+            return Mathf.Max(vec.x, vec.y, vec.z);
+        }
+
     }
     public static class Vector3IntExt {
         public static Vector3Int Mul(this Vector3Int vec, int val) {
