@@ -20,7 +20,7 @@ namespace Kutil {
         [CustomDropDown(nameof(dropDownChoice))]
         private SerializedType _selectedType = new SerializedType();
         private bool _onlyIncludeConcreteTypes = true;
-        private bool _includeNoneOption = false;
+        private bool _includeNoneOption = true;
 
         [NonSerialized]
         protected IEnumerable<Type> choicesTypes;// cache
@@ -66,7 +66,8 @@ namespace Kutil {
                     onSelectCallback: onSelectCallback,
                     formatSelectedValueFunc: formatSelectedValueFunc,
                     noElementsText: $"[{typeof(T).Name}] No inherited or implemented types found",
-                    includeNullChoice: includeNoneOption
+                    includeNullChoice: includeNoneOption,
+                    showRawEditModeToggle: false
                 );
             }
         }

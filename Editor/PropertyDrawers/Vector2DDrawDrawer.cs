@@ -126,7 +126,7 @@ namespace Kutil.PropertyDrawers {
 
 
             Vector2 centerPos => Vector2.one * (size / 2f);
-            float radius => size / 2f - spacing;
+            float drawAreaSize => size / 2f - spacing;
 
             public Vec2DDrawInput() : this(100) { }
             public Vec2DDrawInput(float size) {
@@ -165,8 +165,12 @@ namespace Kutil.PropertyDrawers {
             public void Resize(float newSize) {
                 // float textHeight = vecLabel.style.height.value.value;
                 float textHeight = vecLabel.resolvedStyle.height;
-                if (textHeight == float.NaN || textHeight == 0) {
-                    Debug.LogWarning("invalid label height!");
+                if (textHeight == 0) {
+                    // no content
+                    return;
+                }
+                if (textHeight == float.NaN) {
+                    Debug.LogWarning("invalid label height NaN!");
                     textHeight = 20;
                 }
                 _size = newSize;
@@ -194,9 +198,17 @@ namespace Kutil.PropertyDrawers {
                 // Debug.Log($"s{size} c{centerPos} r{radius}");
                 painter2D.lineWidth = 1.0f;
                 painter2D.strokeColor = outlineColor;
-                painter2D.BeginPath();
                 // painter2D.MoveTo(centerPos);
-                painter2D.Arc(centerPos, radius, Angle.Turns(0), Angle.Turns(1));
+                // scaling circle
+                float magnitude = value.magnitude;
+                float radius;
+                if (magnitude <= 1f) {
+                    radius = 1f;
+                } else {
+                    radius = 1f / magnitude;
+                }
+                painter2D.BeginPath();
+                painter2D.Arc(centerPos, radius * drawAreaSize, Angle.Turns(0), Angle.Turns(1));
                 painter2D.Stroke();
 
                 // line
@@ -205,10 +217,11 @@ namespace Kutil.PropertyDrawers {
                 painter2D.BeginPath();
                 painter2D.MoveTo(centerPos);
                 Vector2 target = value;
+                float endCircleRad = 2;
                 if (target == Vector2.zero) {
                     // Debug.Log("target is zero" + value);
                     // draw circle in center instead
-                    painter2D.Arc(centerPos, 2, Angle.Turns(0), Angle.Turns(1));
+                    painter2D.Arc(centerPos, endCircleRad, Angle.Turns(0), Angle.Turns(1));
                     painter2D.Fill();
                     // painter2D.LineTo(centerPos + Vector2.up * 0.001f);
                 } else {
@@ -222,15 +235,18 @@ namespace Kutil.PropertyDrawers {
                     // Debug.Log($"target {value} {targetPos} {centerPos + targetPos * radius} {lineColor}");
                     painter2D.LineTo(lpos);
                     painter2D.Stroke();
+                    // draw circle at end
+                    painter2D.Arc(lpos, endCircleRad, Angle.Turns(0), Angle.Turns(1));
+                    painter2D.Fill();
                 }
             }
 
             private Vector2 CenterVec(Vector2 brvec) {
-                return (centerPos + new Vector2(brvec.x, -brvec.y) * radius);
+                return (centerPos + new Vector2(brvec.x, -brvec.y) * drawAreaSize);
             }
             private Vector2 UnCenterVec(Vector2 cvec) {
                 Vector2 c = cvec - centerPos;
-                return new Vector2(c.x, -c.y) / radius;
+                return new Vector2(c.x, -c.y) / drawAreaSize;
             }
 
             protected override void ExecuteDefaultAction(EventBase evt) {

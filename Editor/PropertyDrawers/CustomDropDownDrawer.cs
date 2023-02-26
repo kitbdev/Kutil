@@ -26,11 +26,181 @@ namespace Kutil.PropertyDrawers {
         // [NonSerialized]
         // bool updateVal = false;
 
+        VisualElement root;
+        DropdownField dropdownField;
+        PropertyField propField;
+
+        SerializedProperty property;
+
+        static readonly string cdddBaseClass = "kutil-custom-dropdown-drawer";
+        static readonly string cdddDropDownClass = cdddBaseClass + "__dropdown";
+        static readonly string cdddRawPropClass = cdddBaseClass + "__raw-property";
+        static readonly string cdddRawToggleClass = cdddBaseClass + "__raw-edt-toggle";
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            VisualElement root = new VisualElement();
-            root.Add(new Label("Test UITK"));
+            this.property = property;
+            CustomDropDownAttribute dropdownAtt = (CustomDropDownAttribute)attribute;
+            if (dropdownAtt.dropdownDataFieldName != null) {
+                customDropDownData = property.GetValueOnPropRefl<CustomDropDownData>(dropdownAtt.dropdownDataFieldName);
+                if (customDropDownData == null) {
+                    Debug.LogError($"Invalid dropdownDataFieldName {dropdownAtt.dropdownDataFieldName} {property.propertyPath}");
+                    return null;
+                }
+            } else if (dropdownAtt.choicesListSourceField != null) {
+                customDropDownData = CustomDropDownData.Create<object>(
+                    property.GetValueOnPropRefl<object[]>(dropdownAtt.choicesListSourceField),
+                    null,
+                    formatListFunc: dropdownAtt.formatListFuncField == null ? null :
+                        property.GetNeighborProperty(dropdownAtt.formatListFuncField)?.GetValue<Func<string, string>>(),
+                    formatSelectedValueFunc: dropdownAtt.formatSelectedValueFuncField == null ? null :
+                        property.GetNeighborProperty(dropdownAtt.formatSelectedValueFuncField)?.GetValue<Func<string, string>>(),
+                    includeNullChoice: dropdownAtt.includeNullChoice,
+                    noElementsText: dropdownAtt.noElementsText,
+                    errorText: dropdownAtt.errorText
+                );
+            }
+            if (customDropDownData == null) {
+                Debug.LogError($"Invalid CustomDropDownAttribute, no data");
+                return null;
+            }
+
+            object selectedValue = property.GetValue();
+
+            // todo bug where multiple CDDDs are being made when toggle edit button is clicked
+
+            root = new VisualElement();
+            root.name = "CustomDropDownDrawer";
+            root.AddToClassList(cdddBaseClass);
+
+            if (customDropDownData.showRawEditModeToggle) {
+                // raw edit toggle property field
+                propField = new PropertyField(property);
+                // propField.AddToClassList(cdddRawPropClass);
+                root.Add(propField);
+                // bind because will be removed probably
+                propField.Bind(property.serializedObject);
+            }
+
+            // dropdown
+            dropdownField = new DropdownField(property.displayName);
+            // dropdownField.label = property.displayName;
+            root.Add(dropdownField);
+            dropdownField.AddToClassList(cdddDropDownClass);
+            dropdownField.AddToClassList(DropdownField.alignedFieldUssClassName);
+
+            dropdownField.formatListItemCallback += customDropDownData.formatListFunc;
+            dropdownField.formatSelectedValueCallback += customDropDownData.formatSelectedValueFunc;
+
+            int selIndex = customDropDownData.data.ToList().FindIndex(d => d.value.Equals(selectedValue));
+            // if (selIndex == -1) {
+            //     // value not found
+            //     // Debug.LogWarning($"Cannot find {selectedValue} n{selectedValue==null} in list {customDropDownData.data.ToStringFull(d => d.value.ToString())}");
+            //     selIndex = 0;
+            // }
+            List<string> choicesList = customDropDownData.data.Select(d => d.name).ToList();
+            if (customDropDownData.includeNullChoice) {
+                // Debug.Log("null choice test");
+                choicesList.Insert(0, "none");
+                if (selectedValue == null) {
+                    selIndex = 0;
+                } else {
+                    selIndex += 1;
+                }
+            }
+            if (choicesList.Count == 0) {
+                string warningText = customDropDownData.noElementsText ?? "No choices found!";
+                choicesList.Add(warningText);
+                selIndex = 0;
+            }
+            dropdownField.choices = choicesList;
+            dropdownField.index = selIndex;
+
+            dropdownField.RegisterValueChangedCallback(OnDropdownChangeValue);
+
+
+            if (customDropDownData.showRawEditModeToggle) {
+                UpdateDropdownEditMode();
+                Toggle rawEditToggle = new Toggle();
+                rawEditToggle.tooltip = "Toggle raw edit mode";
+                rawEditToggle.AddToClassList(cdddRawToggleClass);
+
+                // change style to match a button
+                rawEditToggle.AddToClassList("unity-button");
+                rawEditToggle.RemoveFromClassList("unity-toggle");
+                rawEditToggle.label = "R";
+
+                Label label = rawEditToggle.Q<Label>();
+                label.style.minWidth = 0f;
+                VisualElement toggle_input = rawEditToggle.Q(null, "unity-toggle__input");
+                if (toggle_input != null) {
+                    toggle_input.visible = false;
+                    VisualElement checkmark = toggle_input.Q("unity-checkmark");
+                    checkmark.style.width = 0f;
+                }
+
+                root.style.flexDirection = FlexDirection.Row;
+                root.style.justifyContent = Justify.SpaceBetween;
+                dropdownField.style.flexGrow = 1;
+                propField.style.flexGrow = 1;
+
+                rawEditToggle.viewDataKey = $"cddd raw edit toggle {property.serializedObject.targetObject.name} {property.name}";
+
+                rawEditToggle.RegisterValueChangedCallback(ce => {
+                    rawEditModeToggle = ce.newValue;
+                    // Debug.Log(rawEditModeToggle + " toggled");
+                    UpdateDropdownEditMode();
+                });
+                root.Add(rawEditToggle);
+            }
+
             return root;
         }
+
+        private void UpdateDropdownEditMode() {
+            if (rawEditModeToggle) {
+                if (root.Contains(dropdownField)) {
+                    root.Remove(dropdownField);
+                }
+                if (!root.Contains(propField)) {
+                    root.Add(propField);
+                    propField.SendToBack();
+                }
+            } else {
+                if (root.Contains(propField)) {
+                    root.Remove(propField);
+                }
+                if (!root.Contains(dropdownField)) {
+                    root.Add(dropdownField);
+                    dropdownField.SendToBack();
+                }
+            }
+        }
+
+        void OnDropdownChangeValue(ChangeEvent<string> changeEvent) {
+            int choiceIndex = dropdownField.index;
+            // Debug.Log($"set {changeEvent.previousValue} to {changeEvent.newValue} {choiceIndex}");
+            CustomDropDownData.Data data = customDropDownData.data[choiceIndex];
+
+            property.SetValue(data.value);
+            // Debug.Log("Set" + property.GetValue() + " to " + data.value);
+
+            customDropDownData.onSelectCallback?.Invoke(null);
+
+            // since we set value via reflection, also call onvalidate that way
+            if (property.serializedObject.targetObject is MonoBehaviour mb) {
+                // Debug.Log(" on mb " + mb);s
+                // b.SendMessage("OnValidate", SendMessageOptions.DontRequireReceiver);
+                ReflectionHelper.TryCallMethod(mb, "OnValidate", null);
+            } else if (property.serializedObject.targetObject is ScriptableObject so) {
+                ReflectionHelper.TryCallMethod(so, "OnValidate", null);
+            }
+        }
+
+
+
+        // old imgui code
+
+
 
         void DrawDefGUI(Rect position, SerializedProperty property, GUIContent label) =>
             base.OnGUI(position, property, label);

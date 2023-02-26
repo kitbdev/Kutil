@@ -18,15 +18,10 @@ namespace Kutil.PropertyDrawers {
         static readonly string foldoutClass = "kutil-collapsable-drawer-foldout";
         static readonly string collapsableClass = "kutil-collapsable-marker";
 
-        // todo restore collapsed state?
-        // bool collapsed = false;
-
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            // VisualElement defVE = base.CreatePropertyGUI(property);
             VisualElement defVE = new PropertyField(property);
             defVE.AddToClassList(collapsableClass);
             CollapsableAttribute cAtt = (CollapsableAttribute)attribute;
-            // SerializedObject serializedObject = new SerializedObject(this);
             // cAtt.isCollapsed = cAtt.startCollapsed;
 
             _ = defVE.schedule.Execute(() => {
@@ -35,7 +30,17 @@ namespace Kutil.PropertyDrawers {
                 VisualElement collapsableBase = new VisualElement();
                 collapsableBase.AddToClassList(baseClass);
 
-                // collapsableBase.userData
+                bool addspace = false;
+                if (addspace) {
+                    VisualElement spacer = new VisualElement();
+                    spacer.AddToClassList(decoratorClass);
+                    // default space height is 8px
+                    spacer.style.height = new StyleLength(8f);
+                    // default header top margin is 12px
+                    // spacer.style.marginTop = new StyleLength(15f);
+                    collapsableBase.Add(spacer);
+                }
+
                 // insert a Foldout
                 Foldout foldout = new Foldout();
                 collapsableBase.Add(foldout);
@@ -46,7 +51,6 @@ namespace Kutil.PropertyDrawers {
                 //     collapsed = !ce.newValue;
                 //     Debug.Log("collapsed " + collapsed);
                 // });
-
                 if (cAtt.text != null) {
                     foldout.text = cAtt.text;
                     Label label = foldout.Q<Label>();
@@ -54,6 +58,11 @@ namespace Kutil.PropertyDrawers {
                     label.style.unityFontStyleAndWeight = FontStyle.Bold;
                 }
                 foldout.AddToClassList(foldoutClass);
+
+                // remove indent?
+                // VisualElement foldoutContainer = foldout.Q("unity-content");
+                // foldoutContainer.style.marginLeft = new StyleLength(0f);
+
 
                 // get parent
                 // parent should be Inspector element (unless nested?)

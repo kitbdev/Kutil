@@ -8,8 +8,11 @@ namespace Kutil {
     // by https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
     // Unity editor extension providing value get/set methods for SerializedProperty. This simplifies writing PropertyDrawers against non-trivial objects.
 
+    /// <summary>
     // Provide simple value get/set methods for SerializedProperty.  Can be used with
     // any data types and with arbitrarily deeply-pathed properties.
+    /// 
+    /// </summary>
     public static class SerializedPropertyExtensions {
 
 
@@ -33,7 +36,7 @@ namespace Kutil {
             value = default;
             return false;
         }
-        public static bool TrySetValueOnPropRefl(this SerializedProperty property,object value, string fieldname = null) {
+        public static bool TrySetValueOnPropRefl(this SerializedProperty property, object value, string fieldname = null) {
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
             string path = fieldname == null ? property.propertyPath :
                 property.propertyPath.Replace(property.name, fieldname);
@@ -47,6 +50,14 @@ namespace Kutil {
             return neighborProp;
         }
 
+
+        /// <summary>
+        /// (Extension) Get the value of the serialized property.
+        /// 
+        /// </summary>
+        /// <param name="property"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public static T GetValue<T>(this SerializedProperty property) {
             object v = property.GetValue();
             if (v is T typedVal) {
@@ -57,7 +68,13 @@ namespace Kutil {
             }
             return default;
         }
+
+        /// <summary>
         /// (Extension) Get the value of the serialized property.
+        /// 
+        /// </summary>
+        /// <param name="property"></param>
+        /// <returns></returns>
         public static object GetValue(this SerializedProperty property) {
             string propertyPath = property.propertyPath;
             object value = property.serializedObject.targetObject;
@@ -67,7 +84,11 @@ namespace Kutil {
             return value;
         }
 
+        /// <summary>
         /// (Extension) Set the value of the serialized property.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="value"></param>
         public static void SetValue(this SerializedProperty property, object value) {
             Undo.RecordObject(property.serializedObject.targetObject, $"Set {property.name}");
 
@@ -77,8 +98,13 @@ namespace Kutil {
             property.serializedObject.ApplyModifiedProperties();
         }
 
+        /// <summary>
         /// (Extension) Set the value of the serialized property, but do not record the change.
         /// The change will not be persisted unless you call SetDirty and ApplyModifiedProperties.
+        /// 
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="value"></param>
         public static void SetValueNoRecord(this SerializedProperty property, object value) {
             string propertyPath = property.propertyPath;
             object container = property.serializedObject.targetObject;
