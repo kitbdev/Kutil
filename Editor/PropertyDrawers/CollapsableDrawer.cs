@@ -19,7 +19,7 @@ namespace Kutil.PropertyDrawers {
         static readonly string collapsableClass = "kutil-collapsable-marker";
 
         // todo restore collapsed state?
-        bool collapsed = false;
+        // bool collapsed = false;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             // VisualElement defVE = base.CreatePropertyGUI(property);
@@ -27,6 +27,7 @@ namespace Kutil.PropertyDrawers {
             defVE.AddToClassList(collapsableClass);
             CollapsableAttribute cAtt = (CollapsableAttribute)attribute;
             // SerializedObject serializedObject = new SerializedObject(this);
+            // cAtt.isCollapsed = cAtt.startCollapsed;
 
             _ = defVE.schedule.Execute(() => {
                 // ! note this modifies the inspector's visual tree hierarchy. hopefully it doesnt cause any problems
@@ -34,13 +35,17 @@ namespace Kutil.PropertyDrawers {
                 VisualElement collapsableBase = new VisualElement();
                 collapsableBase.AddToClassList(baseClass);
 
+                // collapsableBase.userData
                 // insert a Foldout
                 Foldout foldout = new Foldout();
                 collapsableBase.Add(foldout);
-                foldout.SetValueWithoutNotify(!collapsed);
-                foldout.RegisterValueChangedCallback(ce => {
-                    collapsed = !ce.newValue;
-                });
+                foldout.value = !cAtt.startCollapsed;
+                // foldout.value = !collapsed;
+                // foldout.SetValueWithoutNotify(!collapsed);
+                // foldout.RegisterValueChangedCallback(ce => {
+                //     collapsed = !ce.newValue;
+                //     Debug.Log("collapsed " + collapsed);
+                // });
 
                 if (cAtt.text != null) {
                     foldout.text = cAtt.text;
@@ -67,11 +72,14 @@ namespace Kutil.PropertyDrawers {
                 // get all top level children to move into the foldout
                 VisualElement[] childs = parent.Children()
                         .SkipWhile((el) => el != cPropVE)
-                        // ? any other end markers?
                         .TakeWhile((el, i) => {
                             if (i == 0) return true;
+                            // ? any other end markers?
+                            // take while no childs have these classes
                             return el.Q(null, decoratorClass) == null
-                                && el.Q(null, collapsableClass) == null;
+                                && el.Q(null, collapsableClass) == null
+                                && el.Q(null, baseClass) == null
+                                ;
                         })
                         .ToArray();
 
@@ -81,6 +89,10 @@ namespace Kutil.PropertyDrawers {
                 int placeIndex = parent.IndexOf(childs.First());
                 parent.Insert(placeIndex, collapsableBase);
                 collapsableBase.name = $"Collapsable_{childs.First().name}_to_{childs.Last().name}";
+                // set viewdata uniquely to make foldout remember folded state
+                // https://forum.unity.com/threads/can-someone-explain-the-view-data-key-and-its-uses.855145/#post-5638936
+                foldout.viewDataKey = $"{baseClass}_{inspectorElement.name}_{childs.First().name}";
+                // Debug.Log(foldout.viewDataKey);
 
                 // move to foldout
                 foreach (var child in childs) {

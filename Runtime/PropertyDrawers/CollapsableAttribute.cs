@@ -8,9 +8,13 @@ namespace Kutil {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public class CollapsableAttribute : PropertyAttribute {
         public string text { get; set; }
+        public bool startCollapsed { get; set; }
+        // public bool isCollapsed;
 
-        public CollapsableAttribute(string text = "") {
+        public CollapsableAttribute(string text = "", bool startCollapsed = false) {
             this.text = text;
+            this.startCollapsed = startCollapsed;
+            // this.isCollapsed = this.startCollapsed;
         }
     }
 }
