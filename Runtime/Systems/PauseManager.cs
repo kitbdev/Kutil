@@ -44,11 +44,13 @@ namespace Kutil {
         [SerializeField, ReadOnly] bool didAutoPause = false;
 
         [Header("Input")]
-        /// <summary>dont automatically listen to input</summary>
-        [SerializeField] bool ignoreInput = false;
+        /// <summary>listen and respond to input. default is escape key or start button. can be overriden</summary>
+        [Tooltip("listen and respond to input. default is escape key or start button. can be overriden")]
+        [SerializeField] bool handleInput = true;
 #if ENABLE_INPUT_SYSTEM
         InputAction defaultPauseAction;
-        [Tooltip("Input Action Reference to override the default pause action (*/{menu})")]
+        [Tooltip("Input Action Reference to override the default pause action (*/{menu},<Keyboard>/escape,<Gamepad>/start)")]
+        // [ConditionalHide(nameof(handleInput), true)]
         [SerializeField] InputActionReference overrideTogglePauseAction;
         InputActionReference usingIAR => overrideTogglePauseAction ?? InputActionReference.Create(defaultPauseAction);
 #endif
@@ -65,7 +67,7 @@ namespace Kutil {
 
         protected void OnEnable() {
 #if ENABLE_INPUT_SYSTEM
-            if (!ignoreInput) {
+            if (handleInput) {
                 if (overrideTogglePauseAction != null) {
                     overrideTogglePauseAction.action.Enable();
                     overrideTogglePauseAction.action.performed += TogglePauseInput;
@@ -82,7 +84,7 @@ namespace Kutil {
         }
         private void OnDisable() {
 #if ENABLE_INPUT_SYSTEM
-            if (!ignoreInput) {
+            if (handleInput) {
                 if (overrideTogglePauseAction != null) {
                     overrideTogglePauseAction.action.performed -= TogglePauseInput;
                     overrideTogglePauseAction.action.Disable();
