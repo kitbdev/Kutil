@@ -166,7 +166,8 @@ namespace Kutil.PropertyDrawers {
                     scrollProps.ForEach(pf => PropDisable(pf));
                 } else {
                     // delay to detect recursive properties
-                    _ = foldout.schedule.Execute(() => {
+                    foldout.RegisterCallback<GeometryChangedEvent>((ce) => {
+                        // _ = foldout.schedule.Execute(() => {
                         scrollView.Q("unity-content-container").Children().OfType<PropertyField>().ForEach(pf => PropDisable(pf));
                     });
                 }
@@ -176,7 +177,8 @@ namespace Kutil.PropertyDrawers {
             // in case this creates new property drawers, we need to make sure they are still disabled
             if (foldout.value) {
                 // delay until after new fields are created
-                _ = foldout.schedule.Execute(() => {
+                foldout.RegisterCallback<GeometryChangedEvent>((ce) => {
+                    // _ = foldout.schedule.Execute(() => {
                     PropDisableChildren(foldout);
                 });
             }

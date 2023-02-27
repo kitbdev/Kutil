@@ -35,11 +35,6 @@ namespace Kutil {
         }
         // public static string ToStringFull(this IEnumerable<GameObject> enumerable, Func<GameObject, string> toStrFunc = null, bool includeCount = false, bool includeBraces = true, string seperator = ",") {
         // }
-        public static void AddIfUnique<T>(this List<T> enumerable, T value) {
-            if (!enumerable.Contains(value)) {
-                enumerable.Add(value);
-            }
-        }
 
         // public static IEnumerable<T> SelectWhere<T, U>(this IEnumerable<U> enumerable, Func<U, T?> func) {
         //     return enumerable.Select(func).Where(v => v != null);
@@ -49,5 +44,36 @@ namespace Kutil {
                 action.Invoke(v);
             }
         }
+        public static IEnumerable<T> AppendRange<T>(this IEnumerable<T> enumerable, IEnumerable<T> other) {
+            IEnumerable<T> result = enumerable;
+            foreach (var v in other) {
+                result = result.Append(v);
+            }
+            return result;
+        }
+        public static void AppendIfUnique<T>(this IEnumerable<T> enumerable, T value) {
+            if (!enumerable.Contains(value)) {
+                enumerable.Append(value);
+            }
+        }
+    }
+    public static class ListExtensions {
+
+        public static void AddIfUnique<T>(this List<T> enumerable, T value) {
+            if (!enumerable.Contains(value)) {
+                enumerable.Add(value);
+            }
+        }
+        // }
+        public static void AddRangeIfUnique<T>(this List<T> enumerable, IEnumerable<T> other) {
+            foreach (var val in other) {
+                enumerable.AddIfUnique(val);
+            }
+        }
+        // public static List<T> AddRangeChain<T>(this List<T> enumerable, IEnumerable<T> other) {
+        //     enumerable.AddRange(other);
+        //     other.Append()
+        //     return enumerable;
+        // }
     }
 }

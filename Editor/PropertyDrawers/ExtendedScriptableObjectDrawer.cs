@@ -43,6 +43,7 @@ namespace Kutil.PropertyDrawers {
                 }
                 // Add a tiny bit of height if open for the background
                 totalHeight += EditorGUIUtility.standardVerticalSpacing;
+                serializedObject.Dispose();
             }
             return totalHeight;
         }
@@ -50,8 +51,8 @@ namespace Kutil.PropertyDrawers {
         const int buttonWidth = 66;
 
         static readonly List<string> ignoreClassFullNames = new List<string>{
-        "TMPro.TMP_FontAsset", "UnityEngine.InputSystem.InputActionReference"
-     };
+            "TMPro.TMP_FontAsset", "UnityEngine.InputSystem.InputActionReference"
+        };
 
         bool? hasAttribute;
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
@@ -120,6 +121,7 @@ namespace Kutil.PropertyDrawers {
                     }
                     if (GUI.changed)
                         serializedObject.ApplyModifiedProperties();
+                    serializedObject.Dispose();
 
                     EditorGUI.indentLevel--;
                 }
@@ -222,6 +224,7 @@ namespace Kutil.PropertyDrawers {
             }
             if (GUI.changed)
                 serializedObject.ApplyModifiedProperties();
+            serializedObject.Dispose();
             EditorGUILayout.EndVertical();
             EditorGUI.indentLevel--;
         }
@@ -299,8 +302,10 @@ namespace Kutil.PropertyDrawers {
             SerializedProperty prop = serializedObject.GetIterator();
             while (prop.NextVisible(true)) {
                 if (prop.name == "m_Script") continue;
+                serializedObject.Dispose();
                 return true; //if theres any visible property other than m_script
             }
+            serializedObject.Dispose();
             return false;
         }
     }

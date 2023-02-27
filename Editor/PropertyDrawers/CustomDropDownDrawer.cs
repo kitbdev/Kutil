@@ -157,6 +157,9 @@ namespace Kutil.PropertyDrawers {
         }
 
         private void UpdateDropdownEditMode() {
+            // todo use display instead?
+            // dropdownField.style.display = !rawEditModeToggle;
+            // property.style.display = rawEditModeToggle;
             if (rawEditModeToggle) {
                 if (root.Contains(dropdownField)) {
                     root.Remove(dropdownField);

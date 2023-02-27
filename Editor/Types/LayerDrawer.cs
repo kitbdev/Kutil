@@ -10,7 +10,8 @@ namespace Kutil.PropertyDrawers {
             var root = new VisualElement();
             var field = new LayerField();
             field.label = property.displayName;
-            field.BindProperty(property);
+            // field.BindProperty(property);
+            field.bindingPath = property.propertyPath;
             root.Add(field);
             return root;
         }

@@ -4,6 +4,18 @@ using UnityEngine;
 
 namespace Kutil {
     public static class Vector3Ext {
+        
+        /// <summary>
+        /// Projects a direction vector onto a plane. 
+        /// doesnt normalize direction like Vector3.ProjectVectorOnPlane does 
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="normal"></param>
+        /// <returns></returns>
+        public static Vector3 ProjectDirectionOnPlane(Vector3 direction, Vector3 normal) {
+            return (direction - normal * Vector3.Dot(direction, normal)).normalized;
+        }
+
         public static Vector3 Floor(this Vector3 vec) {
             return new Vector3(
                 Mathf.Floor(vec.x),

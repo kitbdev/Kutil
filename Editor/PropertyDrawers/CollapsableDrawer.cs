@@ -24,6 +24,7 @@ namespace Kutil.PropertyDrawers {
             CollapsableAttribute cAtt = (CollapsableAttribute)attribute;
             // cAtt.isCollapsed = cAtt.startCollapsed;
 
+            // defVE.RegisterCallback<GeometryChangedEvent>(()=>{//?
             _ = defVE.schedule.Execute(() => {
                 // ! note this modifies the inspector's visual tree hierarchy. hopefully it doesnt cause any problems
                 // after layout
