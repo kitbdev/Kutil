@@ -26,23 +26,25 @@ namespace Kutil.PropertyDrawers {
             }
         }
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            VisualElement root = new VisualElement();
-            root.name = "ShowAsChildPropertyDrawer";
             SerializedProperty selNameProp = property.FindPropertyRelative(childName);
             if (selNameProp == null) {
                 return base.CreatePropertyGUI(property);
             }
+            VisualElement root = new VisualElement();
+            root.name = "ShowAsChildPropertyDrawer";
             PropertyField childField = new PropertyField(selNameProp, property.displayName);
             // childField.name = property.displayName;
             // Debug.Log(property.displayName);
             root.Add(childField);
-            childField.BindProperty(selNameProp);
+            // childField.BindProperty(selNameProp);
             childField.label = property.displayName;
 
             // set the label after the property has been binded, cause sometimes it doesnt work
             _ = childField.schedule.Execute(() => {
                 // property label should be first
-                var myLabel = childField.Q<Label>(null, "unity-property-field__label");
+                // const string labelClass = "unity-property-field__label";
+                const string labelClass = "unity-base-field__label";
+                var myLabel = childField.Q<Label>(null, labelClass);
                 if (myLabel != null) {
                     myLabel.text = property.displayName;
                 }

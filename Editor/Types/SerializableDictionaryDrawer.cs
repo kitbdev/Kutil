@@ -8,8 +8,16 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Kutil.PropertyDrawers {
+
     // [CustomPropertyDrawer(typeof(SerializableDictionary<,>))]
     public class SerializableDictionaryDrawer : PropertyDrawer {
+        
+        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            VisualElement root = new VisualElement();
+            
+            return root;
+        }
+        
         // public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
         //     // GUI.Label(position, "SerializableDictionaryDrawer");
         //     // EditorGUI.

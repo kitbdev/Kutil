@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace Kutil {
     /// <summary>
+    /// serializable dictionary.
     /// note: must inherit like so:
     /// [System.Serializable] public class DictionaryStringVector2 : SerializableDictionary<string, Vector2> {}
     /// in versions before 2020.1 (I think)   

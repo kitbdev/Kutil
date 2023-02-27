@@ -178,10 +178,23 @@ namespace Kutil.PropertyDrawers {
 
         void OnDropdownChangeValue(ChangeEvent<string> changeEvent) {
             int choiceIndex = dropdownField.index;
+            if (customDropDownData.includeNullChoice) {
+                choiceIndex -= 1;
+            }
             // Debug.Log($"set {changeEvent.previousValue} to {changeEvent.newValue} {choiceIndex}");
-            CustomDropDownData.Data data = customDropDownData.data[choiceIndex];
+            if (choiceIndex >= customDropDownData.data.Length) {
+                Debug.LogWarning($"index oob {choiceIndex} / {customDropDownData.data.Length}");
+                return;
+            }
+            object value;
+            if (choiceIndex == -1) {
+                value = null;
+            } else {
+                CustomDropDownData.Data data = customDropDownData.data[choiceIndex];
+                value = data.value;
+            }
 
-            property.SetValue(data.value);
+            property.SetValue(value);
             // Debug.Log("Set" + property.GetValue() + " to " + data.value);
 
             customDropDownData.onSelectCallback?.Invoke(null);
