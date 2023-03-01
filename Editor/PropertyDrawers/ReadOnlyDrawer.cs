@@ -8,48 +8,27 @@ using System.Linq;
 
 namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
-    public class ReadOnlyDrawer : PropertyDrawer {
+    public class ReadOnlyDrawer : DecoratorDrawer {
 
         public static readonly string readonlyClass = "kutil-readonly";
         public static readonly string readonlyFoldoutClass = "kutil-readonly-foldout";
         public static readonly string readonlyPropertyClass = "kutil-readonly-property";
 
-        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            // var readonlyDrawer = new ReadOnlyPropertyField(property);
-            // return readonlyDrawer;
-            var container = new VisualElement();
-            container.name = "ReadOnlyDrawer";
-            container.AddToClassList(readonlyClass);
-            var propField = new PropertyField(property);
-            container.Add(propField);
-            propField.RegisterCallback<GeometryChangedEvent>(ce => {
-                PropDisable(propField);
+        public override VisualElement CreatePropertyGUI() {
+            var root = new VisualElement();
+            root.name = "ReadOnly";
+            root.AddToClassList(readonlyClass);
+
+            root.RegisterCallback<GeometryChangedEvent>(ce => {
+                PropertyField propertyField = root.GetFirstAncestorOfType<PropertyField>();
+                if (propertyField == null) {
+                    Debug.LogError($"ReadOnly failed to find property! {root.name}");
+                    return;
+                }
+                PropDisable(propertyField);
             });
-            return container;
+            return root;
         }
-
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
-            // for some reason ignores other property drawers
-            // todo need to somehow work on other property drawers that already exist
-            // not https://forum.unity.com/threads/drawing-a-field-using-multiple-property-drawers.479377/ < uses attr only
-            // also for arrays, this operates on each element of the array, not the array itself
-
-            // var previousGUIState = GUI.enabled;
-            // GUI.enabled = false;
-            EditorGUI.BeginDisabledGroup(true);
-            // new EditorGUI.DisabledGroupScope()
-            EditorGUI.PropertyField(position, property, label, property.isExpanded);
-            // foreach (var drawer in allDrawers) {
-            //     allDrawers
-            // }
-            EditorGUI.EndDisabledGroup();
-            // GUI.enabled = previousGUIState;
-        }
-
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            return EditorGUI.GetPropertyHeight(property, label, property.isExpanded);
-        }
-
 
         // disable all visual elements without a Foldout in them
         public static void PropDisable(PropertyField propField) {
@@ -125,29 +104,6 @@ namespace Kutil.PropertyDrawers {
                 });
             }
         }
+
     }
-    // /// <summary>
-    // /// A PropertyField that can still open foldouts
-    // /// </summary>
-    // public class ReadOnlyPropertyField : VisualElement {
-
-    //     // doesnt work if top level is a list
-
-    //     PropertyField propertyField;
-    //     static readonly string readonlyClass = "kutil-readonly-foldout";
-
-    //     public ReadOnlyPropertyField(SerializedProperty property) {
-    //         name = "ReadOnlyField " + name;
-    //         propertyField = new PropertyField(property);
-    //         Add(propertyField);
-    //         this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-    //     }
-
-    //     private void OnGeometryChanged(GeometryChangedEvent evt) {
-    //         // disabling directly disables opening foldouts, so only disable properties wihtout a foldout
-    //         PropDisable(propertyField);
-    //     }
-
-    // }
-
 }
