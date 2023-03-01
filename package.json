@@ -1,6 +1,6 @@
 {
     "name": "kutil",
-    "version": "0.6.8",
+    "version": "0.6.9",
     "displayName": "Kutil",
     "description": "Utilty scripts for unity",
     "unity":"2020.1",

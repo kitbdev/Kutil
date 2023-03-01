@@ -5,7 +5,7 @@ namespace Kutil {
     /// <summary>
     /// Shows a Message in the inspector around the property
     /// </summary>
-    public class AddNoteAttribute : PropertyAttribute {
+    public class AddNotePropAttribute : PropertyAttribute {
 
         public enum NoteLayout {
             BEFORE, REPLACE, AFTER,
@@ -30,7 +30,7 @@ namespace Kutil {
 
         // note can combine with conditional hide and replace mode to have a conditional label
 
-        public AddNoteAttribute(string label = "note", NoteLayout layout = NoteLayout.BEFORE, float width = 50, bool centered = true, NoteStyle style = NoteStyle.DEFAULT) {
+        public AddNotePropAttribute(string label = "note", NoteLayout layout = NoteLayout.BEFORE, float width = 50, bool centered = true, NoteStyle style = NoteStyle.DEFAULT) {
             this.dynamic = false;
             this.noteLabel = label;
             this.noteLayout = layout;
@@ -39,7 +39,7 @@ namespace Kutil {
             this.centered = centered;
             // this.conditionField = conditionalField;
         }
-        public AddNoteAttribute(string sourceField, int dynamic, NoteLayout layout = NoteLayout.BEFORE, float width = 50, bool centered = true, NoteStyle style = NoteStyle.DEFAULT) {
+        public AddNotePropAttribute(string sourceField, int dynamic, NoteLayout layout = NoteLayout.BEFORE, float width = 50, bool centered = true, NoteStyle style = NoteStyle.DEFAULT) {
             this.dynamic = true;
             this.sourceField = sourceField;
             this.noteLabel = "AddNote Property error";
@@ -49,13 +49,13 @@ namespace Kutil {
             this.centered = centered;
             // this.conditionField = conditionalField;
         }
-        public AddNoteAttribute(string label = "note", PropLayout labelLayout = PropLayout.Above, float labelWeight = 1) {
+        public AddNotePropAttribute(string label = "note", PropLayout labelLayout = PropLayout.Above, float labelWeight = 1) {
             this.dynamic = false;
             this.noteLabel = label;
             this.labelLayout = labelLayout;
             this.labelWeight = labelWeight;
         }
-        public AddNoteAttribute(string sourceField, int dynamic, PropLayout labelLayout = PropLayout.Above, float labelWeight = 1) {
+        public AddNotePropAttribute(string sourceField, int dynamic, PropLayout labelLayout = PropLayout.Above, float labelWeight = 1) {
             this.dynamic = true;
             this.sourceField = sourceField;
             this.noteLabel = "AddNote Property error";

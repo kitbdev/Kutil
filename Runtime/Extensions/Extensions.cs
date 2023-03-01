@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using System.Linq;
+using System;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -80,6 +81,10 @@ namespace Kutil {
         }
     }
     public static class QuaternionExt {
+        public static bool Approximately(this Quaternion a, Quaternion b) {
+            return 1f - Mathf.Abs(Quaternion.Dot(a, b)) < Mathf.Epsilon;
+        }
+
         public static Quaternion ClampRotation(this Quaternion q, Vector3 bounds) {
             q.x /= q.w;
             q.y /= q.w;
@@ -116,6 +121,25 @@ namespace Kutil {
     public static class MathfExt {
         public static float Remap(float value, float fromMin, float fromMax, float toMin, float toMax) {
             return ((value - fromMin) / (fromMax - fromMin)) * (toMax - toMin) + toMin;
+        }
+        /// <summary>
+        /// Wraps a value between a min and a max.
+        /// Ex. angle from -180 to 180
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        public static float Wrap(float value, float min, float max) {
+            float range = max - min;
+            if (range <= Mathf.Epsilon) {
+                // range is negative or zero!
+                Debug.LogWarning($"Invalid wrap min max - {min},{max} value:{value}");
+                return value;
+            }
+            value = (value - min) % range;
+            value += min + (value < 0 ? range : 0);
+            return value;
         }
     }
 }

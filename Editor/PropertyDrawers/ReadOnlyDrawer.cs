@@ -10,62 +10,23 @@ namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : PropertyDrawer {
 
-        // string readonlyClass = "kutil-readonly-foldout";
+        public static readonly string readonlyClass = "kutil-readonly";
+        public static readonly string readonlyFoldoutClass = "kutil-readonly-foldout";
+        public static readonly string readonlyPropertyClass = "kutil-readonly-property";
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            var readonlyDrawer = new ReadOnlyPropertyField(property);
-            return readonlyDrawer;
-            // var container = new VisualElement();
-            // container.name = "ReadOnlyDrawer";
-            // var propField = new PropertyField(property);
-            // // disabling directly disables opening foldouts
-            // // propField.SetEnabled(false);
-            // container.Add(propField);
-            // // Debug.Log("rodn " + property.displayName); ;
-
-            // // propField.Bind(property.serializedObject);
-
-            // // set style temporarily so theres no delay
-            // propField.SetEnabled(false);
-            // // propField.AddToClassList("unity-disabled");
-
-            // // var listView = propField.Query<ListView>().ToList();
-            // // Debug.Log(listView.Count());//0
-
-            // // After prop field has binded
-            // // todo custom ReadOnlyProperty VE OnGeoChange instead
-            // _ = propField.schedule.Execute(() => {
-            //     // PropDisable(propField);
-            //     if (propField.Q<Foldout>() != null) {
-            //         propField.SetEnabled(true);
-            //         // Debug.Log("has foldout");
-            //     }
-            //     // propField.RemoveFromClassList("unity-disabled");
-            // });
-            // container.Add(nrod);
-            // return container;
-            // // return base.CreatePropertyGUI(property);
+            // var readonlyDrawer = new ReadOnlyPropertyField(property);
+            // return readonlyDrawer;
+            var container = new VisualElement();
+            container.name = "ReadOnlyDrawer";
+            container.AddToClassList(readonlyClass);
+            var propField = new PropertyField(property);
+            container.Add(propField);
+            propField.RegisterCallback<GeometryChangedEvent>(ce => {
+                PropDisable(propField);
+            });
+            return container;
         }
-
-
-        // void ForEachChildRecursively(VisualElement root, System.Action<VisualElement> action, System.Func<VisualElement, bool> searchChildren = null) {
-        //     List<VisualElement> searched = new();
-        //     Queue<VisualElement> frontier = new();
-        //     frontier.Enqueue(root);
-        //     while (frontier.Count > 0) {
-        //         var cur = frontier.Dequeue();
-        //         searched.Add(cur);
-        //         action?.Invoke(cur);
-        //         if (searchChildren != null && !searchChildren.Invoke(cur)) {
-        //             continue;
-        //         }
-        //         foreach (var child in cur.Children()) {
-        //             if (!searched.Contains(child) && !frontier.Contains(child)) {
-        //                 frontier.Enqueue(child);
-        //             }
-        //         }
-        //     }
-        // }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             // for some reason ignores other property drawers
@@ -88,31 +49,12 @@ namespace Kutil.PropertyDrawers {
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
             return EditorGUI.GetPropertyHeight(property, label, property.isExpanded);
         }
-    }
-    /// <summary>
-    /// A PropertyField that can still open foldouts
-    /// </summary>
-    public class ReadOnlyPropertyField : VisualElement {
 
-        // doesnt work if top level is a list
-
-        PropertyField propertyField;
-        static readonly string readonlyClass = "kutil-readonly-foldout";
-
-        public ReadOnlyPropertyField(SerializedProperty property) {
-            name = "ReadOnlyField " + name;
-            propertyField = new PropertyField(property);
-            Add(propertyField);
-            this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-        }
-
-        private void OnGeometryChanged(GeometryChangedEvent evt) {
-            // disabling directly disables opening foldouts, so only disable properties wihtout a foldout
-            PropDisable(propertyField);
-        }
 
         // disable all visual elements without a Foldout in them
-        void PropDisable(PropertyField propField) {
+        public static void PropDisable(PropertyField propField) {
+
+            propField.AddToClassList(readonlyPropertyClass);
 
             // disable list size field, add/remove buttons, and rearranging
             ListView listView = propField.Children().OfType<ListView>().FirstOrDefault();
@@ -128,7 +70,7 @@ namespace Kutil.PropertyDrawers {
             // todo dont go into other propertfields, recall this method
             Foldout foldout = propField.Q<Foldout>();
             if (foldout != null) {
-                if (foldout.ClassListContains(readonlyClass)) {
+                if (foldout.ClassListContains(readonlyFoldoutClass)) {
                     // already disabled
                     // Debug.Log($"{foldoutLabel.text} is already disabled! {foldout.bindingPath}");
                     return;
@@ -138,7 +80,7 @@ namespace Kutil.PropertyDrawers {
                 // } else {
                 //     Debug.Log("disabling foldout " + foldout.name);
                 // }
-                foldout.AddToClassList(readonlyClass);
+                foldout.AddToClassList(readonlyFoldoutClass);
 
                 Label foldoutLabel = foldout.Q<Label>();
                 foldoutLabel.SetEnabled(false);
@@ -152,7 +94,7 @@ namespace Kutil.PropertyDrawers {
 
             propField.SetEnabled(false);
         }
-        void PropDisableChildren(Foldout foldout) {
+        static void PropDisableChildren(Foldout foldout) {
             VisualElement foldoutContent = foldout.Q("unity-content");
             ScrollView scrollView = foldoutContent.Children().OfType<ScrollView>().FirstOrDefault();
 
@@ -173,7 +115,7 @@ namespace Kutil.PropertyDrawers {
                 }
             }
         }
-        void ToggleClickEventHandler(ClickEvent clickEvent, Foldout foldout) {
+        static void ToggleClickEventHandler(ClickEvent clickEvent, Foldout foldout) {
             // in case this creates new property drawers, we need to make sure they are still disabled
             if (foldout.value) {
                 // delay until after new fields are created
@@ -184,4 +126,28 @@ namespace Kutil.PropertyDrawers {
             }
         }
     }
+    // /// <summary>
+    // /// A PropertyField that can still open foldouts
+    // /// </summary>
+    // public class ReadOnlyPropertyField : VisualElement {
+
+    //     // doesnt work if top level is a list
+
+    //     PropertyField propertyField;
+    //     static readonly string readonlyClass = "kutil-readonly-foldout";
+
+    //     public ReadOnlyPropertyField(SerializedProperty property) {
+    //         name = "ReadOnlyField " + name;
+    //         propertyField = new PropertyField(property);
+    //         Add(propertyField);
+    //         this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+    //     }
+
+    //     private void OnGeometryChanged(GeometryChangedEvent evt) {
+    //         // disabling directly disables opening foldouts, so only disable properties wihtout a foldout
+    //         PropDisable(propertyField);
+    //     }
+
+    // }
+
 }

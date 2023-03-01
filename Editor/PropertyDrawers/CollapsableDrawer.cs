@@ -11,18 +11,24 @@ namespace Kutil.PropertyDrawers {
     /// </summary>
     [CustomPropertyDrawer(typeof(CollapsableAttribute))]
     public class CollapsableDrawer : PropertyDrawer {
-        static readonly string decoratorClass = "unity-decorator-drawers-container";
-        static readonly string headerFontClass = "unity-header-drawer__label";
 
-        static readonly string baseClass = "kutil-collapsable-drawer";
-        static readonly string foldoutClass = "kutil-collapsable-drawer-foldout";
-        static readonly string collapsableClass = "kutil-collapsable-marker";
+        // ? can we find these elsewhere
+        static readonly string unityDecoratorContainerClass = "unity-decorator-drawers-container";
+        static readonly string unityHeaderDecoratorClass = "unity-header-drawer__label";
+        static readonly string unitySpaceDecoratorClass = "unity-space-drawer";
+
+        public static readonly string baseClass = "kutil-collapsable-drawer";
+        public static readonly string foldoutClass = "kutil-collapsable-drawer-foldout";
+        public static readonly string collapsableClass = "kutil-collapsable-marker";
+
+        CollapsableAttribute collapsable => (CollapsableAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             VisualElement defVE = new PropertyField(property);
             defVE.AddToClassList(collapsableClass);
-            CollapsableAttribute cAtt = (CollapsableAttribute)attribute;
+
             // cAtt.isCollapsed = cAtt.startCollapsed;
+            // Debug.Log(property.propertyPath+" "+property.serializedObject.);
 
             // defVE.RegisterCallback<GeometryChangedEvent>(()=>{//?
             _ = defVE.schedule.Execute(() => {
@@ -34,7 +40,7 @@ namespace Kutil.PropertyDrawers {
                 bool addspace = false;
                 if (addspace) {
                     VisualElement spacer = new VisualElement();
-                    spacer.AddToClassList(decoratorClass);
+                    spacer.AddToClassList(unityDecoratorContainerClass);
                     // default space height is 8px
                     spacer.style.height = new StyleLength(8f);
                     // default header top margin is 12px
@@ -45,17 +51,17 @@ namespace Kutil.PropertyDrawers {
                 // insert a Foldout
                 Foldout foldout = new Foldout();
                 collapsableBase.Add(foldout);
-                foldout.value = !cAtt.startCollapsed;
+                foldout.value = !collapsable.startCollapsed;
                 // foldout.value = !collapsed;
                 // foldout.SetValueWithoutNotify(!collapsed);
                 // foldout.RegisterValueChangedCallback(ce => {
                 //     collapsed = !ce.newValue;
                 //     Debug.Log("collapsed " + collapsed);
                 // });
-                if (cAtt.text != null) {
-                    foldout.text = cAtt.text;
+                if (collapsable.text != null) {
+                    foldout.text = collapsable.text;
                     Label label = foldout.Q<Label>();
-                    label.AddToClassList(headerFontClass);
+                    label.AddToClassList(unityHeaderDecoratorClass);
                     label.style.unityFontStyleAndWeight = FontStyle.Bold;
                 }
                 foldout.AddToClassList(foldoutClass);
@@ -84,12 +90,19 @@ namespace Kutil.PropertyDrawers {
                         .SkipWhile((el) => el != cPropVE)
                         .TakeWhile((el, i) => {
                             if (i == 0) return true;
+
+                            // todo test all cases
+                            bool isSpaceDec = el.Q(null, unitySpaceDecoratorClass) == null;
+                            bool takeSpaceDec = collapsable.includeSpaces || isSpaceDec;
+                            bool isHeaderDec = el.Q(null, unityHeaderDecoratorClass) == null;
+                            bool takeHeaderDec = collapsable.includeHeaders || isHeaderDec;
+                            bool takeOtherDec = isSpaceDec || isHeaderDec || (collapsable.includeOtherDecorators || el.Q(null, unityDecoratorContainerClass) == null);
+                            bool takeDec = takeSpaceDec && takeHeaderDec && takeOtherDec;
                             // ? any other end markers?
                             // take while no childs have these classes
-                            return el.Q(null, decoratorClass) == null
-                                && el.Q(null, collapsableClass) == null
-                                && el.Q(null, baseClass) == null
-                                ;
+                            bool takeCollapsable = el.Q(null, collapsableClass) == null;
+                            bool takeSelf = el.Q(null, baseClass) == null;
+                            return takeDec && takeCollapsable && takeSelf;
                         })
                         .ToArray();
 

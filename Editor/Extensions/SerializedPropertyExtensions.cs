@@ -2,7 +2,9 @@ using System.Collections;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Kutil {
     // by https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
@@ -14,6 +16,50 @@ namespace Kutil {
     /// 
     /// </summary>
     public static class SerializedPropertyExtensions {
+
+
+        /// <summary>
+        /// Get the serialized property from a Decorator drawer.
+        /// Uses reflection, so cache if possible.
+        /// </summary>
+        /// <param name="rootElement"></param>
+        /// <returns>the serialized property of the related property field</returns>
+        public static SerializedProperty GetBindedSPropFromDecorator(VisualElement rootElement) {
+            // must be called after geochanged
+            PropertyField propertyField = rootElement.GetFirstAncestorOfType<PropertyField>();
+            if (propertyField == null) {
+                Debug.LogError($"GetBindedSPropFromDecorator mustbe called from a decorator root after GeometryChanged! {rootElement.name}");
+                return null;
+            }
+            InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
+            if (inspectorElement == null) {
+                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} inspectorElement null");
+                return null;
+            }
+            VisualElement editorElement = inspectorElement.parent;
+            if (editorElement == null) {
+                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {inspectorElement.name} editorElement null");
+                return null;
+            }
+            // EditorElement is internal, so get the editor via reflection
+            if (!ReflectionHelper.TryGetValue<Editor>(editorElement, "editor", out Editor editor)) {
+                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editorElement.name} editor null");
+                return null;
+            }
+
+            SerializedObject serializedObject = editor.serializedObject;
+            if (serializedObject == null) {
+                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editorElement.name} serializedObject null");
+                return null;
+            }
+            SerializedProperty serializedProperty = serializedObject.FindProperty(propertyField.bindingPath);
+            if (serializedProperty == null) {
+                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editor} {propertyField.bindingPath} sprop null");
+                return null;
+            }
+            return serializedProperty;
+        }
+
 
 
         public static T GetValueOnPropRefl<T>(this SerializedProperty property, string fieldname = null) {
@@ -53,7 +99,6 @@ namespace Kutil {
 
         /// <summary>
         /// (Extension) Get the value of the serialized property.
-        /// 
         /// </summary>
         /// <param name="property"></param>
         /// <typeparam name="T"></typeparam>
@@ -71,7 +116,6 @@ namespace Kutil {
 
         /// <summary>
         /// (Extension) Get the value of the serialized property.
-        /// 
         /// </summary>
         /// <param name="property"></param>
         /// <returns></returns>
@@ -101,7 +145,6 @@ namespace Kutil {
         /// <summary>
         /// (Extension) Set the value of the serialized property, but do not record the change.
         /// The change will not be persisted unless you call SetDirty and ApplyModifiedProperties.
-        /// 
         /// </summary>
         /// <param name="property"></param>
         /// <param name="value"></param>
