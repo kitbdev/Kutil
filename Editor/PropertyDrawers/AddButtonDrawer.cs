@@ -21,6 +21,7 @@ namespace Kutil.PropertyDrawers {
             Button btn = new Button();
             btn.text = addButton.buttonLabel ?? addButton.buttonMethodName;
             btn.name = $"{btn.text} Button";
+            btn.enableRichText = addButton.richText;
             btn.clicked += () => {
                 // decorators dont have access to the property...
                 serializedProperty ??= SerializedPropertyExtensions.GetBindedSPropFromDecorator(btn);

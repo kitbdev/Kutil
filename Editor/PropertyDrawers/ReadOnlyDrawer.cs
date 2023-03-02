@@ -30,7 +30,11 @@ namespace Kutil.PropertyDrawers {
             return root;
         }
 
-        // disable all visual elements without a Foldout in them
+        /// <summary>
+        /// disable all PropertiyFields and Lists without a Foldout in them.
+        /// disabling the root will disallow foldouts from opening
+        /// </summary>
+        /// <param name="propField"></param>
         public static void PropDisable(PropertyField propField) {
 
             propField.AddToClassList(readonlyPropertyClass);

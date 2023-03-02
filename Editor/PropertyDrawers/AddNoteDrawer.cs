@@ -9,24 +9,29 @@ namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(AddNoteAttribute))]
     public class AddNoteDrawer : DecoratorDrawer {
 
-        AddNoteAttribute addNote => (AddNoteAttribute)attribute;
+        public static readonly string addNoteClass = "add-note-label";
 
         SerializedProperty property;
+        Label note;
+
+        AddNoteAttribute addNote => (AddNoteAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
+            
+            note = new Label();
+            note.AddToClassList(addNoteClass);
+            note.enableRichText = addNote.richText;
 
-            Label note = new Label();
-            string noteText = GetNoteText(note);
-            note.text = noteText;
-            note.AddToClassList("add-note-label");
-            // todo styling
+            note.text = GetNoteText(note);
 
-            // todo updating dynamically
-            note.RegisterCallback<ClickEvent>(ce => {
-                // update on click?
-                Debug.Log($"note {note.name} {note.text} clicked!");
-            });
-
+            if (addNote.dynamic) {
+                // todo update dynamically if dynamic
+                note.RegisterCallback<GeometryChangedEvent>(ce => {
+                    note.text = GetNoteText(note);
+                    Debug.Log($"note {note.name} {note.text} changed!");
+                });
+            }
+            
             return note;
         }
 

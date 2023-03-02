@@ -18,6 +18,8 @@ namespace Kutil {
         public bool allowMultipleCalls { get; set; }
         /// <summary>can this be called in the editor?</summary>
         public bool allowCallInEditor { get; set; }
+        public bool richText { get; set; }
+        
 
         /// <summary>
         /// </summary>
@@ -26,12 +28,13 @@ namespace Kutil {
         /// <param name="parameters">parameters to pass into the call (static)</param>
         /// <param name="allowMultipleCalls">when multiselecting, should the call go to all targets or just the first</param>
         /// <param name="allowCallInEditor">when multiselecting, should the call go to all targets or just the first</param>
-        public AddButtonAttribute(string buttonMethodName, string buttonLabel = null, object[] parameters = null, bool allowCallInEditor = true, bool allowMultipleCalls = true) {
+        public AddButtonAttribute(string buttonMethodName, string buttonLabel = null, object[] parameters = null, bool allowCallInEditor = true, bool allowMultipleCalls = true, bool richText = false) {
             this.buttonMethodName = buttonMethodName;
             this.buttonLabel = buttonLabel;
             this.parameters = parameters;
             this.allowMultipleCalls = allowMultipleCalls;
             this.allowCallInEditor = allowCallInEditor;
+            this.richText = richText;
         }
     }
 }
