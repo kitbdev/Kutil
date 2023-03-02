@@ -9,8 +9,6 @@ namespace Kutil {
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public class ReadOnlyAttribute : PropertyAttribute {
-        public ReadOnlyAttribute() { 
-            order = -100;
-        }
+        public ReadOnlyAttribute() { }
     }
 }

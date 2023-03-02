@@ -18,7 +18,8 @@ namespace Kutil {
         /// <summary>
         /// Shows a label. 
         /// <a href="https://docs.unity3d.com/2022.2/Documentation/Manual/UIE-supported-tags.html">rich text ref:</a>
-        /// &lt;color="red"&gt; &lt;align="center"&gt; &lt;b&gt; &lt;font-weight="700"&gt; '&lt;'=&amp; lt;
+        /// &lt;color="red"&gt;&lt;color=#FF9900&gt;&lt;align="center"&gt;&lt;b&gt;&lt;font-weight="700"&gt;
+        /// '&lt;'=&amp; lt; 
         /// </summary>
         /// <param name="sourceField"></param>
         /// <param name="dynamic"></param>

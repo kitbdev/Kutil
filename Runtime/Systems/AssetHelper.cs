@@ -12,7 +12,7 @@ namespace Kutil {
         /// <param name="folder">location of assets, starting with "Asset/"</param>
         /// <typeparam name="T">type of asset, such as GameObject, Texture, or ScriptableObject</typeparam>
         /// <returns></returns>
-        public static T[] AutoFindAllAssets<T>(string folder) where T : UnityEngine.Object {
+        public static T[] AutoFindAllAssets<T>(string folder = "Assets/Data") where T : UnityEngine.Object {
 #if UNITY_EDITOR
             // Find all Gameobjects in specified folder
             string[] guids2 = UnityEditor.AssetDatabase.FindAssets("", new[] { folder });
