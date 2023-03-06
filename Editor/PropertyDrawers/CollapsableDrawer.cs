@@ -36,6 +36,7 @@ namespace Kutil.PropertyDrawers {
             return collapsableDecorator;
         }
         private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
+            collapsableDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
             PropertyField propertyField = collapsableDecorator.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
                 Debug.LogError($"CollapsableDrawer failed to find containing property! {collapsableDecorator.name}");
@@ -43,7 +44,6 @@ namespace Kutil.PropertyDrawers {
             }
             // Debug.Log("collapsable once "+propertyField.name);
             CreateCollapsable(propertyField);
-            collapsableDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
         }
 
         // ! note this modifies the inspector's visual tree hierarchy. hopefully it doesnt cause any problems

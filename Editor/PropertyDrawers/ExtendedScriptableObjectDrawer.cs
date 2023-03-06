@@ -55,10 +55,13 @@ namespace Kutil.PropertyDrawers {
         };
 
         bool? hasAttribute;
+        bool allowCreation = true;
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             EditorGUI.BeginProperty(position, label, property);
             var type = GetFieldType();
-            hasAttribute ??= type.GetCustomAttribute<ExtendedSOAttribute>(true) != null;
+            ExtendedSOAttribute extendedSOAttribute = type.GetCustomAttribute<ExtendedSOAttribute>(true);
+            hasAttribute ??= extendedSOAttribute != null;
+            allowCreation = extendedSOAttribute?.allowCreation ?? true;
             if (type == null || ignoreClassFullNames.Contains(type.FullName) || !(hasAttribute ?? false)) {
                 EditorGUI.PropertyField(position, property, label);
                 EditorGUI.EndProperty();
@@ -87,7 +90,7 @@ namespace Kutil.PropertyDrawers {
             var indentOffset = indentedPosition.x - position.x;
             propertyRect = new Rect(position.x + (EditorGUIUtility.labelWidth - indentOffset), position.y, position.width - (EditorGUIUtility.labelWidth - indentOffset), EditorGUIUtility.singleLineHeight);
 
-            if (propertySO != null || property.objectReferenceValue == null) {
+            if (allowCreation && (propertySO != null || property.objectReferenceValue == null)) {
                 propertyRect.width -= buttonWidth;
             }
 
@@ -126,19 +129,21 @@ namespace Kutil.PropertyDrawers {
                     EditorGUI.indentLevel--;
                 }
             } else {
-                if (GUI.Button(buttonRect, "Create")) {
-                    if (type.IsAbstract) {
-                        GenericMenu typeChooser = new GenericMenu();
-                        foreach (var elem in type.Assembly.GetTypes().Where(t => type.IsAssignableFrom(t))) {
-                            if (elem.IsAbstract) continue;
-                            typeChooser.AddItem(new GUIContent(elem.Name), false, (elem) => {
-                                property.objectReferenceValue = CreateAssetWithSavePrompt(elem as Type, GetSelectedAssetPath(property));
-                                property.serializedObject.ApplyModifiedProperties();
-                            }, elem);
+                if (allowCreation) {
+                    if (GUI.Button(buttonRect, "Create")) {
+                        if (type.IsAbstract) {
+                            GenericMenu typeChooser = new GenericMenu();
+                            foreach (var elem in type.Assembly.GetTypes().Where(t => type.IsAssignableFrom(t))) {
+                                if (elem.IsAbstract) continue;
+                                typeChooser.AddItem(new GUIContent(elem.Name), false, (elem) => {
+                                    property.objectReferenceValue = CreateAssetWithSavePrompt(elem as Type, GetSelectedAssetPath(property));
+                                    property.serializedObject.ApplyModifiedProperties();
+                                }, elem);
+                            }
+                            typeChooser.ShowAsContext();
+                        } else {
+                            property.objectReferenceValue = CreateAssetWithSavePrompt(type, GetSelectedAssetPath(property));
                         }
-                        typeChooser.ShowAsContext();
-                    } else {
-                        property.objectReferenceValue = CreateAssetWithSavePrompt(type, GetSelectedAssetPath(property));
                     }
                 }
             }
@@ -229,7 +234,7 @@ namespace Kutil.PropertyDrawers {
             EditorGUI.indentLevel--;
         }
 
-        public static T DrawScriptableObjectField<T>(GUIContent label, T objectReferenceValue, ref bool isExpanded) where T : ScriptableObject {
+        public static T DrawScriptableObjectField<T>(GUIContent label, T objectReferenceValue, ref bool isExpanded, bool allowCreation = true) where T : ScriptableObject {
             Rect position = EditorGUILayout.BeginVertical();
 
             var propertyRect = Rect.zero;
@@ -263,11 +268,13 @@ namespace Kutil.PropertyDrawers {
 
                 }
             } else {
-                if (GUILayout.Button("Create", GUILayout.Width(buttonWidth))) {
-                    string selectedAssetPath = "Assets";
-                    var newAsset = CreateAssetWithSavePrompt(typeof(T), selectedAssetPath);
-                    if (newAsset != null) {
-                        objectReferenceValue = (T)newAsset;
+                if (allowCreation) {
+                    if (GUILayout.Button("Create", GUILayout.Width(buttonWidth))) {
+                        string selectedAssetPath = "Assets";
+                        var newAsset = CreateAssetWithSavePrompt(typeof(T), selectedAssetPath);
+                        if (newAsset != null) {
+                            objectReferenceValue = (T)newAsset;
+                        }
                     }
                 }
                 EditorGUILayout.EndHorizontal();

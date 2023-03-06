@@ -34,15 +34,16 @@ namespace Kutil.PropertyDrawers {
         }
 
         private void OnDecoratorGeometryChanged(GeometryChangedEvent changedEvent) {
+            // only need to do once
+            readOnlyDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecoratorGeometryChanged);
             // use a changed event so we can access other VisualElements
             PropertyField propertyField = readOnlyDecorator.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
                 Debug.LogError($"ReadOnly failed to find containing property! {readOnlyDecorator.name}");
                 return;
             }
-            PropDisable(propertyField);
-            //? unregister?
-            readOnlyDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecoratorGeometryChanged);
+            //PropDisable(propertyField);
+            PropDisableNew(propertyField);
         }
 
         public static void DisableField(VisualElement field) {
@@ -51,6 +52,11 @@ namespace Kutil.PropertyDrawers {
                 return;
             }
 
+        }
+        public static void PropDisableNew(PropertyField propField) {
+            // dont need to not disable foldouts anymore...
+            propField.SetEnabled(false);
+            // maybe still remove list stuff?
         }
         /// <summary>
         /// disable all PropertiyFields and Lists without a Foldout in them.
