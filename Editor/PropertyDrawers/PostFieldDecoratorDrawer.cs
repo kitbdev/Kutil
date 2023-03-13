@@ -14,6 +14,7 @@ namespace Kutil.PropertyDrawers {
 
         static readonly string unityDecoratorContainerClass = "unity-decorator-drawers-container";
         public static readonly string decoratorClass = "kutil-post-field-decorator";
+        public static readonly string decoratorPostContainerClass = "kutil-post-decorator-drawer-container";
 
         VisualElement postFieldDecorator;
 
@@ -54,14 +55,16 @@ namespace Kutil.PropertyDrawers {
                 return;
             }
             int myDecIndex = decoratorContainer.IndexOf(postFieldDecorator);
-            if (myDecIndex <= 0) {
+            if (myDecIndex < 0 || myDecIndex >= decoratorContainer.childCount - 1) {
                 // no need to add our own decorator
+                // Debug.Log($"{myDecIndex} / {decoratorContainer.childCount}");
             } else {
                 VisualElement newDecoratorContainer = new VisualElement();
                 newDecoratorContainer.AddToClassList(unityDecoratorContainerClass);
+                newDecoratorContainer.AddToClassList(decoratorPostContainerClass);
                 decoratorContainer.parent.Add(newDecoratorContainer);
-                // take the first n elements
-                var decoratorsToSteal = decoratorContainer.Children().Take(myDecIndex);
+                // take the last elements
+                var decoratorsToSteal = decoratorContainer.Children().Skip(myDecIndex + 1);
                 foreach (var dec in decoratorsToSteal) {
                     decoratorContainer.Remove(dec);
                     newDecoratorContainer.Add(dec);

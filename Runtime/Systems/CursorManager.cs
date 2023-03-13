@@ -45,12 +45,14 @@ namespace Kutil {
             // todo automatically detect focus?
         }
         private void OnDisable() {
+#if ENABLE_INPUT_SYSTEM
             if (unlockAction != null) {
                 unlockAction.action.Disable();
             }
             if (lockAction != null) {
                 lockAction.action.Disable();
             }
+#endif
             if (toggleOnPause) {
                 PauseManager.Instance?.pauseEvent.RemoveListener(UnlockCursor);
                 PauseManager.Instance?.unpauseEvent.RemoveListener(LockCursor);

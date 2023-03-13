@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using Kutil;
 using UnityEngine;
 using UnityEngine.EventSystems;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -104,6 +106,7 @@ namespace Kutil {
         [SerializeField] bool useUnscaledTime = false;
 
         [Header("Input")]
+#if ENABLE_INPUT_SYSTEM
         [Tooltip("Button input - mouse button")]
         [SerializeField] InputActionReference moveDragAction;
         [Tooltip("Vector2 input - keyboard")]
@@ -114,6 +117,7 @@ namespace Kutil {
         [SerializeField] InputActionReference zoomBtnAction;
         [Tooltip("Button input")]
         [SerializeField] InputActionReference recenterAction;
+#endif
         [Space]
         [SerializeField, ReadOnly] Vector2 moveInput = Vector2.zero;
         [SerializeField, ReadOnly] float zoomInput = 0f;
@@ -147,7 +151,7 @@ namespace Kutil {
         float DeltaTime => useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
 
         public float ZoomInput {
-            get => zoomInput; 
+            get => zoomInput;
             set {
                 if (disableZoom) return;
                 zoomInput = value;
@@ -176,21 +180,26 @@ namespace Kutil {
             }
         }
         private void OnEnable() {
+#if ENABLE_INPUT_SYSTEM
             moveAction.ActivateCallbacks(OnMoveAction, OnMoveActionCancelled);
             moveDragAction.ActivateCallbacks(OnMoveDragAction, OnMoveDragActionCancelled);
             zoomContAction.ActivateCallbacks(OnZoomContAction);
             zoomBtnAction.ActivateCallbacks(OnZoomBtnAction, OnZoomBtnActionCancelled);
             recenterAction.ActivateCallbacks(OnRecenterAction);
+#endif
         }
 
         private void OnDisable() {
+#if ENABLE_INPUT_SYSTEM
             moveAction.DeactivateCallbacks(OnMoveAction, OnMoveActionCancelled);
             moveDragAction.DeactivateCallbacks(OnMoveDragAction, OnMoveDragActionCancelled);
             zoomContAction.DeactivateCallbacks(OnZoomContAction);
             zoomBtnAction.DeactivateCallbacks(OnZoomBtnAction, OnZoomBtnActionCancelled);
             recenterAction.DeactivateCallbacks(OnRecenterAction);
+#endif
         }
 
+#if ENABLE_INPUT_SYSTEM
         private void OnMoveAction(InputAction.CallbackContext c) => MoveInput = c.ReadValue<Vector2>();
         private void OnMoveActionCancelled(InputAction.CallbackContext c) => MoveInput = Vector2.zero;
         private void OnMoveDragAction(InputAction.CallbackContext c) {
@@ -205,6 +214,7 @@ namespace Kutil {
         private void OnZoomBtnAction(InputAction.CallbackContext c) => ZoomInput = c.ReadValue<float>();
         private void OnZoomBtnActionCancelled(InputAction.CallbackContext c) => ZoomInput = 0;
         private void OnRecenterAction(InputAction.CallbackContext c) => RecenterCameraAction();
+#endif
 
         public void SetMoveDragStart() {
             if (disableMovement || disableDragMovement) return;
@@ -328,7 +338,12 @@ namespace Kutil {
             if (disableMovement) return;
 
             // input
+#if ENABLE_INPUT_SYSTEM
             Vector2 mousepos = Mouse.current.position.ReadValue();
+#else
+            Vector2 mousepos = Input.mousePosition;
+#endif
+
             // bool dragStartInput = Mouse.current.leftButton.wasPressedThisFrame;
             // bool dragEndInput = Mouse.current.leftButton.wasReleasedThisFrame;
 
@@ -521,25 +536,25 @@ namespace Kutil {
         }
         private void OnDrawGizmos() {
 #if UNITY_EDITOR
-        if (drawBounds && boundaryActive) {
-            using (new Handles.DrawingScope(Color.black)) {
-                Vector3 center = Vector3.zero + (Vector3)boundsCenterOffset;
-                if (boundaryLocalToTarget) {
-                    if (camFollowTarget == null) return;
-                    center += camFollowTarget.position;
-                }
-                if (boundAsCircle) {
-                    Handles.DrawWireDisc(center, Vector3.back, boundsMaxRadius);
-                } else {
-                    Vector3 p0 = center + -boundsSize.x / 2 * Vector3.left + boundsSize.y / 2 * Vector3.up;
-                    Vector3 p1 = center + boundsSize.x / 2 * Vector3.left + boundsSize.y / 2 * Vector3.up;
-                    Vector3 p2 = center + boundsSize.x / 2 * Vector3.left - boundsSize.y / 2 * Vector3.up;
-                    Vector3 p3 = center + -boundsSize.x / 2 * Vector3.left - boundsSize.y / 2 * Vector3.up;
-                    Vector3[] points = new Vector3[5] { p0, p1, p2, p3, p0 };
-                    Handles.DrawAAPolyLine(5, points);
+            if (drawBounds && boundaryActive) {
+                using (new Handles.DrawingScope(Color.black)) {
+                    Vector3 center = Vector3.zero + (Vector3)boundsCenterOffset;
+                    if (boundaryLocalToTarget) {
+                        if (camFollowTarget == null) return;
+                        center += camFollowTarget.position;
+                    }
+                    if (boundAsCircle) {
+                        Handles.DrawWireDisc(center, Vector3.back, boundsMaxRadius);
+                    } else {
+                        Vector3 p0 = center + -boundsSize.x / 2 * Vector3.left + boundsSize.y / 2 * Vector3.up;
+                        Vector3 p1 = center + boundsSize.x / 2 * Vector3.left + boundsSize.y / 2 * Vector3.up;
+                        Vector3 p2 = center + boundsSize.x / 2 * Vector3.left - boundsSize.y / 2 * Vector3.up;
+                        Vector3 p3 = center + -boundsSize.x / 2 * Vector3.left - boundsSize.y / 2 * Vector3.up;
+                        Vector3[] points = new Vector3[5] { p0, p1, p2, p3, p0 };
+                        Handles.DrawAAPolyLine(5, points);
+                    }
                 }
             }
-        }
 #endif
         }
     }

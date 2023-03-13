@@ -1,24 +1,27 @@
 using UnityEngine;
 using System.Linq;
+using System.Runtime.CompilerServices;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace Kutil
-{
+namespace Kutil {
     public static class BoundsIntExtensions {
         /// <summary>
         /// Converts BoundsInt to Bounds.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Bounds AsBounds(this BoundsInt bounds) {
             return new Bounds(bounds.center, bounds.size);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BoundsInt Copy(this BoundsInt bounds) {
             return new BoundsInt(bounds.position, bounds.size);
         }
         /// <summary>
         /// Converts Bounds to BoundsInt. expands volume if necessary
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BoundsInt AsBoundsInt(this Bounds bounds) {
             BoundsInt boundsInt = new BoundsInt();
             boundsInt.SetMinMax(Vector3Int.FloorToInt(bounds.min), Vector3Int.CeilToInt(bounds.max));
@@ -42,12 +45,83 @@ namespace Kutil
         /// <summary>
         /// Returns true if this BoundsInt contains another entirely
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsBounds(this BoundsInt bounds, BoundsInt smaller) {
             return bounds.Contains(smaller.min) && bounds.Contains(smaller.max);
         }
+        /// <summary>integer volume of this bounds</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Volume(this BoundsInt bounds) {
             return bounds.size.x * bounds.size.y * bounds.size.z;
         }
+
+        // copy bounds functionality
+        // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Geometry/Bounds.cs
+        // ? rewrite for faster performance
+
+        /// <summary>
+        /// Does another bounding box intersect with this bounding box?
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>true if intersects</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Intersects(this BoundsInt bounds, BoundsInt other) {
+            // return bounds.AsBounds().Intersects(other.AsBounds());
+            return (bounds.min.x <= other.max.x) && (bounds.max.x >= other.min.x) &&
+                (bounds.min.y <= other.max.y) && (bounds.max.y >= other.min.y) &&
+                (bounds.min.z <= other.max.z) && (bounds.max.z >= other.min.z);
+        }
+        /// <summary>
+        /// Grows the bounds to include the point.
+        /// </summary>
+        /// <param name="newPoint"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Encapsulate(this ref BoundsInt bounds, Vector3Int newPoint) {
+            // var b = bounds.AsBounds();
+            // b.Encapsulate(newPoint);
+            // var bi = b.AsBoundsInt();
+            // bounds.SetMinMax(bi.min, bi.max);
+            // Debug.Log($"bounds encapsulate o:{bounds} p:{newPoint} min:{Vector3Int.Min(bounds.min, newPoint)}, max:{Vector3Int.Max(bounds.max, newPoint)}");
+            bounds.SetMinMax(Vector3Int.Min(bounds.min, newPoint), Vector3Int.Max(bounds.max, newPoint));
+            // Debug.Log($"new bounds:{bounds}");
+        }
+        /// <summary>
+        /// Grows the bounds to include the point. Inclusive
+        /// </summary>
+        /// <param name="newPoint"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EncapsulateInclusive(this ref BoundsInt bounds, Vector3Int newPoint) {
+            // Debug.Log($"bounds encapsulate o:{bounds} p:{newPoint} min:{Vector3Int.Min(bounds.min, newPoint + Vector3Int.one)}, max:{Vector3Int.Max(bounds.max, newPoint)}");
+            //? call it inflated instead of inclusive?
+            bounds.SetMinMax(Vector3Int.Min(bounds.min, newPoint), Vector3Int.Max(bounds.max, newPoint + Vector3Int.one));
+            // Debug.Log($"new bounds:{bounds}");
+        }
+        /// <summary>
+        /// Expand the bounds by increasing its size by amount along each side
+        /// </summary>
+        /// <param name="amount"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Expand(this ref BoundsInt bounds, int amount) {
+            // var b = bounds.AsBounds();
+            // b.Expand(amount);
+            // var bi = b.AsBoundsInt();
+            // bounds.SetMinMax(bi.min, bi.max);
+            bounds.Expand(new Vector3Int(amount, amount, amount));
+        }
+        /// <summary>
+        /// Expand the bounds by increasing its size by amount along each side
+        /// </summary>
+        /// <param name="amount"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Expand(this ref BoundsInt bounds, Vector3Int amount) {
+            // var b = bounds.AsBounds();
+            // b.Expand(amount);
+            // var bi = b.AsBoundsInt();
+            // bounds.SetMinMax(bi.min, bi.max);
+            bounds.size += amount;
+        }
+
+
         // /// <summary>
         // /// Returns true if this BoundsInt contains another entirely
         // /// </summary>
@@ -79,6 +153,7 @@ namespace Kutil
         /// <param name="point"></param>
         /// <param name="inclusive">are the bounds inclusive</param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsOnBorder(this BoundsInt bounds, Vector3Int point, bool inclusive = false) {
             int inc = inclusive ? -1 : 0;
             return
@@ -104,11 +179,12 @@ namespace Kutil
             return point - bpoint;
         }
         /// <summary>
-        /// Returns the closest point on the box or inside the box.
+        /// Returns the closest point on the box or inside the box. Clamps
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="point"></param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3Int ClosestPoint(this BoundsInt bounds, Vector3Int point) {
             // Vector3Int closestPoint = point;
             // if (point.x < bounds.xMin) closestPoint.x = bounds.xMin;
@@ -168,16 +244,29 @@ namespace Kutil
                 new Vector3Int(bounds.xMax, bounds.yMax, bounds.zMax),
             };
         }
-        public static void DrawGizmosBounds(this BoundsInt bounds) {
-            Vector3[] poses = bounds.CornerPositions().Select(p => (Vector3)p).ToArray();
-            DrawCube(poses);
+
+        // gizmos stuff
+
+        /// <summary>
+        /// draw the bounds using handles
+        /// </summary>
+        public static void DrawGizmosBounds(this BoundsInt bounds, Grid grid = null) {
+            DrawGizmosBounds(bounds, Vector3.zero, grid);
         }
-        public static void DrawGizmosBounds(this BoundsInt bounds, Grid grid) {
-            Vector3[] poses = bounds.CornerPositions().Select(p => grid.CellToWorld(p)).ToArray();
-            DrawCube(poses);
+        /// <summary>
+        /// draw the bounds using handles
+        /// </summary>
+        public static void DrawGizmosBounds(this BoundsInt bounds, Vector3 offset, Grid grid = null) {
+            Vector3[] poses = bounds.CornerPositions().Select(p => (grid?.CellToWorld(p) ?? (Vector3)p) + offset).ToArray();
+            HandlesDrawCube(poses);
         }
 
-        public static void DrawCube(Vector3[] poses) {
+        /// <summary>Draw outline of a cube from 8 positions</summary>
+        public static void HandlesDrawCube(Vector3[] poses) {
+            if (poses == null || poses.Length != 8) {
+                Debug.LogError($"DrawCube needs 8 positions to draw has {(poses?.Length.ToString() ?? "null")}");
+                return;
+            }
 #if UNITY_EDITOR
             Handles.DrawLine(poses[0], poses[1]);// bottom square
             Handles.DrawLine(poses[0], poses[2]);
@@ -192,64 +281,6 @@ namespace Kutil
             Handles.DrawLine(poses[6], poses[7]);
             Handles.DrawLine(poses[5], poses[7]);
 #endif
-        }
-
-        // copy bounds functionality
-        // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Geometry/Bounds.cs
-        // todo rewrite for faster performance?
-
-        /// <summary>
-        /// Does another bounding box intersect with this bounding box?
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns>true if intersects</returns>
-        public static bool Intersects(this BoundsInt bounds, BoundsInt other) {
-            return bounds.AsBounds().Intersects(other.AsBounds());
-        }
-        /// <summary>
-        /// Grows the bounds to include the point.
-        /// </summary>
-        /// <param name="newPoint"></param>
-        public static void Encapsulate(this ref BoundsInt bounds, Vector3Int newPoint) {
-            // var b = bounds.AsBounds();
-            // b.Encapsulate(newPoint);
-            // var bi = b.AsBoundsInt();
-            // bounds.SetMinMax(bi.min, bi.max);
-            // Debug.Log($"bounds encapsulate o:{bounds} p:{newPoint} min:{Vector3Int.Min(bounds.min, newPoint)}, max:{Vector3Int.Max(bounds.max, newPoint)}");
-            bounds.SetMinMax(Vector3Int.Min(bounds.min, newPoint), Vector3Int.Max(bounds.max, newPoint));
-            // Debug.Log($"new bounds:{bounds}");
-        }
-        /// <summary>
-        /// Grows the bounds to include the point. Inclusive
-        /// </summary>
-        /// <param name="newPoint"></param>
-        public static void EncapsulateInclusive(this ref BoundsInt bounds, Vector3Int newPoint) {
-            // Debug.Log($"bounds encapsulate o:{bounds} p:{newPoint} min:{Vector3Int.Min(bounds.min, newPoint + Vector3Int.one)}, max:{Vector3Int.Max(bounds.max, newPoint)}");
-            //? call it inflated instead of inclusive?
-            bounds.SetMinMax(Vector3Int.Min(bounds.min, newPoint), Vector3Int.Max(bounds.max, newPoint + Vector3Int.one));
-            // Debug.Log($"new bounds:{bounds}");
-        }
-        /// <summary>
-        /// Expand the bounds by increasing its size by amount along each side
-        /// </summary>
-        /// <param name="amount"></param>
-        public static void Expand(this ref BoundsInt bounds, int amount) {
-            // var b = bounds.AsBounds();
-            // b.Expand(amount);
-            // var bi = b.AsBoundsInt();
-            // bounds.SetMinMax(bi.min, bi.max);
-            bounds.Expand(new Vector3Int(amount, amount, amount));
-        }
-        /// <summary>
-        /// Expand the bounds by increasing its size by amount along each side
-        /// </summary>
-        /// <param name="amount"></param>
-        public static void Expand(this ref BoundsInt bounds, Vector3Int amount) {
-            // var b = bounds.AsBounds();
-            // b.Expand(amount);
-            // var bi = b.AsBoundsInt();
-            // bounds.SetMinMax(bi.min, bi.max);
-            bounds.size += amount;
         }
     }
 }
