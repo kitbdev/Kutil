@@ -244,6 +244,32 @@ namespace Kutil {
                 new Vector3Int(bounds.xMax, bounds.yMax, bounds.zMax),
             };
         }
+        public static Vector3[] CornerPositions(this Bounds bounds) {
+            return new Vector3[]{
+                new Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
+                new Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+                new Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+                new Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+                new Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+                new Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+                new Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+                new Vector3(bounds.max.x, bounds.max.y, bounds.max.z),
+            };
+        }
+        public static (int, int)[] edgeIndexes => new (int, int)[12]{
+            (0, 1),// bottom square
+            (0, 2),
+            (2, 3),
+            (1, 3),
+            (0, 4),// vertical lines
+            (1, 5),
+            (2, 6),
+            (3, 7),
+            (4, 5),// top square
+            (4, 6),
+            (6, 7),
+            (5, 7),
+        };
 
         // gizmos stuff
 
@@ -259,6 +285,22 @@ namespace Kutil {
         public static void DrawGizmosBounds(this BoundsInt bounds, Vector3 offset, Grid grid = null) {
             Vector3[] poses = bounds.CornerPositions().Select(p => (grid?.CellToWorld(p) ?? (Vector3)p) + offset).ToArray();
             HandlesDrawCube(poses);
+        }
+        /// <summary>
+        /// draw the bounds using handles
+        /// </summary>
+        public static void DrawGizmosBounds(this Bounds bounds) {
+            HandlesDrawCube(bounds.CornerPositions());
+        }
+        /// <summary>
+        /// draw the bounds using handles
+        /// </summary>
+        public static void DrawGizmosBounds(this Bounds bounds, Transform transform) {
+            Vector3[] points = bounds.CornerPositions();
+            System.Span<Vector3> poses = new(points);
+            transform.TransformPoints(poses, poses);
+            // Vector3[] poses = bounds.CornerPositions().Select(p => transform.TransformPoint(p)).ToArray();
+            HandlesDrawCube(poses.ToArray());
         }
 
         /// <summary>Draw outline of a cube from 8 positions</summary>

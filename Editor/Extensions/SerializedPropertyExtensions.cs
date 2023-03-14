@@ -21,11 +21,11 @@ namespace Kutil {
         /// <summary>
         /// Get the serialized property from a Decorator drawer.
         /// Uses reflection, so cache if possible.
+        /// must be called after geochanged.
         /// </summary>
         /// <param name="rootElement"></param>
         /// <returns>the serialized property of the related property field</returns>
-        public static SerializedProperty GetBindedSPropFromDecorator(VisualElement rootElement) {
-            // must be called after geochanged
+        public static SerializedProperty GetBindedPropertyFromDecorator(VisualElement rootElement) {
             PropertyField propertyField = rootElement.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
                 Debug.LogError($"GetBindedSPropFromDecorator mustbe called from a decorator root after GeometryChanged! {rootElement.name}");

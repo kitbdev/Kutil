@@ -24,7 +24,7 @@ namespace Kutil.PropertyDrawers {
             btn.enableRichText = addButton.richText;
             btn.clicked += () => {
                 // decorators dont have access to the property...
-                serializedProperty ??= SerializedPropertyExtensions.GetBindedSPropFromDecorator(btn);
+                serializedProperty ??= SerializedPropertyExtensions.GetBindedPropertyFromDecorator(btn);
                 if (serializedProperty == null) {
                     Debug.LogWarning($"Cannot call method on button {btn.name} cannot find prop");
                     return;

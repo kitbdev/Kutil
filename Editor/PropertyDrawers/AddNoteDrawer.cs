@@ -37,7 +37,7 @@ namespace Kutil.PropertyDrawers {
 
         public string GetNoteText(VisualElement root) {
             if (addNote.dynamic) {
-                property ??= SerializedPropertyExtensions.GetBindedSPropFromDecorator(root);
+                property ??= SerializedPropertyExtensions.GetBindedPropertyFromDecorator(root);
                 if (property.TryGetValueOnPropRefl<string>(addNote.sourceField, out var v)) {
                     return v;
                 }
