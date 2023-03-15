@@ -6,16 +6,23 @@ using UnityEditor.UIElements;
 namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(Layer))]
     public class LayerDrawer : PropertyDrawer {
+
+        public static readonly string layerClass = "kutil-layer";
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            var root = new VisualElement();
+            // Debug.Log("layer drawer p");
+            // var root = new VisualElement();
+            // root.AddToClassList(layerClass);
             var field = new LayerField();
+            field.AddToClassList(layerClass);
+            field.AddToClassList(LayerField.alignedFieldUssClassName);
             field.label = property.displayName;
-            // field.BindProperty(property);
-            field.bindingPath = property.propertyPath;
-            root.Add(field);
-            return root;
+            field.bindingPath = property.FindPropertyRelative("layerValue").propertyPath;
+            // root.Add(field);
+            return field;
         }
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+            // Debug.Log("layer drawer g");
             EditorGUI.BeginProperty(position, label, property);
             SerializedProperty layerProp = property.FindPropertyRelative(nameof(Layer.layerValue));
             int val = layerProp.intValue;

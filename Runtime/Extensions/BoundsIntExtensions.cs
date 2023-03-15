@@ -121,6 +121,7 @@ namespace Kutil {
             bounds.size += amount;
         }
 
+        public static Vector3Int CenterInt(this BoundsInt bounds) => bounds.position + bounds.size / 2;
 
         // /// <summary>
         // /// Returns true if this BoundsInt contains another entirely

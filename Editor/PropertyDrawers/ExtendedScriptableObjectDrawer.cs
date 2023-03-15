@@ -12,6 +12,8 @@ using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
 using System.Linq;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Kutil.PropertyDrawers {
     /// <summary>
@@ -21,6 +23,134 @@ namespace Kutil.PropertyDrawers {
     /// </summary>
     [CustomPropertyDrawer(typeof(ScriptableObject), true)]
     public class ExtendedScriptableObjectDrawer : PropertyDrawer {
+
+        public static readonly string extendedSOClass = "kutil-extented-so";
+
+        public VisualElement CreatePropertyGUI(SerializedProperty property) {
+        // public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            VisualElement root = new VisualElement();
+            root.AddToClassList(extendedSOClass);
+
+            var type = GetFieldType();
+            ExtendedSOAttribute extendedSOAttribute = type.GetCustomAttribute<ExtendedSOAttribute>(true);
+
+            if (type == null || ignoreClassFullNames.Contains(type.FullName) || extendedSOAttribute == null) {
+                PropertyField propertyField = new PropertyField(property);
+                // propertyField.AddToClassList(PropertyField.);
+                root.Add(propertyField);
+                return root;
+            }
+
+            ScriptableObject propertySO = null;
+            if (!property.hasMultipleDifferentValues && property.serializedObject.targetObject != null && property.serializedObject.targetObject is ScriptableObject) {
+                propertySO = (ScriptableObject)property.serializedObject.targetObject;
+            }
+            bool hasValue = property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue != null;
+
+            // todo this can change
+            if (hasValue) {
+                Foldout foldout = new Foldout();
+                // foldout.text = "test";
+                foldout.viewDataKey = $"{property.propertyPath}-foldout-datakey";
+                root.Add(foldout);
+
+                ObjectField objectField = new ObjectField(property.name);
+                objectField.objectType = type;
+                objectField.bindingPath = property.propertyPath;
+                // objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
+                objectField.style.paddingLeft = 2;
+                objectField.style.flexGrow = 1;
+                VisualElement foldoutLabelContainer = foldout.Q<Toggle>().Children().FirstOrDefault();
+                foldoutLabelContainer.Add(objectField);
+
+                // todo 
+                SerializedObject newSO = new SerializedObject(property.objectReferenceValue);
+                // InspectorElement defaultInspector = new InspectorElement(property.objectReferenceValue);
+                VisualElement defaultInspector = new VisualElement();
+                FillDefaultInspector(defaultInspector, newSO, true, true);
+                defaultInspector.Bind(newSO);
+                foldout.contentContainer.Add(defaultInspector);
+                // newSO.Dispose();
+            } else {
+                VisualElement hbox = new VisualElement();
+                hbox.name = "hbox";
+                hbox.style.flexDirection = FlexDirection.Row;
+                hbox.style.justifyContent = Justify.SpaceBetween;
+                root.Add(hbox);
+
+                ObjectField objectField = new ObjectField(property.name);
+                objectField.bindingPath = property.propertyPath;
+                objectField.objectType = type;
+                objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
+                hbox.Add(objectField);
+
+                Button addButton = new Button();
+                addButton.style.marginLeft = 4;
+                addButton.style.marginRight = 4;
+                addButton.text = "Create";
+                hbox.Add(addButton);
+            }
+
+            // root.RegisterCallback<GeometryChangedEvent>(OnGeoChanged);
+            return root;
+        }
+        void OnGeoChanged(GeometryChangedEvent changedEvent) {
+
+        }
+
+        // static VisualElement DrawScriptableObjectChildFieldsUIToolkit<T>(T objectReferenceValue) where T : ScriptableObject {
+        //     // Draw a background that shows us clearly which fields are part of the ScriptableObject
+        //     VisualElement root;
+        //     // todo
+        //     EditorGUI.indentLevel++;
+        //     EditorGUILayout.BeginVertical(GUI.skin.box);
+
+        //     var serializedObject = new SerializedObject(objectReferenceValue);
+        //     // Iterate over all the values and draw them
+        //     SerializedProperty prop = serializedObject.GetIterator();
+        //     if (prop.NextVisible(true)) {
+        //         do {
+        //             // Don't bother drawing the class file
+        //             if (prop.name == "m_Script") continue;
+        //             EditorGUILayout.PropertyField(prop, true);
+        //         }
+        //         while (prop.NextVisible(false));
+        //     }
+        //     if (GUI.changed)
+        //         serializedObject.ApplyModifiedProperties();
+        //     serializedObject.Dispose();
+        //     EditorGUILayout.EndVertical();
+        //     EditorGUI.indentLevel--;
+
+        //     return root;
+        // }
+        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, bool hideScript = false, bool hideSDMC = true) {
+            SerializedProperty property = serializedObject.GetIterator();
+            if (property.NextVisible(true)) // Expand first child.
+            {
+                do {
+                    if (property.propertyPath == "m_Script" && hideScript) {
+                        continue;
+                    }
+                    if (property.propertyPath == "m_SerializedDataModeController" && hideSDMC) {
+                        continue;
+                    }
+                    var field = new PropertyField(property.Copy());
+                    field.name = "PropertyField:" + property.propertyPath;
+                    // field.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+
+
+                    if (property.propertyPath == "m_Script" && serializedObject.targetObject != null) {
+                        field.SetEnabled(false);
+                    }
+
+                    container.Add(field);
+                }
+                while (property.NextVisible(false));
+            }
+        }
+
+
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
             float totalHeight = EditorGUIUtility.singleLineHeight;
