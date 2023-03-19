@@ -28,22 +28,22 @@ namespace Kutil {
         public static SerializedProperty GetBindedPropertyFromDecorator(VisualElement rootElement) {
             PropertyField propertyField = rootElement.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
-                Debug.LogError($"GetBindedSPropFromDecorator mustbe called from a decorator root after GeometryChanged! {rootElement.name}");
+                Debug.LogError($"GetBindedPropertyFromDecorator mustbe called from a decorator root after GeometryChanged! {rootElement.name}");
                 return null;
             }
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
-                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} inspectorElement null");
+                Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} inspectorElement null");
                 return null;
             }
             VisualElement editorElement = inspectorElement.parent;
             if (editorElement == null) {
-                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {inspectorElement.name} editorElement null");
+                Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} {inspectorElement.name} editorElement null");
                 return null;
             }
             // EditorElement is internal, so get the editor via reflection
             if (!ReflectionHelper.TryGetValue<Editor>(editorElement, "editor", out Editor editor)) {
-                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editorElement.name} editor null");
+                Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} {editorElement.name} editor null");
                 return null;
             }
 
@@ -58,6 +58,30 @@ namespace Kutil {
                 return null;
             }
             return serializedProperty;
+        }
+        /// <summary>
+        /// Get the editor from a field inside the editor, such as a field or decorator
+        /// Uses reflection, so cache if possible.
+        /// must be called after geochanged.
+        /// </summary>
+        /// <param name="fieldElement"></param>
+        public static Editor GetEditorFromField(VisualElement fieldElement) {
+            InspectorElement inspectorElement = fieldElement.GetFirstAncestorOfType<InspectorElement>();
+            if (inspectorElement == null) {
+                Debug.LogError($"GetEditorFromDecorator {fieldElement.name} inspectorElement null");
+                return null;
+            }
+            VisualElement editorElement = inspectorElement.parent;
+            if (editorElement == null) {
+                Debug.LogError($"GetEditorFromDecorator {fieldElement.name} {inspectorElement.name} editorElement null");
+                return null;
+            }
+            // EditorElement is internal, so get the editor via reflection
+            if (!ReflectionHelper.TryGetValue<Editor>(editorElement, "editor", out Editor editor)) {
+                Debug.LogError($"GetEditorFromDecorator {fieldElement.name} {editorElement.name} editor null");
+                return null;
+            }
+            return editor;
         }
 
 

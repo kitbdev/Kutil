@@ -26,6 +26,7 @@ namespace Kutil.PropertyDrawers {
 
         public static readonly string extendedSOClass = "kutil-extented-so";
 
+//https://forum.unity.com/threads/uitoolkit-inspectorelement-does-not-draw-content-of-scriptableobject-correctly.1135846/
         public VisualElement CreatePropertyGUI(SerializedProperty property) {
         // public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             VisualElement root = new VisualElement();
