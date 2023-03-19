@@ -63,6 +63,11 @@ namespace Kutil.PropertyDrawers {
             // foldout.text = "test";
             hasValueFoldout.viewDataKey = $"{property.propertyPath}-foldout-datakey";
             Toggle toggle = hasValueFoldout.Q<Toggle>();
+            toggle.AddToClassList(Toggle.alignedFieldUssClassName);
+            toggle.style.marginTop = 0;
+            toggle.style.marginBottom = 0;
+            toggle.style.marginLeft = 0;
+            toggle.style.marginRight = 0;
             var checkMark = toggle.Q("unity-checkmark");
             checkMark.style.marginRight = 0;
             root.Add(hasValueFoldout);
@@ -74,7 +79,11 @@ namespace Kutil.PropertyDrawers {
             hvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             hvObjectField.style.paddingLeft = 2;
             hvObjectField.style.flexGrow = 1;
+            hvObjectField.style.marginRight = 0;
             hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
+            Label label = hvObjectField.Q<Label>();
+            label.AddToClassList(PropertyField.labelUssClassName);
+            label.style.marginRight = 5;
             VisualElement foldoutLabelContainer = toggle.Children().FirstOrDefault();
             foldoutLabelContainer.Add(hvObjectField);
 
@@ -91,6 +100,7 @@ namespace Kutil.PropertyDrawers {
             nvObjectField.bindingPath = property.propertyPath;
             nvObjectField.objectType = type;
             nvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
+            nvObjectField.Q<Label>().AddToClassList(PropertyField.labelUssClassName);
             nvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
             noValueHBox.Add(nvObjectField);
 
@@ -120,6 +130,8 @@ namespace Kutil.PropertyDrawers {
                 }
                 noValueHBox.Add(addButton);
             }
+
+            UpdateUI();
             return root;
         }
 
