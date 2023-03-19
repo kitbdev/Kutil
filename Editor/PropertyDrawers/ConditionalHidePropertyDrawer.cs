@@ -6,8 +6,12 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
 namespace Kutil.PropertyDrawers {
-    ///Original version of the ConditionalHideAttribute created by Brecht Lecluyse (www.brechtos.com)
-    ///Modified by: Sebastian Lague and Kit
+    /// Original version of the ConditionalHideAttribute created by Brecht Lecluyse (www.brechtos.com)
+    /// Modified by: Sebastian Lague and Kit
+    /// using a decorator to properly handle top level arrays 
+    /// <summary>
+    /// Conditionally hides a field based on a bool or enum field
+    /// </summary>
 #if UNITY_2022_2_OR_NEWER
     [CustomPropertyDrawer(typeof(ConditionalHideAttribute))]
     public class ConditionalHidePropertyDrawer : DecoratorDrawer {
@@ -20,6 +24,7 @@ namespace Kutil.PropertyDrawers {
         VisualElement decorator;
         PropertyField propertyField;
         SerializedProperty serializedProperty;
+        InspectorElement inspectorElement;
 
         public override VisualElement CreatePropertyGUI() {
             decorator = new VisualElement();
@@ -29,8 +34,9 @@ namespace Kutil.PropertyDrawers {
         }
 
         private void SetupField(GeometryChangedEvent evt) {
-            // Debug.Log("Setting up c hide decorator...");
             decorator.UnregisterCallback<GeometryChangedEvent>(SetupField);
+            // Debug.Log("Setting up c hide decorator...");
+            // get propertyfield
             propertyField = decorator.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
                 Debug.LogError($"{GetType().Name} decorator failed to find containing property!");
@@ -38,34 +44,30 @@ namespace Kutil.PropertyDrawers {
             }
             propertyField.AddToClassList(conditionalHideClass);
 
-            var editor = SerializedPropertyExtensions.GetEditorFromField(propertyField);
+            // get serialized property
             serializedProperty = SerializedPropertyExtensions.GetBindedPropertyFromDecorator(decorator);
             if (serializedProperty == null) {
                 Debug.LogError($"{GetType().Name} decorator cannot find serialized property!, cannot bind.");
                 return;
             }
-            InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
+
+            // get inspector element to register an onvalidate callback
+            inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
                 Debug.LogError($"Conditional Hide - inspectorElement null!");
                 return;
             }
-            // VisualElement editorElement = inspectorElement.parent;
-            // if (editorElement == null) {
-            //     Debug.LogError($"Conditional Hide - editorElement null!");
-            //     return;
-            // }
-            // Debug.Log($"e:{editor.name} - {editor.target?.name??"target?"}");
-            // Debug.Log($"c hide registering on {editorElement.name} prop: {serializedProperty.serializedObject.targetObject}-{serializedProperty.name}");
-            // editorElement.RegisterCallback<SerializedObjectChangeEvent>(ce => UpdateField());
-            // inspectorElement.RegisterCallback<SerializedObjectChangeEvent>(ce => UpdateField());
-            // editorElement.RegisterCallback<SerializedPropertyChangeEvent>(ce => UpdateField());
-            // propertyField.RegisterCallback<SerializedPropertyChangeEvent>(ce => UpdateField());
-            // this one properly responds to all changes
-            inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(ce => UpdateField());
+            // this properly responds to all changes
+            inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+            decorator.RegisterCallback<DetachFromPanelEvent>(OnDetach);
         }
 
+        void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
+            inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+        }
+        void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
         void UpdateField() {
-            // Debug.Log("Updating field!");
+            // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
             bool enabled = GetConditionalHideAttributeResult(conditionalHide, serializedProperty) == conditionalHide.showIfTrue;
             propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
         }

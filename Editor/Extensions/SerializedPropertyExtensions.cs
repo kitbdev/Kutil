@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Kutil.PropertyDrawers;
 
 namespace Kutil {
     // by https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
@@ -31,11 +32,31 @@ namespace Kutil {
                 Debug.LogError($"GetBindedPropertyFromDecorator mustbe called from a decorator root after GeometryChanged! {rootElement.name}");
                 return null;
             }
+
+            // try to get on inspector
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
                 Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} inspectorElement null");
                 return null;
             }
+            // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/UIElements/Inspector/InspectorElement.cs
+            if (ReflectionHelper.TryGetValue<SerializedObject>(inspectorElement, "boundObject", out SerializedObject so)) {
+                SerializedProperty serializedPropertyI = so.FindProperty(propertyField.bindingPath);
+                if (serializedPropertyI != null) {
+                    return serializedPropertyI;
+                }
+            }
+
+            // try to get on custom inspectorfield 
+            InspectorField inspectorField = propertyField.GetFirstAncestorOfType<InspectorField>();
+            if (inspectorField != null) {
+                SerializedProperty serializedPropertyIF = inspectorField.SerializedObject.FindProperty(propertyField.bindingPath);
+                if (serializedPropertyIF != null) {
+                    return serializedPropertyIF;
+                }
+            }
+
+            // try to get on editor
             VisualElement editorElement = inspectorElement.parent;
             if (editorElement == null) {
                 Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} {inspectorElement.name} editorElement null");
@@ -54,7 +75,7 @@ namespace Kutil {
             }
             SerializedProperty serializedProperty = serializedObject.FindProperty(propertyField.bindingPath);
             if (serializedProperty == null) {
-                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editor} {propertyField.bindingPath} sprop null");
+                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editor} {propertyField.bindingPath} serializedProperty null");
                 return null;
             }
             return serializedProperty;
@@ -84,6 +105,29 @@ namespace Kutil {
             return editor;
         }
 
+
+        // public static string GetElementName(this SerializedProperty property) {
+            // this is literally what .displayName does
+        //     if (property.IsElement(out var i)) {
+        //         return $"Element {i}";
+        //     }
+        //     return property.displayName;
+        // }
+        public static bool IsElement(this SerializedProperty property, out int index) {
+            if (property.propertyPath.EndsWith("]")) {
+                int v = property.propertyPath.LastIndexOf("[");
+                int l = property.propertyPath.Length - v;
+                string indexStr = property.propertyPath.Substring(v);
+                Debug.Log(indexStr);
+                if (!int.TryParse(indexStr, out index)) {
+                    // failed
+                    index = -1;
+                }
+                return true;
+            }
+            index = -1;
+            return false;
+        }
 
 
         public static T GetValueOnPropRefl<T>(this SerializedProperty property, string fieldname = null) {

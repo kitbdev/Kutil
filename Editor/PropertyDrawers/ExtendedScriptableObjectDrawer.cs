@@ -26,11 +26,19 @@ namespace Kutil.PropertyDrawers {
 
         public static readonly string extendedSOClass = "kutil-extented-so";
 
-//https://forum.unity.com/threads/uitoolkit-inspectorelement-does-not-draw-content-of-scriptableobject-correctly.1135846/
-        public VisualElement CreatePropertyGUI(SerializedProperty property) {
-        // public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+        Foldout hasValueFoldout;
+        VisualElement noValueHBox;
+        SerializedProperty fieldProperty;
+
+        SerializedObject hasValueSO;
+        VisualElement defaultInspector;
+        Object valueReference;
+
+        // public VisualElement CreatePropertyGUI(SerializedProperty property) {
+        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             VisualElement root = new VisualElement();
             root.AddToClassList(extendedSOClass);
+            this.fieldProperty = property;
 
             var type = GetFieldType();
             ExtendedSOAttribute extendedSOAttribute = type.GetCustomAttribute<ExtendedSOAttribute>(true);
@@ -42,116 +50,131 @@ namespace Kutil.PropertyDrawers {
                 return root;
             }
 
+            bool allowCreation = extendedSOAttribute?.allowCreation ?? true;
+
             ScriptableObject propertySO = null;
             if (!property.hasMultipleDifferentValues && property.serializedObject.targetObject != null && property.serializedObject.targetObject is ScriptableObject) {
                 propertySO = (ScriptableObject)property.serializedObject.targetObject;
             }
-            bool hasValue = property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue != null;
 
-            // todo this can change
-            if (hasValue) {
-                Foldout foldout = new Foldout();
-                // foldout.text = "test";
-                foldout.viewDataKey = $"{property.propertyPath}-foldout-datakey";
-                root.Add(foldout);
+            // has value ui
+            hasValueFoldout = new Foldout();
+            hasValueFoldout.name = "hasValueFoldout";
+            // foldout.text = "test";
+            hasValueFoldout.viewDataKey = $"{property.propertyPath}-foldout-datakey";
+            Toggle toggle = hasValueFoldout.Q<Toggle>();
+            var checkMark = toggle.Q("unity-checkmark");
+            checkMark.style.marginRight = 0;
+            root.Add(hasValueFoldout);
 
-                ObjectField objectField = new ObjectField(property.name);
-                objectField.objectType = type;
-                objectField.bindingPath = property.propertyPath;
-                // objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
-                objectField.style.paddingLeft = 2;
-                objectField.style.flexGrow = 1;
-                VisualElement foldoutLabelContainer = foldout.Q<Toggle>().Children().FirstOrDefault();
-                foldoutLabelContainer.Add(objectField);
+            string fieldName = property.displayName;
+            ObjectField hvObjectField = new ObjectField(fieldName);
+            hvObjectField.objectType = type;
+            hvObjectField.bindingPath = property.propertyPath;
+            hvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
+            hvObjectField.style.paddingLeft = 2;
+            hvObjectField.style.flexGrow = 1;
+            hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
+            VisualElement foldoutLabelContainer = toggle.Children().FirstOrDefault();
+            foldoutLabelContainer.Add(hvObjectField);
 
-                // todo 
-                SerializedObject newSO = new SerializedObject(property.objectReferenceValue);
-                // InspectorElement defaultInspector = new InspectorElement(property.objectReferenceValue);
-                VisualElement defaultInspector = new VisualElement();
-                FillDefaultInspector(defaultInspector, newSO, true, true);
-                defaultInspector.Bind(newSO);
-                foldout.contentContainer.Add(defaultInspector);
-                // newSO.Dispose();
-            } else {
-                VisualElement hbox = new VisualElement();
-                hbox.name = "hbox";
-                hbox.style.flexDirection = FlexDirection.Row;
-                hbox.style.justifyContent = Justify.SpaceBetween;
-                root.Add(hbox);
+            // AddInspector();
 
-                ObjectField objectField = new ObjectField(property.name);
-                objectField.bindingPath = property.propertyPath;
-                objectField.objectType = type;
-                objectField.AddToClassList(ObjectField.alignedFieldUssClassName);
-                hbox.Add(objectField);
+            // no value ui
+            noValueHBox = new VisualElement();
+            noValueHBox.name = "noValueHBox";
+            noValueHBox.style.flexDirection = FlexDirection.Row;
+            noValueHBox.style.justifyContent = Justify.SpaceBetween;
+            root.Add(noValueHBox);
 
+            ObjectField nvObjectField = new ObjectField(fieldName);
+            nvObjectField.bindingPath = property.propertyPath;
+            nvObjectField.objectType = type;
+            nvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
+            nvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
+            noValueHBox.Add(nvObjectField);
+
+            if (allowCreation) {
                 Button addButton = new Button();
                 addButton.style.marginLeft = 4;
                 addButton.style.marginRight = 4;
                 addButton.text = "Create";
-                hbox.Add(addButton);
+                if (type.IsAbstract) {
+                    // todo test!
+                    IEnumerable<Type> assignableTypes = type.Assembly.GetTypes().Where(t => type.IsAssignableFrom(t));
+                    addButton.AddManipulator(new ContextualMenuManipulator(evt => {
+                        foreach (var assignableType in assignableTypes) {
+                            if (assignableType.IsAbstract) continue;
+                            evt.menu.AppendAction(assignableType.Name, action => {
+                                property.objectReferenceValue = CreateAssetWithSavePrompt(assignableType as Type, GetSelectedAssetPath(property));
+                                property.serializedObject.ApplyModifiedProperties();
+                            }, DropdownMenuAction.AlwaysEnabled);
+                        }
+                    }));
+                } else {
+                    addButton.clicked += () => {
+                        // Debug.Log("create button clicked");
+                        property.objectReferenceValue = CreateAssetWithSavePrompt(type, GetSelectedAssetPath(property));
+                        UpdateUI();
+                    };
+                }
+                noValueHBox.Add(addButton);
             }
-
-            // root.RegisterCallback<GeometryChangedEvent>(OnGeoChanged);
             return root;
         }
-        void OnGeoChanged(GeometryChangedEvent changedEvent) {
 
-        }
-
-        // static VisualElement DrawScriptableObjectChildFieldsUIToolkit<T>(T objectReferenceValue) where T : ScriptableObject {
-        //     // Draw a background that shows us clearly which fields are part of the ScriptableObject
-        //     VisualElement root;
-        //     // todo
-        //     EditorGUI.indentLevel++;
-        //     EditorGUILayout.BeginVertical(GUI.skin.box);
-
-        //     var serializedObject = new SerializedObject(objectReferenceValue);
-        //     // Iterate over all the values and draw them
-        //     SerializedProperty prop = serializedObject.GetIterator();
-        //     if (prop.NextVisible(true)) {
-        //         do {
-        //             // Don't bother drawing the class file
-        //             if (prop.name == "m_Script") continue;
-        //             EditorGUILayout.PropertyField(prop, true);
-        //         }
-        //         while (prop.NextVisible(false));
-        //     }
-        //     if (GUI.changed)
-        //         serializedObject.ApplyModifiedProperties();
-        //     serializedObject.Dispose();
-        //     EditorGUILayout.EndVertical();
-        //     EditorGUI.indentLevel--;
-
-        //     return root;
-        // }
-        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, bool hideScript = false, bool hideSDMC = true) {
-            SerializedProperty property = serializedObject.GetIterator();
-            if (property.NextVisible(true)) // Expand first child.
-            {
-                do {
-                    if (property.propertyPath == "m_Script" && hideScript) {
-                        continue;
-                    }
-                    if (property.propertyPath == "m_SerializedDataModeController" && hideSDMC) {
-                        continue;
-                    }
-                    var field = new PropertyField(property.Copy());
-                    field.name = "PropertyField:" + property.propertyPath;
-                    // field.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
-
-
-                    if (property.propertyPath == "m_Script" && serializedObject.targetObject != null) {
-                        field.SetEnabled(false);
-                    }
-
-                    container.Add(field);
+        private void AddInspector() {
+            if (fieldProperty.objectReferenceValue != null) {
+                if (fieldProperty.objectReferenceValue == valueReference) {
+                    // already updated
+                    return;
                 }
-                while (property.NextVisible(false));
+                if (valueReference != null) {
+                    // clear the old SO
+                    ClearValueSO();
+                }
+                valueReference = fieldProperty.objectReferenceValue;
+                hasValueSO = new SerializedObject(fieldProperty.objectReferenceValue);
+                // this uses imgui still
+                // InspectorElement defaultInspector = new InspectorElement(property.objectReferenceValue);
+                // use an InspectorElement to allow certain decorators to find the proper serializedobject?
+                // InspectorElement inspectorParent = new InspectorElement();
+                // VisualElement defaultInspector = new VisualElement();
+                // FillDefaultInspector(defaultInspector, hasValueSO, true, true);
+                defaultInspector = new InspectorField(hasValueSO);
+                defaultInspector.Bind(hasValueSO);
+                hasValueFoldout.contentContainer.Add(defaultInspector);
+                // inspectorParent.Add(defaultInspector);
+            } else {
+                // remove old one, if there was one
+                ClearValueSO();
             }
         }
 
+        private void ClearValueSO() {
+            if (hasValueSO != null) {
+                hasValueSO.Dispose();
+                hasValueSO = null;
+            }
+            if (defaultInspector != null) {
+                hasValueFoldout.Clear();
+                // hasValueFoldout.contentContainer.Remove(defaultInspector);
+                defaultInspector = null;
+            }
+            valueReference = null;
+        }
 
+        void UpdateUI() {
+            bool hasValue = fieldProperty.propertyType == SerializedPropertyType.ObjectReference && fieldProperty.objectReferenceValue != null;
+            // Debug.Log($"Updating ui on {property.name} hasValue:{hasValue}");
+            hasValueFoldout.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
+            noValueHBox.style.display = !hasValue ? DisplayStyle.Flex : DisplayStyle.None;
+            AddInspector();
+        }
+
+
+
+        /// old IMGUI way
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
             float totalHeight = EditorGUIUtility.singleLineHeight;
@@ -290,130 +313,6 @@ namespace Kutil.PropertyDrawers {
             return selectedAssetPath;
         }
 
-        public static T _GUILayout<T>(string label, T objectReferenceValue, ref bool isExpanded) where T : ScriptableObject {
-            return _GUILayout<T>(new GUIContent(label), objectReferenceValue, ref isExpanded);
-        }
-
-        public static T _GUILayout<T>(GUIContent label, T objectReferenceValue, ref bool isExpanded) where T : ScriptableObject {
-            Rect position = EditorGUILayout.BeginVertical();
-
-            var propertyRect = Rect.zero;
-            var guiContent = label;
-            var foldoutRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, EditorGUIUtility.singleLineHeight);
-            if (objectReferenceValue != null) {
-                isExpanded = EditorGUI.Foldout(foldoutRect, isExpanded, guiContent, true);
-
-                var indentedPosition = EditorGUI.IndentedRect(position);
-                var indentOffset = indentedPosition.x - position.x;
-                propertyRect = new Rect(position.x + EditorGUIUtility.labelWidth - indentOffset, position.y, position.width - EditorGUIUtility.labelWidth - indentOffset, EditorGUIUtility.singleLineHeight);
-            } else {
-                // So yeah having a foldout look like a label is a weird hack 
-                // but both code paths seem to need to be a foldout or 
-                // the object field control goes weird when the codepath changes.
-                // I guess because foldout is an interactable control of its own and throws off the controlID?
-                foldoutRect.x += 12;
-                EditorGUI.Foldout(foldoutRect, isExpanded, guiContent, true, EditorStyles.label);
-
-                var indentedPosition = EditorGUI.IndentedRect(position);
-                var indentOffset = indentedPosition.x - position.x;
-                propertyRect = new Rect(position.x + EditorGUIUtility.labelWidth - indentOffset, position.y, position.width - EditorGUIUtility.labelWidth - indentOffset - 60, EditorGUIUtility.singleLineHeight);
-            }
-
-            EditorGUILayout.BeginHorizontal();
-            objectReferenceValue = EditorGUILayout.ObjectField(new GUIContent(" "), objectReferenceValue, typeof(T), false) as T;
-
-            if (objectReferenceValue != null) {
-
-                EditorGUILayout.EndHorizontal();
-                if (isExpanded) {
-                    DrawScriptableObjectChildFields(objectReferenceValue);
-                }
-            } else {
-                if (GUILayout.Button("Create", GUILayout.Width(buttonWidth))) {
-                    string selectedAssetPath = "Assets";
-                    var newAsset = CreateAssetWithSavePrompt(typeof(T), selectedAssetPath);
-                    if (newAsset != null) {
-                        objectReferenceValue = (T)newAsset;
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-            EditorGUILayout.EndVertical();
-            return objectReferenceValue;
-        }
-
-        static void DrawScriptableObjectChildFields<T>(T objectReferenceValue) where T : ScriptableObject {
-            // Draw a background that shows us clearly which fields are part of the ScriptableObject
-            EditorGUI.indentLevel++;
-            EditorGUILayout.BeginVertical(GUI.skin.box);
-
-            var serializedObject = new SerializedObject(objectReferenceValue);
-            // Iterate over all the values and draw them
-            SerializedProperty prop = serializedObject.GetIterator();
-            if (prop.NextVisible(true)) {
-                do {
-                    // Don't bother drawing the class file
-                    if (prop.name == "m_Script") continue;
-                    EditorGUILayout.PropertyField(prop, true);
-                }
-                while (prop.NextVisible(false));
-            }
-            if (GUI.changed)
-                serializedObject.ApplyModifiedProperties();
-            serializedObject.Dispose();
-            EditorGUILayout.EndVertical();
-            EditorGUI.indentLevel--;
-        }
-
-        public static T DrawScriptableObjectField<T>(GUIContent label, T objectReferenceValue, ref bool isExpanded, bool allowCreation = true) where T : ScriptableObject {
-            Rect position = EditorGUILayout.BeginVertical();
-
-            var propertyRect = Rect.zero;
-            var guiContent = label;
-            var foldoutRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, EditorGUIUtility.singleLineHeight);
-            if (objectReferenceValue != null) {
-                isExpanded = EditorGUI.Foldout(foldoutRect, isExpanded, guiContent, true);
-
-                var indentedPosition = EditorGUI.IndentedRect(position);
-                var indentOffset = indentedPosition.x - position.x;
-                propertyRect = new Rect(position.x + EditorGUIUtility.labelWidth - indentOffset, position.y, position.width - EditorGUIUtility.labelWidth - indentOffset, EditorGUIUtility.singleLineHeight);
-            } else {
-                // So yeah having a foldout look like a label is a weird hack 
-                // but both code paths seem to need to be a foldout or 
-                // the object field control goes weird when the codepath changes.
-                // I guess because foldout is an interactable control of its own and throws off the controlID?
-                foldoutRect.x += 12;
-                EditorGUI.Foldout(foldoutRect, isExpanded, guiContent, true, EditorStyles.label);
-
-                var indentedPosition = EditorGUI.IndentedRect(position);
-                var indentOffset = indentedPosition.x - position.x;
-                propertyRect = new Rect(position.x + EditorGUIUtility.labelWidth - indentOffset, position.y, position.width - EditorGUIUtility.labelWidth - indentOffset - 60, EditorGUIUtility.singleLineHeight);
-            }
-
-            EditorGUILayout.BeginHorizontal();
-            objectReferenceValue = EditorGUILayout.ObjectField(new GUIContent(" "), objectReferenceValue, typeof(T), false) as T;
-
-            if (objectReferenceValue != null) {
-                EditorGUILayout.EndHorizontal();
-                if (isExpanded) {
-
-                }
-            } else {
-                if (allowCreation) {
-                    if (GUILayout.Button("Create", GUILayout.Width(buttonWidth))) {
-                        string selectedAssetPath = "Assets";
-                        var newAsset = CreateAssetWithSavePrompt(typeof(T), selectedAssetPath);
-                        if (newAsset != null) {
-                            objectReferenceValue = (T)newAsset;
-                        }
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-            EditorGUILayout.EndVertical();
-            return objectReferenceValue;
-        }
-
         // Creates a new ScriptableObject via the default Save File panel
         static ScriptableObject CreateAssetWithSavePrompt(Type type, string path) {
             path = EditorUtility.SaveFilePanelInProject("Save ScriptableObject", type.Name + ".asset", "asset", "Enter a file name for the ScriptableObject.", path);
@@ -446,5 +345,69 @@ namespace Kutil.PropertyDrawers {
             serializedObject.Dispose();
             return false;
         }
+    }
+
+    /// <summary>
+    /// create a default inspector for a serialized object.
+    /// must bind yourself 
+    /// because the uitk InspectorElement uses imgui still.
+    /// </summary>
+    public class InspectorField : VisualElement {
+        public static readonly string inspectorFieldClass = "kutil-inspector-field";
+        SerializedObject serializedObject;
+        public SerializedObject SerializedObject => serializedObject;
+
+        public InspectorField(SerializedObject serializedObject, bool hideScript = true) {
+            // this.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            this.serializedObject = serializedObject;
+            this.AddToClassList(inspectorFieldClass);
+            this.AddToClassList(InspectorElement.ussClassName);
+            this.AddToClassList(InspectorElement.customInspectorUssClassName);
+            this.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
+            this.AddToClassList(InspectorElement.uIECustomVariantUssClassName);
+            this.style.paddingLeft = 0;
+            this.style.paddingTop = 0;
+            this.style.paddingRight = 0;
+            //? need prefab stuff
+            try {
+                FillDefaultInspector(this, serializedObject, hideScript, true);
+            } catch (System.Exception) {
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// create a default inspector for a serialized object. 
+        /// only using because the uitk InspectorElement uses imgui still
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="serializedObject"></param>
+        /// <param name="hideScript"></param>
+        /// <param name="hideSDMC"></param>
+        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, bool hideScript = false, bool hideSDMC = true) {
+            SerializedProperty property = serializedObject.GetIterator();
+            if (property.NextVisible(true)) // Expand first child.
+            {
+                do {
+                    if (property.propertyPath == "m_Script" && hideScript) {
+                        continue;
+                    }
+                    if (property.propertyPath == "m_SerializedDataModeController" && hideSDMC) {
+                        continue;
+                    }
+                    var field = new PropertyField(property.Copy());
+                    field.name = "PropertyField:" + property.propertyPath;
+
+                    if (property.propertyPath == "m_Script" && serializedObject.targetObject != null) {
+                        field.SetEnabled(false);
+                    }
+
+                    container.Add(field);
+                }
+                while (property.NextVisible(false));
+            }
+        }
+
     }
 }
