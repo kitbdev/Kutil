@@ -1,12 +1,21 @@
 using UnityEngine;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
 namespace Kutil {
     public static class BoundsIntExtensions {
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BoundsInt Create(Vector3Int min, Vector3Int max) {
+            BoundsInt b = new();
+            b.SetMinMax(min, max);
+            return b;
+        }
+
         /// <summary>
         /// Converts BoundsInt to Bounds.
         /// </summary>
@@ -251,6 +260,127 @@ namespace Kutil {
             return intersection;
         }
 
+
+        public static BoundsInt[] SplitBounds(BoundsInt bounds, Vector3Int pos, bool allowx = true, bool allowy = true, bool allowz = true) {
+            // todo > or >= ??
+            bool cutx = pos.x > bounds.xMin && pos.x < bounds.xMax && allowx;
+            bool cuty = pos.y > bounds.yMin && pos.y < bounds.yMax && allowy;
+            bool cutz = pos.z > bounds.zMin && pos.z < bounds.zMax && allowz;
+            // Debug.Log($"cutting {bounds} on {pos} allow:{allowx},{allowy},{allowz} cut:{cutx},{cuty},{cutz}");
+
+            Vector3Int size = (pos - bounds.min);
+            if (!cutx) {
+                size.x = bounds.size.x;
+            }
+            if (!cuty) {
+                size.y = bounds.size.y;
+            }
+            if (!cutz) {
+                size.z = bounds.size.z;
+            }
+            Vector3Int isize = bounds.size - size;
+
+            if (cutx && cuty && cutz) {
+                // cut into 8
+                return new BoundsInt[]{
+                    new(bounds.min, size),
+                    new(new(pos.x,        bounds.min.y, bounds.min.z), new(isize.x, size.y,  size.z)),
+                    new(new(bounds.min.x, pos.y,        bounds.min.z), new(size.x,  isize.y, size.z)),
+                    new(new(pos.x,        pos.y,        bounds.min.z), new(isize.x, isize.y, size.z)),
+                    new(new(bounds.min.x, bounds.min.y, pos.z),        new(size.x,  size.y,  isize.z)),
+                    new(new(pos.x,        bounds.min.y, pos.z),        new(isize.x, size.y,  isize.z)),
+                    new(new(bounds.min.x, pos.y,        pos.z),        new(size.x,  isize.y, isize.z)),
+                    new(pos, isize),
+                };
+            } else if (cutx && cuty && !cutz) {
+                // cut on x and y into 4
+                return new BoundsInt[]{
+                    new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
+                    new(new(pos.x, bounds.min.y, bounds.min.z), new(isize.x, size.y, size.z)),
+                    new(new(bounds.min.x, pos.y, bounds.min.z), new(size.x, isize.y, size.z)),
+                    new(new(pos.x, pos.y, bounds.min.z), new(isize.x, isize.y, size.z)),
+                };
+            } else if (cutx && !cuty && cutz) {
+                // cut on x and z into 4
+                return new BoundsInt[]{
+                    new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
+                    new(new(pos.x, bounds.min.y, bounds.min.z), new(isize.x, size.y, size.z)),
+                    new(new(bounds.min.x, bounds.min.y, pos.z), new(size.x, size.y, isize.z)),
+                    new(new(pos.x, bounds.min.y, pos.z), new(isize.x, size.y, isize.z)),
+                };
+            } else if (cutx && !cuty && !cutz) {
+                // cut only x
+                return new BoundsInt[]{
+                    new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
+                    new(new(pos.x, bounds.min.y, bounds.min.z), new(isize.x, size.y, size.z)),
+                };
+            } else if (!cutx && cuty && cutz) {
+                // cut on y and z into 4
+                return new BoundsInt[]{
+                    new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
+                    new(new(bounds.min.x, pos.y, bounds.min.z), new(size.x, isize.y, size.z)),
+                    new(new(bounds.min.x, bounds.min.y, pos.z), new(size.x, size.y, isize.z)),
+                    new(new(bounds.min.x, pos.y, pos.z), new(size.x, isize.y, isize.z)),
+                };
+            } else if (!cutx && cuty && !cutz) {
+                // cut only y
+                return new BoundsInt[]{
+                    new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
+                    new(new(bounds.min.x, pos.y, bounds.min.z), new(size.x, isize.y, size.z)),
+                };
+            } else if (!cutx && !cuty && cutz) {
+                // cut only z
+                return new BoundsInt[]{
+                    new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
+                    new(new(bounds.min.x, bounds.min.y, pos.z), new(size.x, size.y, isize.z)),
+                };
+            } else if (!cutx && !cuty && !cutz) {
+                // dont cut at all
+                return new BoundsInt[]{
+                    new(bounds.min, bounds.size)
+                };
+            }
+            return null;
+        }
+        // public static IEnumerable<BoundsInt> SplitBoundsR(BoundsInt bounds, Vector3Int pos, bool allowx = true, bool allowy = true, bool allowz = true) {
+        //     // todo test this please
+        //     // todo > or >= ??
+        //     bool cutx = pos.x > bounds.xMin && pos.x < bounds.xMax && allowx;
+        //     bool cuty = pos.y > bounds.yMin && pos.y < bounds.yMax && allowy;
+        //     bool cutz = pos.z > bounds.zMin && pos.z < bounds.zMax && allowz;
+        //     Debug.Log($"rcutting {bounds} on {pos} allow:{allowx},{allowy},{allowz} cut:{cutx},{cuty},{cutz}");
+        //     if (cutx) {
+        //         int cutxsize1 = pos.x - bounds.xMin;
+        //         int cutxsize2 = bounds.xMax - pos.x;
+        //         var b1 = new BoundsInt(bounds.min.x, bounds.min.y, bounds.min.z, cutxsize1, bounds.size.y, bounds.size.z);
+        //         var b2 = new BoundsInt(cutxsize1, bounds.min.y, bounds.min.z, cutxsize2, bounds.size.y, bounds.size.z);
+        // // ! this doesnt remove old ones that get split
+        //         IEnumerable<BoundsInt> boundsr = SplitBoundsR(b1, pos, false, allowy, allowz);
+        //         boundsr = boundsr.AppendRange(SplitBoundsR(b2, pos, false, allowy, allowz));
+        //         return boundsr;
+        //     }
+        //     if (cuty) {
+        //         int cutysize1 = pos.y - bounds.yMin;
+        //         int cutysize2 = bounds.yMax - pos.y;
+        //         var b1 = new BoundsInt(bounds.min.y, bounds.min.y, bounds.min.z, bounds.size.x, cutysize1, bounds.size.z);
+        //         var b2 = new BoundsInt(bounds.min.x, cutysize1, bounds.min.z, bounds.size.x, cutysize2, bounds.size.z);
+        //         IEnumerable<BoundsInt> boundsr = SplitBoundsR(b1, pos, allowx, false, allowz);
+        //         boundsr = boundsr.AppendRange(SplitBoundsR(b2, pos, allowx, false, allowz));
+        //         return boundsr;
+        //     }
+        //     if (cutz) {
+        //         int cutzsize1 = pos.z - bounds.zMin;
+        //         int cutzsize2 = bounds.zMax - pos.z;
+        //         var b1 = new BoundsInt(bounds.min.x, bounds.min.y, bounds.min.z, bounds.size.x, bounds.size.y, cutzsize1);
+        //         var b2 = new BoundsInt(bounds.min.x, bounds.min.y, cutzsize1, bounds.size.x, bounds.size.y, cutzsize2);
+        //         IEnumerable<BoundsInt> boundsr = SplitBoundsR(b1, pos, allowx, allowy, false);
+        //         boundsr = boundsr.AppendRange(SplitBoundsR(b2, pos, allowx, allowy, false));
+        //         return boundsr;
+        //     }
+        //     return bounds.InNewArray();
+        // }
+
+
         /// <summary>
         /// Returns true if bounds can be turned into one without adding new volume
         /// </summary>
@@ -391,6 +521,21 @@ namespace Kutil {
             Handles.DrawLine(poses[6], poses[7]);
             Handles.DrawLine(poses[5], poses[7]);
 #endif
+        }
+
+        /// <summary>
+        /// Simple bounds int comparer - position XYZ, size XYZ 
+        /// </summary>
+        public class BoundsIntComparer : IComparer<BoundsInt> {
+            public int Compare(BoundsInt x, BoundsInt y) {
+                if (x.position.x != y.position.x) return y.position.x - x.position.x;
+                if (x.position.y != y.position.y) return y.position.y - x.position.y;
+                if (x.position.z != y.position.z) return y.position.z - x.position.z;
+                if (x.size.x != y.size.x) return y.size.x - x.size.x;
+                if (x.size.y != y.size.y) return y.size.y - x.size.y;
+                if (x.size.z != y.size.z) return y.size.z - x.size.z;
+                return 0;
+            }
         }
     }
 }
