@@ -7,6 +7,10 @@ using UnityEngine.InputSystem;
 #endif
 
 namespace Kutil {
+    /// <summary>
+    /// Manages Pausing.
+    /// Must be only one PauseManager.
+    /// </summary>
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
     public class PauseManager : Singleton<PauseManager> {
@@ -49,8 +53,10 @@ namespace Kutil {
         [SerializeField] bool handleInput = true;
 #if ENABLE_INPUT_SYSTEM
         InputAction defaultPauseAction;
-        [Tooltip("Input Action Reference to override the default pause action (*/{menu},<Keyboard>/escape,<Gamepad>/start)")]
-        // [ConditionalHide(nameof(handleInput), true)]
+        // not */{menu}
+        // cannot be changed at runtime
+        [Tooltip("Input Action Reference to override the default pause action (<Keyboard>/escape,<Gamepad>/start)")]
+        [ConditionalHide(nameof(handleInput), true)]
         [SerializeField] InputActionReference overrideTogglePauseAction;
         InputActionReference usingIAR => overrideTogglePauseAction ?? InputActionReference.Create(defaultPauseAction);
 #endif

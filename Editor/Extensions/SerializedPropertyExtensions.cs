@@ -32,10 +32,10 @@ namespace Kutil {
                 Debug.LogError($"GetBindedPropertyFromDecorator mustbe called from a decorator root after GeometryChanged! no propertyField for '{rootElement.name}'");
                 return null;
             }
-        //     return GetBindedPropertyFromPropertyField(propertyField);
-        // }
-        // public static SerializedProperty GetBindedPropertyFromPropertyField(PropertyField propertyField) {
-        //     var rootElement = propertyField;
+            //     return GetBindedPropertyFromPropertyField(propertyField);
+            // }
+            // public static SerializedProperty GetBindedPropertyFromPropertyField(PropertyField propertyField) {
+            //     var rootElement = propertyField;
             // try to get on inspector
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
@@ -143,6 +143,19 @@ namespace Kutil {
             return default;
         }
         public static bool TryGetValueOnPropRefl<T>(this SerializedProperty property, string fieldname, out T value) {
+            try {
+                if (property == null || property.serializedObject == null || property.serializedObject.targetObject == null || fieldname == null) {
+                    value = default;
+                    return false;
+                }
+            } catch (System.ArgumentNullException e) {
+                // sometimes serialized property can be unset and not register as null...
+                //ArgumentNullException: Value cannot be null.
+                // Parameter name: _unity_self
+                Debug.LogError("TryGetValueOnPropRefl property failed: " + e.Message);
+                value = default;
+                return false;
+            }
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
             string path = fieldname == null ? property.propertyPath :
                 property.propertyPath.Replace(property.name, fieldname);
@@ -154,6 +167,10 @@ namespace Kutil {
             return false;
         }
         public static bool TrySetValueOnPropRefl(this SerializedProperty property, object value, string fieldname = null) {
+            if (property == null || property.serializedObject == null || property.serializedObject.targetObject == null) {
+                value = default;
+                return false;
+            }
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
             string path = fieldname == null ? property.propertyPath :
                 property.propertyPath.Replace(property.name, fieldname);

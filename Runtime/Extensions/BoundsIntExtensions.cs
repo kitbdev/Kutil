@@ -30,14 +30,14 @@ namespace Kutil {
         /// <summary>
         /// Flattens into a RectInt. Removes the Z axis. Can Swizzle for different axis.
         /// </summary>
-        /// <param name="swizzle">Swizzle to flatten on other axis</param>
+        /// <param name="swizzle">Will drop the third swizzle axis. ex: XYZ drops the Z axis</param>
         public static Rect AsRect(this Bounds bounds, GridLayout.CellSwizzle swizzle = default) {
             return new Rect((Vector2)Grid.Swizzle(swizzle, bounds.min), (Vector2)Grid.Swizzle(swizzle, bounds.size));
         }
         /// <summary>
         /// Flattens into a RectInt. Removes the Z axis. Can Swizzle for different axis.
         /// </summary>
-        /// <param name="swizzle">Swizzle to flatten on other axis</param>
+        /// <param name="swizzle">Will drop the third swizzle axis. ex: XYZ drops the Z axis</param>
         public static RectInt AsRectInt(this BoundsInt bounds, GridLayout.CellSwizzle swizzle = default) {
             return new RectInt(Vector2Int.FloorToInt((Vector2)Grid.Swizzle(swizzle, bounds.min)),
                 Vector2Int.FloorToInt(((Vector2)Grid.Swizzle(swizzle, bounds.size))));
@@ -70,6 +70,11 @@ namespace Kutil {
             return (bounds.min.x <= other.max.x) && (bounds.max.x >= other.min.x) &&
                 (bounds.min.y <= other.max.y) && (bounds.max.y >= other.min.y) &&
                 (bounds.min.z <= other.max.z) && (bounds.max.z >= other.min.z);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EncapsulateBoundsInt(this ref BoundsInt bounds, BoundsInt other) {
+            bounds.Encapsulate(other.min);
+            bounds.Encapsulate(other.max);
         }
         /// <summary>
         /// Grows the bounds to include the point.
@@ -233,6 +238,68 @@ namespace Kutil {
             return closestPoint;
         }
 
+        /// <summary>
+        /// Get the BoundsInt that intersects these two boundsints. assumes they do intersect.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BoundsInt GetIntersection(this BoundsInt bounds, BoundsInt other) {
+            BoundsInt intersection = new();
+            intersection.SetMinMax(Vector3Int.Max(bounds.min, other.min), Vector3Int.Min(bounds.max, other.max));
+            return intersection;
+        }
+
+        /// <summary>
+        /// Returns true if bounds can be turned into one without adding new volume
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public static bool CanMergeBounds(this BoundsInt bounds, BoundsInt other) {
+            // contain each other entirely
+            if (bounds.ContainsBounds(other) || other.ContainsBounds(bounds)) return true;
+            // share 2 axis
+            if (bounds.AsRectInt(GridLayout.CellSwizzle.XYZ).Equals(other.AsRectInt(GridLayout.CellSwizzle.XYZ))) return true;
+            if (bounds.AsRectInt(GridLayout.CellSwizzle.XZY).Equals(other.AsRectInt(GridLayout.CellSwizzle.XZY))) return true;
+            if (bounds.AsRectInt(GridLayout.CellSwizzle.YZX).Equals(other.AsRectInt(GridLayout.CellSwizzle.YZX))) return true;
+
+            return false;
+        }
+        public static BoundsInt MergeBounds(this BoundsInt bounds, BoundsInt other) {
+            // contain each other entirely
+            if (bounds.ContainsBounds(other)) return bounds;
+            if (other.ContainsBounds(bounds)) return other;
+            // share a rectint
+            if (bounds.AsRectInt(GridLayout.CellSwizzle.XYZ).Equals(other.AsRectInt(GridLayout.CellSwizzle.XYZ))) {
+                var b = new BoundsInt();
+                b.SetMinMax(new(bounds.xMin, bounds.yMin, Mathf.Min(bounds.zMin, other.zMin)),
+                            new(bounds.xMax, bounds.yMax, Mathf.Max(bounds.zMax, other.zMax)));
+                return b;
+            }
+            if (bounds.AsRectInt(GridLayout.CellSwizzle.XZY).Equals(other.AsRectInt(GridLayout.CellSwizzle.XZY))) {
+                var b = new BoundsInt();
+                b.SetMinMax(new(bounds.xMin, Mathf.Min(bounds.yMin, other.yMin), bounds.zMin),
+                            new(bounds.xMax, Mathf.Max(bounds.yMax, other.yMax), bounds.zMax));
+                return b;
+            }
+            if (bounds.AsRectInt(GridLayout.CellSwizzle.YZX).Equals(other.AsRectInt(GridLayout.CellSwizzle.YZX))) {
+                var b = new BoundsInt();
+                b.SetMinMax(new(Mathf.Min(bounds.xMin, other.xMin), bounds.yMin, bounds.zMin),
+                            new(Mathf.Max(bounds.xMax, other.xMax), bounds.yMax, bounds.zMax));
+                return b;
+            }
+            throw new System.Exception($"BoundsInt cannot merge {bounds} and {other}");
+            // return default;
+        }
+
+
+        /// <summary>
+        /// Get the 8 corners for this boundsint
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
         public static Vector3Int[] CornerPositions(this BoundsInt bounds) {
             return new Vector3Int[]{
                 new Vector3Int(bounds.xMin, bounds.yMin, bounds.zMin),
