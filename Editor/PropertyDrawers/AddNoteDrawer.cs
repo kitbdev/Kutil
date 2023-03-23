@@ -13,33 +13,69 @@ namespace Kutil.PropertyDrawers {
 
         SerializedProperty property;
         Label note;
+        InspectorElement inspectorElement;
 
         AddNoteAttribute addNote => (AddNoteAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
-            
+
             note = new Label();
             note.AddToClassList(addNoteClass);
             note.enableRichText = addNote.richText;
+            note.name = "AddNoteLabel";
 
-            note.text = GetNoteText(note);
+            note.text = addNote.noteLabel ?? "missing label!";
 
-            if (addNote.dynamic) {
-                // todo update dynamically if dynamic
-                note.RegisterCallback<GeometryChangedEvent>(ce => {
-                    note.text = GetNoteText(note);
-                    Debug.Log($"note {note.name} {note.text} changed!");
-                });
+            if (addNote.useField) {
+                note.RegisterCallback<GeometryChangedEvent>(OnGeoChanged);
             }
-            
+
             return note;
         }
 
-        public string GetNoteText(VisualElement root) {
+        private void OnGeoChanged(GeometryChangedEvent ce) {
+            note.UnregisterCallback<GeometryChangedEvent>(OnGeoChanged);
+
             if (addNote.dynamic) {
-                property ??= SerializedPropertyExtensions.GetBindedPropertyFromDecorator(root);
+                var propertyField = note.GetFirstAncestorOfType<PropertyField>();
+                if (propertyField == null) {
+                    Debug.LogError($"{GetType().Name} decorator failed to find containing property!");
+                    return;
+                }
+                // get inspector element to register an onvalidate callback
+                inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
+                if (inspectorElement == null) {
+                    Debug.LogError($"AddNote - inspectorElement null!");
+                    return;
+                }
+                // this properly responds to all changes
+                inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+                note.RegisterCallback<DetachFromPanelEvent>(OnDetach);
+            }
+            UpdateLabel();
+        }
+
+        private void OnUpdate(SerializedPropertyChangeEvent changeEvent) => UpdateLabel();
+        void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
+            inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+        }
+        public void UpdateLabel() {
+            note.text = GetNoteText(note);
+            // Debug.Log($"note {note.name} changed to '{note.text}' from source {addNote.sourceField} on {property?.propertyPath??"none"}");
+        }
+
+        public string GetNoteText(VisualElement root) {
+            if (addNote.useField) {
+                if (property == null) property = SerializedPropertyExtensions.GetBindedPropertyFromDecorator(root);
+                if (property == null) {
+                    Debug.LogError("AddNote use field but no prop found for " + addNote.noteLabel);
+                    return "Error for " + addNote.sourceField;
+                }
                 if (property.TryGetValueOnPropRefl<string>(addNote.sourceField, out var v)) {
                     return v;
+                }
+                if (property.TryGetValueOnPropRefl<object>(addNote.sourceField, out var o)) {
+                    return o.ToString();
                 }
             }
             return addNote.noteLabel;

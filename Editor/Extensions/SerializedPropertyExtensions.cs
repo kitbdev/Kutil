@@ -29,10 +29,13 @@ namespace Kutil {
         public static SerializedProperty GetBindedPropertyFromDecorator(VisualElement rootElement) {
             PropertyField propertyField = rootElement.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
-                Debug.LogError($"GetBindedPropertyFromDecorator mustbe called from a decorator root after GeometryChanged! {rootElement.name}");
+                Debug.LogError($"GetBindedPropertyFromDecorator mustbe called from a decorator root after GeometryChanged! no propertyField for '{rootElement.name}'");
                 return null;
             }
-
+        //     return GetBindedPropertyFromPropertyField(propertyField);
+        // }
+        // public static SerializedProperty GetBindedPropertyFromPropertyField(PropertyField propertyField) {
+        //     var rootElement = propertyField;
             // try to get on inspector
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
@@ -107,7 +110,7 @@ namespace Kutil {
 
 
         // public static string GetElementName(this SerializedProperty property) {
-            // this is literally what .displayName does
+        // this is literally what .displayName does
         //     if (property.IsElement(out var i)) {
         //         return $"Element {i}";
         //     }
