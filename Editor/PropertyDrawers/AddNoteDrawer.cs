@@ -18,6 +18,7 @@ namespace Kutil.PropertyDrawers {
         AddNoteAttribute addNote => (AddNoteAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
+            property = null;
 
             note = new Label();
             note.AddToClassList(addNoteClass);
@@ -58,6 +59,7 @@ namespace Kutil.PropertyDrawers {
         private void OnUpdate(SerializedPropertyChangeEvent changeEvent) => UpdateLabel();
         void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
             inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+            property = null;
         }
         public void UpdateLabel() {
             note.text = GetNoteText(note);
@@ -69,7 +71,7 @@ namespace Kutil.PropertyDrawers {
                 if (property == null) property = SerializedPropertyExtensions.GetBindedPropertyFromDecorator(root);
                 if (property == null) {
                     Debug.LogError("AddNote use field but no prop found for " + addNote.noteLabel);
-                    return "Error for " + addNote.sourceField;
+                    return $"Error on property for {addNote.sourceField}";
                 }
                 if (property.TryGetValueOnPropRefl<string>(addNote.sourceField, out var v)) {
                     return v;
@@ -77,6 +79,7 @@ namespace Kutil.PropertyDrawers {
                 if (property.TryGetValueOnPropRefl<object>(addNote.sourceField, out var o)) {
                     return o.ToString();
                 }
+                return $"Error no value found: {addNote.sourceField}";
             }
             return addNote.noteLabel;
         }

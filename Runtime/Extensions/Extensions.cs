@@ -141,5 +141,16 @@ namespace Kutil {
             value += min + (value < 0 ? range : 0);
             return value;
         }
+        public static int Wrap(int value, int min, int max) {
+            int range = max - min;
+            if (range <= Mathf.Epsilon) {
+                // range is negative or zero!
+                Debug.LogWarning($"Invalid wrap min max - {min},{max} value:{value}");
+                return value;
+            }
+            value = (value - min) % range;
+            value += min + (value < 0 ? range : 0);
+            return value;
+        }
     }
 }
