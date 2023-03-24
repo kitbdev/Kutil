@@ -8,16 +8,14 @@ using UnityEngine.UIElements;
 using Kutil.PropertyDrawers;
 
 namespace Kutil {
-    // by https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
+    // originally from https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
     // Unity editor extension providing value get/set methods for SerializedProperty. This simplifies writing PropertyDrawers against non-trivial objects.
 
     /// <summary>
-    // Provide simple value get/set methods for SerializedProperty.  Can be used with
-    // any data types and with arbitrarily deeply-pathed properties.
-    /// 
+    /// Provide simple value get/set methods for SerializedProperty.  Can be used with
+    /// any data types and with arbitrarily deeply-pathed properties.
     /// </summary>
     public static class SerializedPropertyExtensions {
-
 
         /// <summary>
         /// Get the serialized property from a Decorator drawer.

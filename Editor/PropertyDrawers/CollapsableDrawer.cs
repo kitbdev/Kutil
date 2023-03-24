@@ -41,7 +41,7 @@ namespace Kutil.PropertyDrawers {
             if (propertyField == null) {
                 Debug.LogError($"CollapsableDrawer failed to find containing property! {collapsableDecorator.name}");
                 return;
-            }
+            } 
             // Debug.Log("collapsable once "+propertyField.name);
             CreateCollapsable(propertyField);
         }
@@ -156,25 +156,36 @@ namespace Kutil.PropertyDrawers {
             VisualElement[] childs = parent.Children()
                     .SkipWhile((el) => el != cPropVE)
                     .TakeWhile((el, i) => {
+                        // return true to include this element
                         if (i == 0) return true;
 
                         // todo end only if before field?
                         bool isEndMarker = el.Q(null, collapsableEndClass) != null;
                         if (isEndMarker) return false;
 
-                        // todo test all cases
-                        bool isSpaceDec = el.Q(null, unitySpaceDecoratorClass) == null;
-                        bool takeSpaceDec = collapsable.includeSpaces || isSpaceDec;
-                        bool isHeaderDec = el.Q(null, unityHeaderDecoratorClass) == null;
-                        bool takeHeaderDec = collapsable.includeHeaders || isHeaderDec;
-                        bool takeOtherDec = isSpaceDec || isHeaderDec || (collapsable.includeOtherDecorators || el.Q(null, unityDecoratorContainerClass) == null);
-                        bool takeDec = takeSpaceDec && takeHeaderDec && takeOtherDec;
-                        // ? any other end markers?
                         // dont allow if is another collapsable
                         bool isCollapsable = el.Q(null, collapsableClass) != null
                                             || el.Q(null, collapsableBaseClass) != null
                                             || el.Q(null, collapsableDecoratorClass) != null;
-                        return takeDec && !isCollapsable;
+                        if (isCollapsable) return false;
+
+                        // todo test all cases
+                        bool isHeaderDec = el.Q(null, unityHeaderDecoratorClass) != null;
+                        if (!collapsable.includeHeaders && isHeaderDec) return false;
+
+                        // bool takeHeaderDec = collapsable.includeHeaders || isHeaderDec;
+                        bool isSpaceDec = el.Q(null, unitySpaceDecoratorClass) != null;
+                        if (!collapsable.includeSpaces && isSpaceDec) return false;
+
+                        // bool takeSpaceDec = collapsable.includeSpaces || isSpaceDec;
+                        bool isDec = el.Q(null, unityDecoratorContainerClass) != null;
+                        bool isOtherDec = isDec && !isSpaceDec && !isHeaderDec;
+                        if (!collapsable.includeOtherDecorators && isOtherDec) return false;
+                        // bool takeOtherDec = isSpaceDec || isHeaderDec || (collapsable.includeOtherDecorators || isDec);
+                        // bool takeDec = takeSpaceDec && takeHeaderDec && takeOtherDec;
+                        // ? any other end markers?
+                        // return takeDec;
+                        return true;
                     })
                     .ToArray();
 
