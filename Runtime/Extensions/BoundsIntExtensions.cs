@@ -81,6 +81,13 @@ namespace Kutil {
                 (bounds.min.z <= other.max.z) && (bounds.max.z >= other.min.z);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IntersectsAndOverlaps(this BoundsInt bounds, BoundsInt other) {
+            // return bounds.AsBounds().Intersects(other.AsBounds());
+            return (bounds.min.x < other.max.x) && (bounds.max.x > other.min.x) &&
+                (bounds.min.y < other.max.y) && (bounds.max.y > other.min.y) &&
+                (bounds.min.z < other.max.z) && (bounds.max.z > other.min.z);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EncapsulateBoundsInt(this ref BoundsInt bounds, BoundsInt other) {
             bounds.Encapsulate(other.min);
             bounds.Encapsulate(other.max);
@@ -498,6 +505,16 @@ namespace Kutil {
             System.Span<Vector3> poses = new(points);
             transform.TransformPoints(poses, poses);
             // Vector3[] poses = bounds.CornerPositions().Select(p => transform.TransformPoint(p)).ToArray();
+            HandlesDrawCube(poses.ToArray());
+        }
+        /// <summary>
+        /// draw the bounds using handles
+        /// </summary>
+        public static void DrawGizmosBounds(this BoundsInt bounds, Transform transform, Grid grid) {
+            Vector3Int[] points = bounds.CornerPositions();
+            var ps = points.Select(p => grid.CellToLocal(p)).ToArray();
+            System.Span<Vector3> poses = new(ps);
+            transform.TransformPoints(poses, poses);
             HandlesDrawCube(poses.ToArray());
         }
 

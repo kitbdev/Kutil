@@ -103,6 +103,7 @@ namespace Kutil {
         }
 #if ENABLE_INPUT_SYSTEM
         void TogglePauseInput(InputAction.CallbackContext cc) {
+            if (debug) Debug.Log("pause input");
             TogglePause();
         }
 #endif
