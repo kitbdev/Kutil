@@ -7,6 +7,16 @@ using UnityEditor;
 #endif
 
 namespace Kutil {
+    public static class BoundsExtensions {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Bounds Scale(this Bounds bounds, Vector3 scale) {
+            return new Bounds(bounds.center, Vector3.Scale(bounds.size, scale));
+        }
+        public static Bounds Scale(this Bounds bounds, float scale) {
+            return new Bounds(bounds.center, bounds.size * scale);
+        }
+
+    }
     public static class BoundsIntExtensions {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -28,7 +38,7 @@ namespace Kutil {
             return new BoundsInt(bounds.position, bounds.size);
         }
         /// <summary>
-        /// Converts Bounds to BoundsInt. expands volume if necessary
+        /// Converts Bounds to BoundsInt. expands volume if necessary, using floor and ceil
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BoundsInt AsBoundsInt(this Bounds bounds) {
@@ -70,6 +80,7 @@ namespace Kutil {
 
         /// <summary>
         /// Does another bounding box intersect with this bounding box?
+        /// includes just touching
         /// </summary>
         /// <param name="other"></param>
         /// <returns>true if intersects</returns>
@@ -80,6 +91,12 @@ namespace Kutil {
                 (bounds.min.y <= other.max.y) && (bounds.max.y >= other.min.y) &&
                 (bounds.min.z <= other.max.z) && (bounds.max.z >= other.min.z);
         }
+        /// <summary>
+        /// Does another bounding box intersect with this bounding box?
+        /// does not include just touching, must be some overlap
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns>true if intersects</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IntersectsAndOverlaps(this BoundsInt bounds, BoundsInt other) {
             // return bounds.AsBounds().Intersects(other.AsBounds());

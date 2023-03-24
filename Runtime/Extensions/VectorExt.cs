@@ -30,6 +30,7 @@ namespace Kutil {
                 Mathf.Abs(vec.z)
             );
         }
+        /// <summary>Divides each component by given vector</summary>
         public static Vector3 Div(this Vector3 vec, Vector3 other) {
             return new Vector3(
                 vec.x / other.x,

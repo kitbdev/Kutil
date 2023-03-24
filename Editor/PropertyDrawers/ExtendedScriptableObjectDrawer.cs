@@ -61,6 +61,8 @@ namespace Kutil.PropertyDrawers {
             hasValueFoldout = new Foldout();
             hasValueFoldout.name = "hasValueFoldout";
             // foldout.text = "test";
+            // start closed
+            hasValueFoldout.value = false;
             hasValueFoldout.viewDataKey = $"{property.propertyPath}-foldout-datakey";
             Toggle toggle = hasValueFoldout.Q<Toggle>();
             toggle.AddToClassList(Toggle.alignedFieldUssClassName);

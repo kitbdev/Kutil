@@ -54,10 +54,12 @@ namespace Kutil {
         /// </summary>
         /// <param name="t"></param>
         public static void DestroyAllChildren(this Transform t) {
-            for (int i = t.childCount - 1; i >= 0; i--) {
-                if (Application.isPlaying) {
+            if (Application.isPlaying) {
+                for (int i = t.childCount - 1; i >= 0; i--) {
                     UnityEngine.Object.Destroy(t.GetChild(i).gameObject);
-                } else {
+                }
+            } else {
+                for (int i = t.childCount - 1; i >= 0; i--) {
                     UnityEngine.Object.DestroyImmediate(t.GetChild(i).gameObject);
                 }
             }
