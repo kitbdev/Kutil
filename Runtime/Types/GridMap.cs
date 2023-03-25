@@ -439,7 +439,7 @@ namespace Kutil {
 #if UNITY_EDITOR
             Handles.color = Color.gray;
 
-            bounds.DrawGizmosBounds();
+            bounds.DrawBoundsHandles();
 
             Handles.color = Color.white;
 #endif

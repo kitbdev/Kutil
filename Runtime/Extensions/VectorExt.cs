@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Mathematics;
+using System.Linq;
 
 namespace Kutil {
     public static class Vector3Ext {
@@ -68,6 +70,13 @@ namespace Kutil {
                 Mathf.Abs(vec.z)
             );
         }
+        // public static Vector3Int Min(params Vector3Int[] vecs) {
+        //     return new Vector3Int(
+        //         Mathf.Min(vecs.Select(vecs => vecs.x).ToArray()),
+        //         Mathf.Min(vecs.Select(vecs => vecs.y).ToArray()),
+        //         Mathf.Min(vecs.Select(vecs => vecs.z).ToArray())
+        //     );
+        // }
         public static int ManhattanDistance(this Vector3Int vec) {
             return Mathf.Abs(vec.x) + Mathf.Abs(vec.y) + Mathf.Abs(vec.z);
         }

@@ -58,7 +58,7 @@ namespace Kutil {
         public IEnumerable<TCellObject> GetAllCells() => cells.Select(kvp => kvp.Value);
 
         public bool AtBoundEdge(Vector3Int coord) {
-            return bounds.IsOnBorder(coord, true);
+            return bounds.IsOnBorder(coord);
         }
 
 

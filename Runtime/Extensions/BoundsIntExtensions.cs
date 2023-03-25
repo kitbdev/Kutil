@@ -1,4 +1,5 @@
 using UnityEngine;
+// using Unity.Mathematics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
@@ -18,6 +19,15 @@ namespace Kutil {
 
     }
     public static class BoundsIntExtensions {
+
+        /*
+            Note: boundsint is (min-inclusive, max-exclusive) by default
+            ex - for regular points boundsint.contains(boundsint.max) returns false
+            ex - allPositionsWithin goes from min to (max-Vector3Int.one)
+            helps with iterating and size calculations being 0-indexed
+        */
+
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BoundsInt Create(Vector3Int min, Vector3Int max) {
@@ -62,7 +72,7 @@ namespace Kutil {
                 Vector2Int.FloorToInt(((Vector2)Grid.Swizzle(swizzle, bounds.size))));
         }
         /// <summary>
-        /// Returns true if this BoundsInt contains another entirely
+        /// Returns true if this BoundsInt contains another entirely.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsBounds(this BoundsInt bounds, BoundsInt smaller) {
@@ -76,38 +86,45 @@ namespace Kutil {
 
         // copy bounds functionality
         // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Geometry/Bounds.cs
+        // and rectint https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Geometry/RectInt.cs
         // ? rewrite for faster performance
 
         /// <summary>
         /// Does another bounding box intersect with this bounding box?
-        /// includes just touching
+        /// includes just touching.
+        /// recommended to use Overlaps() by default instead
         /// </summary>
         /// <param name="other"></param>
         /// <returns>true if intersects</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Intersects(this BoundsInt bounds, BoundsInt other) {
-            // return bounds.AsBounds().Intersects(other.AsBounds());
-            return (bounds.min.x <= other.max.x) && (bounds.max.x >= other.min.x) &&
-                (bounds.min.y <= other.max.y) && (bounds.max.y >= other.min.y) &&
-                (bounds.min.z <= other.max.z) && (bounds.max.z >= other.min.z);
+        public static bool IntersectsOrTouches(this BoundsInt bounds, BoundsInt other) {
+            return other.xMin <= bounds.xMax
+                && other.xMax >= bounds.xMin
+                && other.yMin <= bounds.yMax
+                && other.yMax >= bounds.yMin
+                && other.zMin <= bounds.zMax
+                && other.zMax >= bounds.zMin;
         }
         /// <summary>
-        /// Does another bounding box intersect with this bounding box?
+        /// Does this bounding box overlap with another?
         /// does not include just touching, must be some overlap
         /// </summary>
         /// <param name="other"></param>
-        /// <returns>true if intersects</returns>
+        /// <returns>true if overlaps</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IntersectsAndOverlaps(this BoundsInt bounds, BoundsInt other) {
-            // return bounds.AsBounds().Intersects(other.AsBounds());
-            return (bounds.min.x < other.max.x) && (bounds.max.x > other.min.x) &&
-                (bounds.min.y < other.max.y) && (bounds.max.y > other.min.y) &&
-                (bounds.min.z < other.max.z) && (bounds.max.z > other.min.z);
+        public static bool Overlaps(this BoundsInt bounds, BoundsInt other) {
+            return other.xMin < bounds.xMax
+                && other.xMax > bounds.xMin
+                && other.yMin < bounds.yMax
+                && other.yMax > bounds.yMin
+                && other.zMin < bounds.zMax
+                && other.zMax > bounds.zMin;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EncapsulateBoundsInt(this ref BoundsInt bounds, BoundsInt other) {
-            bounds.Encapsulate(other.min);
-            bounds.Encapsulate(other.max);
+            // bounds.Encapsulate(other.min);
+            // bounds.Encapsulate(other.max);
+            bounds.SetMinMax(Vector3Int.Min(bounds.min, other.min), Vector3Int.Max(bounds.max, other.max));
         }
         /// <summary>
         /// Grows the bounds to include the point.
@@ -115,16 +132,13 @@ namespace Kutil {
         /// <param name="newPoint"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Encapsulate(this ref BoundsInt bounds, Vector3Int newPoint) {
-            // var b = bounds.AsBounds();
-            // b.Encapsulate(newPoint);
-            // var bi = b.AsBoundsInt();
-            // bounds.SetMinMax(bi.min, bi.max);
             // Debug.Log($"bounds encapsulate o:{bounds} p:{newPoint} min:{Vector3Int.Min(bounds.min, newPoint)}, max:{Vector3Int.Max(bounds.max, newPoint)}");
             bounds.SetMinMax(Vector3Int.Min(bounds.min, newPoint), Vector3Int.Max(bounds.max, newPoint));
             // Debug.Log($"new bounds:{bounds}");
         }
         /// <summary>
-        /// Grows the bounds to include the point. Inclusive
+        /// Grows the bounds to include the point. 
+        /// treats the new point as Inclusive, includes points on the max border
         /// </summary>
         /// <param name="newPoint"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -135,40 +149,42 @@ namespace Kutil {
             // Debug.Log($"new bounds:{bounds}");
         }
         /// <summary>
-        /// Expand the bounds by increasing its size by amount along each side
+        /// Expand the bounds by increasing its size by amount along each axis
         /// </summary>
         /// <param name="amount"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Expand(this ref BoundsInt bounds, int amount) {
-            // var b = bounds.AsBounds();
-            // b.Expand(amount);
-            // var bi = b.AsBoundsInt();
-            // bounds.SetMinMax(bi.min, bi.max);
             bounds.Expand(new Vector3Int(amount, amount, amount));
         }
         /// <summary>
-        /// Expand the bounds by increasing its size by amount along each side
+        /// Expand the bounds by increasing its size by amount along each axis.
+        /// only moves the maximum point if size and amount are positive.
+        /// if size is negative, amount should also be negative to expand.
         /// </summary>
         /// <param name="amount"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Expand(this ref BoundsInt bounds, Vector3Int amount) {
-            // var b = bounds.AsBounds();
-            // b.Expand(amount);
-            // var bi = b.AsBoundsInt();
-            // bounds.SetMinMax(bi.min, bi.max);
+            bounds.size += amount;
+        }
+        /// <summary>
+        /// Expand the bounds by moving its minimum point by amount.
+        /// only moves the minimum point if size and amount are positive.
+        /// if size is negative, amount should also be negative to expand.
+        /// </summary>
+        /// <param name="amount"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExpandMin(this ref BoundsInt bounds, Vector3Int amount) {
+            bounds.position -= amount;
             bounds.size += amount;
         }
 
-        public static Vector3Int CenterInt(this BoundsInt bounds) => bounds.position + bounds.size / 2;
+        public static Vector3Int CenterIntFloored(this BoundsInt bounds) => bounds.position + bounds.size / 2;
+        public static Vector3Int CenterIntRounded(this BoundsInt bounds) =>
+            bounds.position + Vector3Int.RoundToInt((Vector3)bounds.size / 2f);
 
-        // /// <summary>
-        // /// Returns true if this BoundsInt contains another entirely
-        // /// </summary>
-        // public static bool ContainsInclusive(this BoundsInt bounds, Vector3Int point) {
-        //     return bounds.Contains(point)||bounds;
-        // }
         /// <summary>
-        /// grows bounds to include top right corner
+        /// grows bounds to include max(top,right,frwd) corner.
+        /// ! doesnt actually change other boundsint method functionality
         /// </summary>
         /// <returns>new boundsint</returns>
         public static BoundsInt MakeInclusive(this BoundsInt bounds) {
@@ -177,7 +193,7 @@ namespace Kutil {
             return b;
         }
         /// <summary>
-        /// shrinks bounds to exclude top right corner
+        /// shrinks bounds to exclude max(top,right,frwd) corner
         /// </summary>
         /// <returns>new boundsint</returns>
         public static BoundsInt MakeExclusive(this BoundsInt bounds) {
@@ -190,18 +206,16 @@ namespace Kutil {
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="point"></param>
-        /// <param name="inclusive">are the bounds inclusive</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsOnBorder(this BoundsInt bounds, Vector3Int point, bool inclusive = false) {
-            int inc = inclusive ? -1 : 0;
-            return
-                point.x == bounds.xMin ||
-                point.x == bounds.xMax + inc ||
-                point.y == bounds.yMin ||
-                point.y == bounds.yMax + inc ||
-                point.z == bounds.zMin ||
-                point.z == bounds.zMax + inc;
+        public static bool IsOnBorder(this BoundsInt bounds, Vector3Int point) {
+            return bounds.Contains(point) && (
+                    point.x == bounds.xMin ||
+                    point.x == bounds.xMax - 1 ||
+                    point.y == bounds.yMin ||
+                    point.y == bounds.yMax - 1 ||
+                    point.z == bounds.zMin ||
+                    point.z == bounds.zMax - 1);
         }
         /// <summary>
         /// Returns the Euclidean distance to the point from the closest point on the border.
@@ -284,9 +298,22 @@ namespace Kutil {
             return intersection;
         }
 
-
-        public static BoundsInt[] SplitBounds(BoundsInt bounds, Vector3Int pos, bool allowx = true, bool allowy = true, bool allowz = true) {
-            // todo > or >= ??
+        /// <summary>
+        /// Splits the bounds into mutliple based on the given position.
+        /// pos acts as a plane on each axis that will split the bounds.
+        /// will return 1-8 new boundsInts.
+        /// new boundInts will start at an axis of pos
+        /// </summary>
+        /// <param name="bounds">the bounds to split</param>
+        /// <param name="pos">split position per axis. if pos equals min or max, no splitting will occur</param>
+        /// <param name="allowx">allow splitting the bounds on the x axis</param>
+        /// <param name="allowy">allow splitting the bounds on the y axis</param>
+        /// <param name="allowz">allow splitting the bounds on the z axis</param>
+        /// <returns></returns>
+        public static BoundsInt[] SplitBounds(this BoundsInt bounds, Vector3Int pos, bool allowx = true, bool allowy = true, bool allowz = true) {
+            // need to cut when point overlaps in any axis
+            // dont have zero length bounds, so dont use pos>=bounds.min
+            // x? pos < bounds.max-1 ? probably not, cause using size pos-min and bounds.size is max-min
             bool cutx = pos.x > bounds.xMin && pos.x < bounds.xMax && allowx;
             bool cuty = pos.y > bounds.yMin && pos.y < bounds.yMax && allowy;
             bool cutz = pos.z > bounds.zMin && pos.z < bounds.zMax && allowz;
@@ -358,95 +385,60 @@ namespace Kutil {
                     new(new(bounds.min.x, bounds.min.y, bounds.min.z), new(size.x, size.y, size.z)),
                     new(new(bounds.min.x, bounds.min.y, pos.z), new(size.x, size.y, isize.z)),
                 };
-            } else if (!cutx && !cuty && !cutz) {
+            } else { // if (!cutx && !cuty && !cutz)
                 // dont cut at all
                 return new BoundsInt[]{
                     new(bounds.min, bounds.size)
                 };
             }
-            return null;
         }
-        // public static IEnumerable<BoundsInt> SplitBoundsR(BoundsInt bounds, Vector3Int pos, bool allowx = true, bool allowy = true, bool allowz = true) {
-        //     // todo test this please
-        //     // todo > or >= ??
-        //     bool cutx = pos.x > bounds.xMin && pos.x < bounds.xMax && allowx;
-        //     bool cuty = pos.y > bounds.yMin && pos.y < bounds.yMax && allowy;
-        //     bool cutz = pos.z > bounds.zMin && pos.z < bounds.zMax && allowz;
-        //     Debug.Log($"rcutting {bounds} on {pos} allow:{allowx},{allowy},{allowz} cut:{cutx},{cuty},{cutz}");
-        //     if (cutx) {
-        //         int cutxsize1 = pos.x - bounds.xMin;
-        //         int cutxsize2 = bounds.xMax - pos.x;
-        //         var b1 = new BoundsInt(bounds.min.x, bounds.min.y, bounds.min.z, cutxsize1, bounds.size.y, bounds.size.z);
-        //         var b2 = new BoundsInt(cutxsize1, bounds.min.y, bounds.min.z, cutxsize2, bounds.size.y, bounds.size.z);
-        // // ! this doesnt remove old ones that get split
-        //         IEnumerable<BoundsInt> boundsr = SplitBoundsR(b1, pos, false, allowy, allowz);
-        //         boundsr = boundsr.AppendRange(SplitBoundsR(b2, pos, false, allowy, allowz));
-        //         return boundsr;
+
+        // /// <summary>
+        // /// Returns true if bounds can be turned into one without adding new volume
+        // /// </summary>
+        // /// <param name="bounds"></param>
+        // /// <param name="other"></param>
+        // /// <returns></returns>
+        // public static bool CanMergeBounds(this BoundsInt bounds, BoundsInt other) {
+        //     // contain each other entirely
+        //     if (bounds.ContainsBounds(other) || other.ContainsBounds(bounds)) return true;
+        //     // share 2 axis
+        //     // todo faster
+        //     // if (bounds.min.x == other.min.x && bounds.max.x == other.max.x
+        //     //     && bounds.min.y == other.min.y&& bounds.max.y == other.max.y) return true;
+        //     if (bounds.AsRectInt(GridLayout.CellSwizzle.XYZ).Equals(other.AsRectInt(GridLayout.CellSwizzle.XYZ))) return true;
+        //     if (bounds.AsRectInt(GridLayout.CellSwizzle.XZY).Equals(other.AsRectInt(GridLayout.CellSwizzle.XZY))) return true;
+        //     if (bounds.AsRectInt(GridLayout.CellSwizzle.YZX).Equals(other.AsRectInt(GridLayout.CellSwizzle.YZX))) return true;
+        //     return false;
+        // }
+        // public static BoundsInt MergeBounds(this BoundsInt bounds, BoundsInt other) {
+        //     // contain each other entirely
+        //     if (bounds.ContainsBounds(other)) return bounds;
+        //     if (other.ContainsBounds(bounds)) return other;
+        //     // share a rectint
+        //     if (bounds.AsRectInt(GridLayout.CellSwizzle.XYZ).Equals(other.AsRectInt(GridLayout.CellSwizzle.XYZ))) {
+        //         var b = new BoundsInt();
+        //         b.SetMinMax(new(bounds.xMin, bounds.yMin, Math.Min(bounds.zMin, other.zMin)),
+        //                     new(bounds.xMax, bounds.yMax, Math.Max(bounds.zMax, other.zMax)));
+        //         return b;
         //     }
-        //     if (cuty) {
-        //         int cutysize1 = pos.y - bounds.yMin;
-        //         int cutysize2 = bounds.yMax - pos.y;
-        //         var b1 = new BoundsInt(bounds.min.y, bounds.min.y, bounds.min.z, bounds.size.x, cutysize1, bounds.size.z);
-        //         var b2 = new BoundsInt(bounds.min.x, cutysize1, bounds.min.z, bounds.size.x, cutysize2, bounds.size.z);
-        //         IEnumerable<BoundsInt> boundsr = SplitBoundsR(b1, pos, allowx, false, allowz);
-        //         boundsr = boundsr.AppendRange(SplitBoundsR(b2, pos, allowx, false, allowz));
-        //         return boundsr;
+        //     if (bounds.AsRectInt(GridLayout.CellSwizzle.XZY).Equals(other.AsRectInt(GridLayout.CellSwizzle.XZY))) {
+        //         var b = new BoundsInt();
+        //         b.SetMinMax(new(bounds.xMin, Math.Min(bounds.yMin, other.yMin), bounds.zMin),
+        //                     new(bounds.xMax, Math.Max(bounds.yMax, other.yMax), bounds.zMax));
+        //         return b;
         //     }
-        //     if (cutz) {
-        //         int cutzsize1 = pos.z - bounds.zMin;
-        //         int cutzsize2 = bounds.zMax - pos.z;
-        //         var b1 = new BoundsInt(bounds.min.x, bounds.min.y, bounds.min.z, bounds.size.x, bounds.size.y, cutzsize1);
-        //         var b2 = new BoundsInt(bounds.min.x, bounds.min.y, cutzsize1, bounds.size.x, bounds.size.y, cutzsize2);
-        //         IEnumerable<BoundsInt> boundsr = SplitBoundsR(b1, pos, allowx, allowy, false);
-        //         boundsr = boundsr.AppendRange(SplitBoundsR(b2, pos, allowx, allowy, false));
-        //         return boundsr;
+        //     if (bounds.AsRectInt(GridLayout.CellSwizzle.YZX).Equals(other.AsRectInt(GridLayout.CellSwizzle.YZX))) {
+        //         var b = new BoundsInt();
+        //         b.SetMinMax(new(Math.Min(bounds.xMin, other.xMin), bounds.yMin, bounds.zMin),
+        //                     new(Math.Max(bounds.xMax, other.xMax), bounds.yMax, bounds.zMax));
+        //         return b;
         //     }
-        //     return bounds.InNewArray();
+        //     throw new System.Exception($"BoundsInt cannot merge {bounds} and {other}");
+        //     // return default;
         // }
 
 
-        /// <summary>
-        /// Returns true if bounds can be turned into one without adding new volume
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        public static bool CanMergeBounds(this BoundsInt bounds, BoundsInt other) {
-            // contain each other entirely
-            if (bounds.ContainsBounds(other) || other.ContainsBounds(bounds)) return true;
-            // share 2 axis
-            if (bounds.AsRectInt(GridLayout.CellSwizzle.XYZ).Equals(other.AsRectInt(GridLayout.CellSwizzle.XYZ))) return true;
-            if (bounds.AsRectInt(GridLayout.CellSwizzle.XZY).Equals(other.AsRectInt(GridLayout.CellSwizzle.XZY))) return true;
-            if (bounds.AsRectInt(GridLayout.CellSwizzle.YZX).Equals(other.AsRectInt(GridLayout.CellSwizzle.YZX))) return true;
-
-            return false;
-        }
-        public static BoundsInt MergeBounds(this BoundsInt bounds, BoundsInt other) {
-            // contain each other entirely
-            if (bounds.ContainsBounds(other)) return bounds;
-            if (other.ContainsBounds(bounds)) return other;
-            // share a rectint
-            if (bounds.AsRectInt(GridLayout.CellSwizzle.XYZ).Equals(other.AsRectInt(GridLayout.CellSwizzle.XYZ))) {
-                var b = new BoundsInt();
-                b.SetMinMax(new(bounds.xMin, bounds.yMin, Mathf.Min(bounds.zMin, other.zMin)),
-                            new(bounds.xMax, bounds.yMax, Mathf.Max(bounds.zMax, other.zMax)));
-                return b;
-            }
-            if (bounds.AsRectInt(GridLayout.CellSwizzle.XZY).Equals(other.AsRectInt(GridLayout.CellSwizzle.XZY))) {
-                var b = new BoundsInt();
-                b.SetMinMax(new(bounds.xMin, Mathf.Min(bounds.yMin, other.yMin), bounds.zMin),
-                            new(bounds.xMax, Mathf.Max(bounds.yMax, other.yMax), bounds.zMax));
-                return b;
-            }
-            if (bounds.AsRectInt(GridLayout.CellSwizzle.YZX).Equals(other.AsRectInt(GridLayout.CellSwizzle.YZX))) {
-                var b = new BoundsInt();
-                b.SetMinMax(new(Mathf.Min(bounds.xMin, other.xMin), bounds.yMin, bounds.zMin),
-                            new(Mathf.Max(bounds.xMax, other.xMax), bounds.yMax, bounds.zMax));
-                return b;
-            }
-            throw new System.Exception($"BoundsInt cannot merge {bounds} and {other}");
-            // return default;
-        }
 
 
         /// <summary>
@@ -454,16 +446,17 @@ namespace Kutil {
         /// </summary>
         /// <param name="bounds"></param>
         /// <returns></returns>
-        public static Vector3Int[] CornerPositions(this BoundsInt bounds) {
+        public static Vector3Int[] CornerPositions(this BoundsInt bounds, bool exclusive = true) {
+            int ofs = exclusive ? 0 : -1;
             return new Vector3Int[]{
                 new Vector3Int(bounds.xMin, bounds.yMin, bounds.zMin),
-                new Vector3Int(bounds.xMax, bounds.yMin, bounds.zMin),
-                new Vector3Int(bounds.xMin, bounds.yMax, bounds.zMin),
-                new Vector3Int(bounds.xMax, bounds.yMax, bounds.zMin),
-                new Vector3Int(bounds.xMin, bounds.yMin, bounds.zMax),
-                new Vector3Int(bounds.xMax, bounds.yMin, bounds.zMax),
-                new Vector3Int(bounds.xMin, bounds.yMax, bounds.zMax),
-                new Vector3Int(bounds.xMax, bounds.yMax, bounds.zMax),
+                new Vector3Int(bounds.xMax+ofs, bounds.yMin, bounds.zMin),
+                new Vector3Int(bounds.xMin, bounds.yMax+ofs, bounds.zMin),
+                new Vector3Int(bounds.xMax+ofs, bounds.yMax+ofs, bounds.zMin),
+                new Vector3Int(bounds.xMin, bounds.yMin, bounds.zMax+ofs),
+                new Vector3Int(bounds.xMax+ofs, bounds.yMin, bounds.zMax+ofs),
+                new Vector3Int(bounds.xMin, bounds.yMax+ofs, bounds.zMax+ofs),
+                new Vector3Int(bounds.xMax+ofs, bounds.yMax+ofs, bounds.zMax+ofs),
             };
         }
         public static Vector3[] CornerPositions(this Bounds bounds) {
@@ -495,65 +488,93 @@ namespace Kutil {
 
         // gizmos stuff
 
+        // todo easy handle maniplulator? to be able to edit a bounds in the scene like a boxcollider
+
+
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawGizmosBounds(this BoundsInt bounds, Grid grid = null) {
-            DrawGizmosBounds(bounds, Vector3.zero, grid);
+        public static void DrawBoundsHandles(this BoundsInt bounds, Grid grid = null) {
+            DrawBoundsHandles(bounds, Vector3.zero, grid);
         }
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawGizmosBounds(this BoundsInt bounds, Vector3 offset, Grid grid = null) {
+        public static void DrawBoundsHandles(this BoundsInt bounds, Vector3 offset, Grid grid = null) {
             Vector3[] poses = bounds.CornerPositions().Select(p => (grid?.CellToWorld(p) ?? (Vector3)p) + offset).ToArray();
-            HandlesDrawCube(poses);
+            DrawCube(poses, HandlesDrawLine);
         }
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawGizmosBounds(this Bounds bounds) {
-            HandlesDrawCube(bounds.CornerPositions());
+        public static void DrawBoundsHandles(this Bounds bounds) {
+            DrawCube(bounds.CornerPositions(), HandlesDrawLine);
         }
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawGizmosBounds(this Bounds bounds, Transform transform) {
+        public static void DrawBoundsHandles(this Bounds bounds, Transform transform) {
             Vector3[] points = bounds.CornerPositions();
             System.Span<Vector3> poses = new(points);
             transform.TransformPoints(poses, poses);
             // Vector3[] poses = bounds.CornerPositions().Select(p => transform.TransformPoint(p)).ToArray();
-            HandlesDrawCube(poses.ToArray());
+            DrawCube(poses.ToArray(), HandlesDrawLine);
         }
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawGizmosBounds(this BoundsInt bounds, Transform transform, Grid grid) {
+        public static void DrawBoundsHandles(this BoundsInt bounds, Transform transform, Grid grid) {
+            DrawBounds(bounds, transform, grid, HandlesDrawLine);
+        }
+
+
+        public static void DrawBounds(this BoundsInt bounds, Transform transform, Grid grid, System.Action<Vector3, Vector3> drawFunc) {
             Vector3Int[] points = bounds.CornerPositions();
-            var ps = points.Select(p => grid.CellToLocal(p)).ToArray();
+            Vector3[] ps = points.Select(p => grid.CellToLocal(p)).ToArray();
             System.Span<Vector3> poses = new(ps);
-            transform.TransformPoints(poses, poses);
-            HandlesDrawCube(poses.ToArray());
+            if (transform != null) {
+                // todo use matrix4x4 instead?
+                transform.TransformPoints(poses, poses);
+            }
+            DrawCube(poses.ToArray(), drawFunc);
+        }
+        public static void HandlesDrawLine(Vector3 start, Vector3 end) {
+#if UNITY_EDITOR
+            Handles.DrawLine(start, end);
+#endif
+        }
+        public static void GizmosDrawLine(Vector3 start, Vector3 end) => Gizmos.DrawLine(start, end);
+        public static void DrawCube(Vector3[] cornerPositions, System.Action<Vector3, Vector3> drawFunc) {
+            if (cornerPositions == null || cornerPositions.Length != 8 || drawFunc == null) {
+                Debug.LogError($"DrawCube needs 8 positions to draw has {(cornerPositions?.Length.ToString() ?? "null")}");
+                return;
+            }
+            foreach (var (e1, e2) in BoundsIntExtensions.edgeIndexes) {
+                Vector3 start = cornerPositions[e1];
+                Vector3 end = cornerPositions[e2];
+                drawFunc(start, end);
+            }
         }
 
         /// <summary>Draw outline of a cube from 8 positions</summary>
-        public static void HandlesDrawCube(Vector3[] poses) {
-            if (poses == null || poses.Length != 8) {
-                Debug.LogError($"DrawCube needs 8 positions to draw has {(poses?.Length.ToString() ?? "null")}");
+        public static void HandlesDrawCube(Vector3[] cornerPositions) {
+#if UNITY_EDITOR
+            if (cornerPositions == null || cornerPositions.Length != 8) {
+                Debug.LogError($"DrawCube needs 8 positions to draw has {(cornerPositions?.Length.ToString() ?? "null")}");
                 return;
             }
-#if UNITY_EDITOR
-            Handles.DrawLine(poses[0], poses[1]);// bottom square
-            Handles.DrawLine(poses[0], poses[2]);
-            Handles.DrawLine(poses[2], poses[3]);
-            Handles.DrawLine(poses[1], poses[3]);
-            Handles.DrawLine(poses[0], poses[4]);// vertical lines
-            Handles.DrawLine(poses[1], poses[5]);
-            Handles.DrawLine(poses[2], poses[6]);
-            Handles.DrawLine(poses[3], poses[7]);
-            Handles.DrawLine(poses[4], poses[5]);// top square
-            Handles.DrawLine(poses[4], poses[6]);
-            Handles.DrawLine(poses[6], poses[7]);
-            Handles.DrawLine(poses[5], poses[7]);
+            Handles.DrawLine(cornerPositions[0], cornerPositions[1]);// bottom square
+            Handles.DrawLine(cornerPositions[0], cornerPositions[2]);
+            Handles.DrawLine(cornerPositions[2], cornerPositions[3]);
+            Handles.DrawLine(cornerPositions[1], cornerPositions[3]);
+            Handles.DrawLine(cornerPositions[0], cornerPositions[4]);// vertical lines
+            Handles.DrawLine(cornerPositions[1], cornerPositions[5]);
+            Handles.DrawLine(cornerPositions[2], cornerPositions[6]);
+            Handles.DrawLine(cornerPositions[3], cornerPositions[7]);
+            Handles.DrawLine(cornerPositions[4], cornerPositions[5]);// top square
+            Handles.DrawLine(cornerPositions[4], cornerPositions[6]);
+            Handles.DrawLine(cornerPositions[6], cornerPositions[7]);
+            Handles.DrawLine(cornerPositions[5], cornerPositions[7]);
 #endif
         }
 

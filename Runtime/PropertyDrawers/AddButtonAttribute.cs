@@ -16,7 +16,7 @@ namespace Kutil {
         public float btnWeight { get; set; }
         /// <summary>when multiselecting, should the call go to all targets or just the first</summary>
         public bool allowMultipleCalls { get; set; }
-        /// <summary>can this be called in the editor?</summary>
+        /// <summary>can this be called in the editor when not in playmode</summary>
         public bool allowCallInEditor { get; set; }
         public bool richText { get; set; }
         
@@ -27,7 +27,7 @@ namespace Kutil {
         /// <param name="buttonLabel">label on the button. will use method name by default</param>
         /// <param name="parameters">parameters to pass into the call (static)</param>
         /// <param name="allowMultipleCalls">when multiselecting, should the call go to all targets or just the first</param>
-        /// <param name="allowCallInEditor">when multiselecting, should the call go to all targets or just the first</param>
+        /// <param name="allowCallInEditor">can this be called in the editor when not in playmode</param>
         public AddButtonAttribute(string buttonMethodName, string buttonLabel = null, object[] parameters = null, bool allowCallInEditor = true, bool allowMultipleCalls = true, bool richText = false) {
             this.buttonMethodName = buttonMethodName;
             this.buttonLabel = buttonLabel;
