@@ -451,10 +451,10 @@ namespace Kutil {
             return new Vector3Int[]{
                 new Vector3Int(bounds.xMin, bounds.yMin, bounds.zMin),
                 new Vector3Int(bounds.xMax+ofs, bounds.yMin, bounds.zMin),
-                new Vector3Int(bounds.xMin, bounds.yMax+ofs, bounds.zMin),
-                new Vector3Int(bounds.xMax+ofs, bounds.yMax+ofs, bounds.zMin),
                 new Vector3Int(bounds.xMin, bounds.yMin, bounds.zMax+ofs),
                 new Vector3Int(bounds.xMax+ofs, bounds.yMin, bounds.zMax+ofs),
+                new Vector3Int(bounds.xMin, bounds.yMax+ofs, bounds.zMin),
+                new Vector3Int(bounds.xMax+ofs, bounds.yMax+ofs, bounds.zMin),
                 new Vector3Int(bounds.xMin, bounds.yMax+ofs, bounds.zMax+ofs),
                 new Vector3Int(bounds.xMax+ofs, bounds.yMax+ofs, bounds.zMax+ofs),
             };
@@ -463,10 +463,10 @@ namespace Kutil {
             return new Vector3[]{
                 new Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
                 new Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
-                new Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
-                new Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
                 new Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
                 new Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+                new Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+                new Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
                 new Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
                 new Vector3(bounds.max.x, bounds.max.y, bounds.max.z),
             };
@@ -486,54 +486,74 @@ namespace Kutil {
             (5, 7),
         };
 
+        public class Vector3YZXComparer : IComparer<Vector3> {
+            public int Compare(Vector3 a, Vector3 b) {
+                if (a.y != b.y) return (int)(b.y - a.y);
+                if (a.z != b.z) return (int)(b.z - a.z);
+                if (a.x != b.x) return (int)(b.x - a.x);
+                return 0;
+            }
+        }
+
         // gizmos stuff
 
         // todo easy handle maniplulator? to be able to edit a bounds in the scene like a boxcollider
 
-
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawBoundsHandles(this BoundsInt bounds, Grid grid = null) {
-            DrawBoundsHandles(bounds, Vector3.zero, grid);
+        public static void DrawBoundsHandles(this Bounds bounds, Transform transform = null) {
+            DrawBounds(bounds, HandlesDrawLine, null, transform);
+            // Handles.han
         }
+
+
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
         public static void DrawBoundsHandles(this BoundsInt bounds, Vector3 offset, Grid grid = null) {
-            Vector3[] poses = bounds.CornerPositions().Select(p => (grid?.CellToWorld(p) ?? (Vector3)p) + offset).ToArray();
-            DrawCube(poses, HandlesDrawLine);
+            DrawBounds(bounds, HandlesDrawLine, offset, grid);
         }
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawBoundsHandles(this Bounds bounds) {
-            DrawCube(bounds.CornerPositions(), HandlesDrawLine);
+        public static void DrawBoundsHandles(this BoundsInt bounds, Transform transform = null, Grid grid = null) {
+            DrawBounds(bounds, HandlesDrawLine, transform, grid);
         }
-        /// <summary>
-        /// draw the bounds using handles
-        /// </summary>
-        public static void DrawBoundsHandles(this Bounds bounds, Transform transform) {
-            Vector3[] points = bounds.CornerPositions();
+
+
+        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Vector3 offset, Grid grid = null) {
+            Matrix4x4 matrix4x4 = Matrix4x4.Translate(offset);
+            DrawBounds(bounds, drawFunc, matrix4x4, null, grid);
+        }
+        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Transform transform = null, Grid grid = null) {
+            DrawBounds(bounds, drawFunc, null, transform, grid);
+        }
+
+        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null, Grid grid = null) {
+            DrawCube(bounds.CornerPositions(), drawFunc, transformMatrix, transform, grid);
+        }
+        public static void DrawBounds(this Bounds bounds, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null) {
+            DrawCube(bounds.CornerPositions(), drawFunc, transformMatrix, transform);
+        }
+        public static void DrawCube(Vector3Int[] points, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null, Grid grid = null) {
+            // apply the grid
+            Vector3[] ps;
+            if (grid != null) {
+                ps = points.Select(p => grid.CellToLocal(p)).ToArray();
+            } else {
+                ps = points.Select(p => (Vector3)p).ToArray();
+            }
+            DrawCube(ps, drawFunc, transformMatrix, transform);
+        }
+        public static void DrawCube(Vector3[] points, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null) {
+            // apply trs matrix or transform
+            if (transformMatrix != null) {
+                Matrix4x4 t = (Matrix4x4)transformMatrix;
+                points = points.Select(p => t.MultiplyPoint3x4(p)).ToArray();
+            }
             System.Span<Vector3> poses = new(points);
-            transform.TransformPoints(poses, poses);
-            // Vector3[] poses = bounds.CornerPositions().Select(p => transform.TransformPoint(p)).ToArray();
-            DrawCube(poses.ToArray(), HandlesDrawLine);
-        }
-        /// <summary>
-        /// draw the bounds using handles
-        /// </summary>
-        public static void DrawBoundsHandles(this BoundsInt bounds, Transform transform, Grid grid) {
-            DrawBounds(bounds, transform, grid, HandlesDrawLine);
-        }
-
-
-        public static void DrawBounds(this BoundsInt bounds, Transform transform, Grid grid, System.Action<Vector3, Vector3> drawFunc) {
-            Vector3Int[] points = bounds.CornerPositions();
-            Vector3[] ps = points.Select(p => grid.CellToLocal(p)).ToArray();
-            System.Span<Vector3> poses = new(ps);
             if (transform != null) {
-                // todo use matrix4x4 instead?
                 transform.TransformPoints(poses, poses);
             }
             DrawCube(poses.ToArray(), drawFunc);
@@ -544,10 +564,18 @@ namespace Kutil {
 #endif
         }
         public static void GizmosDrawLine(Vector3 start, Vector3 end) => Gizmos.DrawLine(start, end);
-        public static void DrawCube(Vector3[] cornerPositions, System.Action<Vector3, Vector3> drawFunc) {
-            if (cornerPositions == null || cornerPositions.Length != 8 || drawFunc == null) {
+        /// <summary>
+        /// calls drawFunc on each edge pair of cornerPositions, assuming they are ordered yzx like CornerPositions()
+        /// </summary>
+        /// <param name="cornerPositions"></param>
+        /// <param name="drawFunc"></param>
+        public static void DrawCube(Vector3[] cornerPositions, System.Action<Vector3, Vector3> drawFunc = null) {
+            if (cornerPositions == null || cornerPositions.Length != 8) {
                 Debug.LogError($"DrawCube needs 8 positions to draw has {(cornerPositions?.Length.ToString() ?? "null")}");
                 return;
+            }
+            if (drawFunc == null) {
+                drawFunc = GizmosDrawLine;
             }
             foreach (var (e1, e2) in BoundsIntExtensions.edgeIndexes) {
                 Vector3 start = cornerPositions[e1];
