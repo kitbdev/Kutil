@@ -114,7 +114,8 @@ namespace Kutil {
         //     }
         //     return property.displayName;
         // }
-        public static bool IsElement(this SerializedProperty property, out int index) {
+        public static bool IsElementInArray(this SerializedProperty property) => IsElementInArray(property, out _);
+        public static bool IsElementInArray(this SerializedProperty property, out int index) {
             if (property.propertyPath.EndsWith("]")) {
                 int v = property.propertyPath.LastIndexOf("[");
                 int l = property.propertyPath.Length - v;

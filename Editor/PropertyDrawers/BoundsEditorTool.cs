@@ -101,7 +101,12 @@ namespace Kutil {
             buttonAbsContainer.name = "bounds-editor-button-container";
             buttonAbsContainer.style.position = Position.Absolute;
             buttonAbsContainer.style.left = 0;
-            buttonAbsContainer.style.top = EditorGUIUtility.singleLineHeight * 1.5f;
+            // todo get bounds label position and move under or something
+            float topDist = 1.5f;
+            if (property.IsElementInArray()) {
+                topDist = 2.5f;
+            }
+            buttonAbsContainer.style.top = EditorGUIUtility.singleLineHeight * topDist;
             buttonAbsContainer.style.flexDirection = FlexDirection.Row;
             buttonAbsContainer.style.justifyContent = Justify.SpaceBetween;
             root.Add(buttonAbsContainer);
@@ -207,6 +212,9 @@ namespace Kutil {
 
         void OnContextMenuEvent(ContextualMenuPopulateEvent ce) {
             // Debug.Log("OnContextMenuEvent");
+
+            // todo add copy and paste options
+
             //https://docs.unity3d.com/2023.2/Documentation/Manual/UIE-Command-Events.html
             // ce.menu.AppendAction("Copy", a => ProcessCmd("Copy"), DropdownMenuAction.AlwaysEnabled);
             // ce.menu.AppendAction("Paste", a => ProcessCmd("Paste"), ValidateCmd("Paste"));
@@ -216,7 +224,7 @@ namespace Kutil {
             //     propertyField.SendEvent(ce);
             // }
             ce.menu.AppendSeparator();
-            ce.menu.AppendAction("Toggle Bounds tool", a => ToggleBoundsTool(), DropdownMenuAction.AlwaysEnabled);
+            ce.menu.AppendAction("Toggle Bounds tool", a => ToggleBoundsTool(), (a) => IsBoundsToolActive() ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             ce.menu.AppendAction("Recenter to (0,0,0)", a => RecenterAndApplyBounds(), DropdownMenuAction.AlwaysEnabled);
             ce.menu.AppendAction("Make Cube", a => MakeCubeApplyBounds(), DropdownMenuAction.AlwaysEnabled);
             ce.menu.AppendAction("Reset", a => ResetAndApplyBounds(), DropdownMenuAction.AlwaysEnabled);
