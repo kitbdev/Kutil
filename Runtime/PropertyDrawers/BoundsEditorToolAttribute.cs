@@ -12,7 +12,7 @@ namespace Kutil {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public class BoundsEditorToolAttribute : PropertyAttribute {
         public bool showEditButton { get; set; } = true;
-        public bool showResetButton { get; set; } = true;
+        public bool showResetButton { get; set; } = false;
         public bool showBoundsWhenInactive { get; set; } = true;
         public bool useTransformScaleAndRotation { get; set; } = true;
 
