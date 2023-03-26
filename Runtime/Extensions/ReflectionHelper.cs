@@ -269,7 +269,7 @@ namespace Kutil {
         }
 
         public struct AttributedField<T>
-            where T : Attribute {
+                where T : Attribute {
             public T Attribute;
             public FieldInfo FieldInfo;
         }

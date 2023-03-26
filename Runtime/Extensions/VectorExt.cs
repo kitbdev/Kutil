@@ -90,16 +90,13 @@ namespace Kutil {
         /// <summary>returns the corresponding axis</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetAxis(this Vector3 vec, Axis axis) {
-            switch (axis) {
-                case Axis.x: return vec.x;
-                case Axis.y: return vec.y;
-                case Axis.z: return vec.z;
-            }
-            return default;
+            return vec[(int)axis];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float2 GetAxisSwizzle(this Vector3 vec, Axis axis, Axis secondAxis) {
             return new float2(vec.GetAxis(axis), vec.GetAxis(secondAxis));
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 GetAxisSwizzle(this Vector3 vec, Axis axis, Axis secondAxis, Axis thirdAxis) {
             return new float3(vec.GetAxis(axis), vec.GetAxis(secondAxis), vec.GetAxis(thirdAxis));
         }
@@ -160,16 +157,13 @@ namespace Kutil {
         /// <summary>returns the corresponding axis</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetAxis(this Vector3Int vec, Axis axis) {
-            switch (axis) {
-                case Axis.x: return vec.x;
-                case Axis.y: return vec.y;
-                case Axis.z: return vec.z;
-            }
-            return default;
+            return vec[(int)axis];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int2 GetAxisSwizzle(this Vector3Int vec, Axis axis, Axis secondAxis) {
             return new int2(vec.GetAxis(axis), vec.GetAxis(secondAxis));
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int3 GetAxisSwizzle(this Vector3Int vec, Axis axis, Axis secondAxis, Axis thirdAxis) {
             return new int3(vec.GetAxis(axis), vec.GetAxis(secondAxis), vec.GetAxis(thirdAxis));
         }

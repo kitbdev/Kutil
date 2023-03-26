@@ -57,6 +57,15 @@ namespace Kutil {
             return boundsInt;
         }
         /// <summary>
+        /// Converts Bounds to BoundsInt. rounds min and max points
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BoundsInt AsBoundsIntRounded(this Bounds bounds) {
+            BoundsInt boundsInt = new BoundsInt();
+            boundsInt.SetMinMax(Vector3Int.RoundToInt(bounds.min), Vector3Int.RoundToInt(bounds.max));
+            return boundsInt;
+        }
+        /// <summary>
         /// Flattens into a RectInt. Removes the Z axis. Can Swizzle for different axis.
         /// </summary>
         /// <param name="swizzle">Will drop the third swizzle axis. ex: XYZ drops the Z axis</param>
