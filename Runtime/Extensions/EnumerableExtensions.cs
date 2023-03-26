@@ -8,14 +8,15 @@ namespace Kutil {
             return enumerable.GroupBy(keySelector).Select(grp => grp.First());
         }
         /// <summary>
-        /// Returns a string showing all elements of the enumerable
+        /// Returns a string listing all elements of the enumerable
         /// </summary>
         /// <param name="toStrFunc">function to convert elements to string</param>
         /// <param name="includeCount">should prefix enumerable count?</param>
         /// <param name="includeBraces">should braces before and after be included? []</param>
         /// <param name="seperator">seperator between elements. default is ","</param>
+        /// <param name="maxCount">maximum number of elements to check. -1 disables</param>
         /// <returns>string with all elements</returns>
-        public static string ToStringFull<T>(this IEnumerable<T> enumerable, Func<T, string> toStrFunc = null, bool includeCount = false, bool includeBraces = true, string seperator = ",") {
+        public static string ToStringFull<T>(this IEnumerable<T> enumerable, Func<T, string> toStrFunc = null, bool includeCount = false, bool includeBraces = true, string seperator = ",", int maxCount = -1) {
             if (toStrFunc == null) toStrFunc = e => e.ToString();
             // todo? formatting
             System.Text.StringBuilder str = new System.Text.StringBuilder("");
@@ -24,12 +25,14 @@ namespace Kutil {
             if (includeBraces) str.Append("[");
             int i = 0;
             foreach (var e in enumerable) {
+                if (maxCount > 0 && i > maxCount) break;
                 str.Append(toStrFunc(e));
                 if (i < cnt - 1) {
                     str.Append(seperator);
                 }
                 i++;
             }
+            if (maxCount > 0 && i > maxCount) str.Append("...");
             if (includeBraces) str.Append("]");
             return str.ToString();
         }
