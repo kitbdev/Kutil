@@ -114,13 +114,16 @@ namespace Kutil {
         //     }
         //     return property.displayName;
         // }
-        public static bool IsElementInArray(this SerializedProperty property) => IsElementInArray(property, out _);
+
+        //? check this
+        public static bool IsInAnyArray(this SerializedProperty property) => property.propertyPath.Contains("]");
+        public static bool IsElementInArray(this SerializedProperty property) => property.propertyPath.EndsWith("]");
         public static bool IsElementInArray(this SerializedProperty property, out int index) {
             if (property.propertyPath.EndsWith("]")) {
                 int v = property.propertyPath.LastIndexOf("[");
                 int l = property.propertyPath.Length - v;
                 string indexStr = property.propertyPath.Substring(v);
-                Debug.Log(indexStr);
+                // Debug.Log(indexStr);
                 if (!int.TryParse(indexStr, out index)) {
                     // failed
                     index = -1;

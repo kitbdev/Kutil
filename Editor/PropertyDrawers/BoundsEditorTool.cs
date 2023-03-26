@@ -43,6 +43,7 @@ namespace Kutil {
                 if (obj is not Component) continue;
                 isAvailable = ReflectionHelper.HasAnyFieldsWithAttributeType<BoundsEditorToolAttribute>(obj.GetType());
                 // Debug.Log($"is available: {isAvailable} on {obj.name}");
+                // todo make sure those fields are of Bounds or BoundsInt type
                 if (isAvailable) break;
             }
             ToolManager.RefreshAvailableTools();
@@ -86,15 +87,28 @@ namespace Kutil {
             toolActive = false;
             boundsTransform = null;
 
+            this.property = property;
+            propertyField = new PropertyField(property);
+
+            if (property.propertyType != SerializedPropertyType.Bounds && property.propertyType != SerializedPropertyType.BoundsInt) {
+                // invalid field type, only works on Bounds and BoundsInt
+                return propertyField;
+            }
+
+            if (property.IsInAnyArray() || property.isArray) {
+                // arrays not supported
+                return propertyField;
+            }
+
+
             root = new();
             root.name = "kutil-bounds-editor-tool-drawer-container";
             root.AddToClassList(boundsEditorToolClass);
             string tooltip = "Edit bounds. \nHold alt to pin center, hold shift to scale uniformly";//, hold control to snap relatively
             root.tooltip = tooltip;
 
-            this.property = property;
-            propertyField = new PropertyField(property);
             root.Add(propertyField);
+
 
             // add button?
             VisualElement buttonAbsContainer = new VisualElement();
@@ -246,7 +260,7 @@ namespace Kutil {
             if (IsBoundsToolActive()) {
                 ToolManager.RestorePreviousTool();
             } else {
-                ToolManager.RefreshAvailableTools();
+                // ToolManager.RefreshAvailableTools();
                 ToolManager.SetActiveTool<BoundsEditorTool>();
             }
         }
