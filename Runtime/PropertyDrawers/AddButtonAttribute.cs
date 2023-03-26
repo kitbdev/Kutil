@@ -13,13 +13,15 @@ namespace Kutil {
         public string buttonLabel { get; set; }
         /// <summary>parameters to pass into the call (static)</summary>
         public object[] parameters { get; set; }
-        public float btnWeight { get; set; }
-        /// <summary>when multiselecting, should the call go to all targets or just the first</summary>
-        public bool allowMultipleCalls { get; set; }
+        public bool allowMultipleCalls { get; set; } = true;
         /// <summary>can this be called in the editor when not in playmode</summary>
-        public bool allowCallInEditor { get; set; }
-        public bool richText { get; set; }
-        
+        public bool allowCallInEditor { get; set; } = true;
+        public bool richText { get; set; } = false;
+
+        /// <summary>Hide the property field in the inspector, but show other decorators</summary>
+        //? could this be a seperate decorator
+        public bool hideProperty { get; set; } = false;
+
 
         /// <summary>
         /// </summary>

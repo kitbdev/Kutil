@@ -40,10 +40,7 @@ namespace Kutil {
             // targets
             foreach (var obj in targets) {
                 // Debug.Log($"check on {obj.name} b?{obj is Behaviour} t{obj.GetType().Name}");
-                if (obj is not Component) continue;
-                isAvailable = ReflectionHelper.HasAnyFieldsWithAttributeType<BoundsEditorToolAttribute>(obj.GetType());
-                // Debug.Log($"is available: {isAvailable} on {obj.name}");
-                // todo make sure those fields are of Bounds or BoundsInt type
+                isAvailable = IsAvailable(obj);
                 if (isAvailable) break;
             }
             ToolManager.RefreshAvailableTools();
@@ -51,6 +48,18 @@ namespace Kutil {
                 // disable self
                 ToolManager.RestorePreviousTool();
             }
+        }
+        /// <summary>
+        /// Does this Object have fields with BoundsEditorToolAttribute
+        /// Uses reflection.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool IsAvailable(UnityEngine.Object obj) {
+            if (obj is not Component) return false;
+            return ReflectionHelper.HasAnyFieldsWithAttributeType<BoundsEditorToolAttribute>(obj.GetType());
+            // Debug.Log($"is available: {isAvailable} on {obj.name}");
+            // todo? make sure those fields are of Bounds or BoundsInt type?
         }
 
         // do actual tool in BoundsEditorToolDrawer SceneView.duringSceneGui instead
@@ -95,8 +104,15 @@ namespace Kutil {
                 return propertyField;
             }
 
+            // todo array support
             if (property.IsInAnyArray() || property.isArray) {
                 // arrays not supported
+                return propertyField;
+            }
+
+            // prevent the user from trying to enable the tool here where it is unavailable for this target
+            if (!BoundsEditorTool.IsAvailable(property.serializedObject.targetObject)) {
+                // Debug.LogWarning("BoundsEditorTool is not available for " + property.serializedObject.targetObject.name + " " + property.serializedObject.targetObject.GetType().Name);
                 return propertyField;
             }
 
@@ -377,11 +393,20 @@ namespace Kutil {
             if (boundsTransform == null || Mathf.Approximately(boundsTransform.lossyScale.sqrMagnitude, 0f)) return;
 
             Matrix4x4 transformMatrix;
-            if (boundsEditorToolAttribute.useTransformScaleAndRotation) {
+            if (boundsEditorToolAttribute.scale <= 0) {
+                boundsEditorToolAttribute.scale = 1f;
+            }
+            // boundsEditorToolAttribute.scale = 0.5f;
+            Vector3 viewScale = boundsEditorToolAttribute.scale * Vector3.one;
+            bool useRotScale = boundsEditorToolAttribute.useTransformScaleAndRotation;
+            // scale must be 0 for handle to work correctly
+            if (useRotScale) {
                 transformMatrix = Matrix4x4.TRS(boundsTransform.position, boundsTransform.rotation, Vector3.one);
             } else {
-                transformMatrix = Matrix4x4.identity;
+                // transformMatrix = Matrix4x4.TRS(boundsTransform.position, Quaternion.identity, Vector3.one);
+                transformMatrix = Matrix4x4.Translate(boundsTransform.position);
             }
+            // Debug.Log("scale:" + scale + " " + boundsEditorToolAttribute.scale+" "+transformMatrix.lossyScale);
             if (!toolActive) {
                 // draw regular cube when tool not activated
                 if (boundsEditorToolAttribute.showBoundsWhenInactive) {
@@ -390,17 +415,9 @@ namespace Kutil {
                         // ? disabled color instead
                         Handles.color = (Handles.UIColliderHandleColor);
 
-                        Vector3 center;
-                        Vector3 size;
-                        if (boundsEditorToolAttribute.useTransformScaleAndRotation) {
-                            center = TransformColliderCenterToHandleSpace(boundsTransform, bounds.center);
-                            size = Vector3.Scale(bounds.size, boundsTransform.lossyScale);
-                        } else {
-                            center = bounds.center + boundsTransform.position;
-                            size = bounds.size;
-                        }
+                        var handleBounds = TransformBoundsToHandleSpace(bounds, boundsTransform, viewScale, useRotScale);
 
-                        Handles.DrawWireCube(center, size);
+                        Handles.DrawWireCube(handleBounds.center, handleBounds.size);
                     }
                 }
                 return;
@@ -411,14 +428,9 @@ namespace Kutil {
             // relative box matrix is center multiplied by transform's matrix with custom postmultiplied lossy scale matrix
             using (new Handles.DrawingScope(transformMatrix)) {
 
-                if (boundsEditorToolAttribute.useTransformScaleAndRotation) {
-                    boundsHandle.center = TransformColliderCenterToHandleSpace(boundsTransform, bounds.center);
-                    boundsHandle.size = Vector3.Scale(bounds.size, boundsTransform.lossyScale);
-                } else {
-                    // boundsHandle.center = Handles.inverseMatrix * bounds.center;
-                    boundsHandle.center = bounds.center + boundsTransform.position;
-                    boundsHandle.size = bounds.size;
-                }
+                var handleBounds = TransformBoundsToHandleSpace(bounds, boundsTransform, viewScale, useRotScale);
+                boundsHandle.center = handleBounds.center;
+                boundsHandle.size = handleBounds.size;
 
                 // can change color or which axes to have handles on
                 boundsHandle.SetColor(Handles.UIColliderHandleColor);
@@ -430,16 +442,7 @@ namespace Kutil {
                     // Undo.RecordObject(obj, string.Format("Modify {0} Bounds", ObjectNames.NicifyVariableName(target.GetType().Name)));
                     // Debug.Log("edited " + boundsTransform.name);
 
-                    if (boundsEditorToolAttribute.useTransformScaleAndRotation) {
-                        bounds.center = TransformHandleCenterToColliderSpace(boundsTransform, boundsHandle.center);
-                        Vector3 size = Vector3.Scale(boundsHandle.size, InvertScaleVector(boundsTransform.lossyScale));
-                        size = new Vector3(Mathf.Abs(size.x), Mathf.Abs(size.y), Mathf.Abs(size.z));
-                        bounds.size = size;
-                    } else {
-                        // bounds.center = Handles.matrix * boundsHandle.center;
-                        bounds.center = boundsHandle.center - boundsTransform.position;
-                        bounds.size = boundsHandle.size;
-                    }
+                    bounds = TransformHandleToBoundsSpace(new(boundsHandle.center, boundsHandle.size), boundsTransform, viewScale, useRotScale);
 
                     UpdateValueFromBounds();
                 }
@@ -465,18 +468,47 @@ namespace Kutil {
         }
 
         // utils
-        protected static Vector3 TransformColliderCenterToHandleSpace(Transform colliderTransform, Vector3 colliderCenter) {
-            return Handles.inverseMatrix * (colliderTransform.localToWorldMatrix * colliderCenter);
-        }
 
-        protected static Vector3 TransformHandleCenterToColliderSpace(Transform colliderTransform, Vector3 handleCenter) {
-            return colliderTransform.localToWorldMatrix.inverse * (Handles.matrix * handleCenter);
-        }
-        protected static Vector3 InvertScaleVector(Vector3 scaleVector) {
-            for (int axis = 0; axis < 3; ++axis)
-                scaleVector[axis] = scaleVector[axis] == 0f ? 0f : 1f / scaleVector[axis];
+        protected static Bounds TransformBoundsToHandleSpace(Bounds bounds, Transform transform, Vector3 viewScale, bool useRS) {
+            if (useRS) {
+                return new Bounds(
+                    center: Handles.inverseMatrix * (transform.localToWorldMatrix * Vector3.Scale(bounds.center, viewScale)),
+                    // size: Handles.inverseMatrix.MultiplyVector(Vector3.Scale(bounds.size, transform.lossyScale))
+                    size: Vector3.Scale(Vector3.Scale(bounds.size, viewScale), transform.lossyScale)
+                );
+            } else {
+                return new Bounds(
+                    center: Handles.inverseMatrix * (Vector3.Scale(bounds.center, viewScale)),
+                    // size: Handles.inverseMatrix.MultiplyVector(bounds.size)
+                    // size: bounds.size
+                    size: Vector3.Scale(bounds.size, viewScale)
+                );
 
-            return scaleVector;
+            }
+        }
+        protected static Bounds TransformHandleToBoundsSpace(Bounds handleBounds, Transform transform, Vector3 viewScale, bool useRS) {
+            viewScale = viewScale.InvertScale();
+            if (useRS) {
+                // Vector3 size = Handles.matrix.MultiplyVector(handleBounds.size);
+                // size = Vector3.Scale(size, Vector3Ext.InvertScale(transform.lossyScale));
+                Vector3 size = Vector3.Scale(handleBounds.size, Vector3Ext.InvertScale(transform.lossyScale));
+                size = size.Abs();
+                size = Vector3.Scale(size, viewScale);
+                // Vector3 size2 = Handles.matrix.MultiplyVector(handleBounds.size).Scaled(transform.lossyScale.InvertScale()).Abs();
+                return new Bounds(
+                    center: Vector3.Scale(transform.localToWorldMatrix.inverse * (Handles.matrix * handleBounds.center), viewScale),
+                    size: size
+                // size: handleBounds.size.Scaled(transform.lossyScale.InvertScale()).Abs()
+                );
+            } else {
+                return new Bounds(
+                    center: Vector3.Scale(Handles.matrix * handleBounds.center, viewScale),
+                    // size: Handles.matrix.MultiplyVector(handleBounds.size)
+                    // size: handleBounds.size
+                    size: Vector3.Scale(handleBounds.size, viewScale)
+                );
+
+            }
         }
     }
 }

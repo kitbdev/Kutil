@@ -81,12 +81,27 @@ namespace Kutil {
                 vec.z % other.z
             );
         }
+        public static Vector3 Scaled(this Vector3 vec, Vector3 other) {
+            return new Vector3(
+                vec.x * other.x,
+                vec.y * other.y,
+                vec.z * other.z
+            );
+        }
         public static float MinValue(this Vector3 vec) {
             return Mathf.Min(vec.x, vec.y, vec.z);
         }
         public static float MaxValue(this Vector3 vec) {
             return Mathf.Max(vec.x, vec.y, vec.z);
         }
+
+        /// <summary>Inverts the vector. returns 1 / vector</summary>
+        public static Vector3 InvertScale(this Vector3 scaleVector) {
+            for (int axis = 0; axis < 3; ++axis)
+                scaleVector[axis] = scaleVector[axis] == 0f ? 0f : 1f / scaleVector[axis];
+            return scaleVector;
+        }
+
         /// <summary>returns the corresponding axis</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetAxis(this Vector3 vec, Axis axis) {

@@ -60,6 +60,8 @@ namespace Kutil.PropertyDrawers {
             // this properly responds to all changes
             inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
             decorator.RegisterCallback<DetachFromPanelEvent>(OnDetach);
+
+            UpdateField();
         }
 
         void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {

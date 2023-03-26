@@ -22,7 +22,7 @@ namespace Kutil {
         // public string offsetFieldName { get; set; }
 
         // todo scale?
-        // public float scale { get; set; }
+        public float scale { get; set; } = 1f;
 
 
         public BoundsEditorToolAttribute() { }

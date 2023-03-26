@@ -16,9 +16,12 @@ namespace Kutil.PropertyDrawers {
         AddButtonAttribute addButton => (AddButtonAttribute)attribute;
 
         SerializedProperty serializedProperty;
+        Button btn;
 
         public override VisualElement CreatePropertyGUI() {
-            Button btn = new Button();
+            serializedProperty = null;
+
+            btn = new Button();
             btn.text = addButton.buttonLabel ?? addButton.buttonMethodName;
             btn.name = $"{btn.text} Button";
             btn.enableRichText = addButton.richText;
@@ -31,9 +34,17 @@ namespace Kutil.PropertyDrawers {
                 }
                 CallButtonMethod(serializedProperty);
             };
-            // btn.RegisterCallback<GeometryChangedEvent>(ce => {
-            // });
+            btn.RegisterCallback<GeometryChangedEvent>(OnSetup);
             return btn;
+        }
+        void OnSetup(GeometryChangedEvent changedEvent) {
+            btn.UnregisterCallback<GeometryChangedEvent>(OnSetup);
+            if (addButton.hideProperty) {
+                PropertyField propertyField = btn.GetFirstAncestorOfType<PropertyField>();
+                if (propertyField != null && propertyField.childCount > 1) {
+                    propertyField[1].style.display = DisplayStyle.None;
+                }
+            }
         }
 
         void CallButtonMethod(SerializedProperty property) {
