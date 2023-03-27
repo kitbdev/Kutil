@@ -25,7 +25,11 @@ namespace Kutil {
         public override GUIContent toolbarIcon =>
             new GUIContent(EditorGUIUtility.IconContent("d_EditCollider").image, "Bounds Tool");
 
-        public override bool IsAvailable() => isAvailable;
+        public override bool IsAvailable() {
+            // defeats the purpose of caching?
+            UpdateAvailability();
+            return isAvailable;
+        }
         public override bool gridSnapEnabled => !isBoundsInt;
 
 
@@ -43,22 +47,23 @@ namespace Kutil {
             // }
         }
 
-        // todo this is called every time a selection is made, is reflection too costly? not really
         void UpdateAvailability() {
             isAvailable = false;
             // Debug.Log("btool selection change " + Selection.objects.ToStringFull(null, true));
             // Debug.Log("btool update " + targets?.ToStringFull(null, true));
-            // targets
 
             foreach (var obj in targets) {
                 // Debug.Log($"check on {obj.name} b?{obj is Behaviour} t{obj.GetType().Name}");
                 isAvailable = IsAvailable(obj);
                 if (isAvailable) break;
             }
-            ToolManager.RefreshAvailableTools();
+
+            // ToolManager.RefreshAvailableTools();
             if (!isAvailable) {
                 // disable self
-                ToolManager.RestorePreviousTool();
+                if (ToolManager.IsActiveTool(this)) {
+                    ToolManager.RestorePreviousTool();
+                }
             }
         }
         /// <summary>
@@ -106,6 +111,9 @@ namespace Kutil {
             }
         }
 
+        // todo make serialized object from target properties and do here?
+        // for multiselect if noting else
+
         // do actual tool in BoundsEditorToolDrawer SceneView.duringSceneGui instead
     }
 
@@ -140,22 +148,19 @@ namespace Kutil {
             toolActive = false;
             boundsTransform = null;
 
-            this.property = property;
+            this.property = property.Copy();
             propertyField = new PropertyField(property);
+            propertyField.name = "bounds-tool-drawer-" + property.propertyPath;
 
             if (property.propertyType != SerializedPropertyType.Bounds && property.propertyType != SerializedPropertyType.BoundsInt) {
                 // invalid field type, only works on Bounds and BoundsInt
                 return propertyField;
             }
 
-            // todo array support
-            if (property.IsInAnyArray() || property.isArray) {
-                // arrays not supported
-                return propertyField;
-            }
+            // todo multiselect support
 
             // prevent the user from trying to enable the tool here where it is unavailable for this target
-            // ToolManager.
+            ToolManager.RefreshAvailableTools();
             if (!BoundsEditorTool.IsAvailable(property.serializedObject.targetObject)) {
                 // Debug.LogWarning("BoundsEditorTool is not available for " + property.serializedObject.targetObject.name + " " + property.serializedObject.targetObject.GetType().Name);
                 return propertyField;
@@ -250,11 +255,21 @@ namespace Kutil {
             // ? set min and max per axis in attribute?
 
             // todo? maybe use this event - AttachToPanelEvent
-            root.RegisterCallback<GeometryChangedEvent>(SetupField);
+            root.RegisterCallback<AttachToPanelEvent>(OnAttach);
+            root.RegisterCallback<DetachFromPanelEvent>(OnDetach);
+            // root.RegisterCallback<GeometryChangedEvent>(SetupField);
             return root;
         }
         private void SetupField(GeometryChangedEvent evt) {
-            root.UnregisterCallback<GeometryChangedEvent>(SetupField);
+            // root.UnregisterCallback<GeometryChangedEvent>(SetupField);
+
+            if (!ValidateProperty()) {
+                // if (property == null) {
+                // Debug.Log("on setup no property! " + propertyField?.name);
+                return;
+            }
+
+            // Debug.Log("on setup " + property.propertyPath);
 
             // get inspector element to register an onvalidate callback
             inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
@@ -262,9 +277,10 @@ namespace Kutil {
                 Debug.LogError($"{GetType().Name} - inspectorElement missing!");
                 return;
             }
+
             // this properly responds to all changes
+            // inspectorElement.RegisterCallback<SerializedObjectChangeEvent>(OnUpdateObject);
             // inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
-            root.RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
             // i think this just adds the button in the inspector
             // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/GUI/Tools/EditorToolGUI.cs
@@ -276,14 +292,51 @@ namespace Kutil {
 
             OnToolChange();
         }
+        // todo this is a mess
+        void OnAttach(AttachToPanelEvent evt) {
+            // Debug.Log("attached");
+
+            SetupField(null);
+        }
 
         void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
+            // Debug.Log("detached! " + detachFromPanelEvent.target.ToString());
+            //property?.propertyPath
+            property = null;
+            boundsTransform = null;
+            inspectorElement = null;
             // inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+            // inspectorElement.UnregisterCallback<SerializedObjectChangeEvent>(OnUpdateObject);
             // root.UnregisterCallback<ContextualMenuPopulateEvent>(OnContextMenuEvent);
 
             SceneView.duringSceneGui -= SceneGUI;
             ToolManager.activeToolChanged -= OnToolChange;
+
+            ToolManager.RefreshAvailableTools();
         }
+
+        // void OnUpdateObject(SerializedObjectChangeEvent changeEvent) {
+        //     Debug.Log("change obj " + changeEvent.ToString());
+        // }
+
+        // void OnUpdate(SerializedPropertyChangeEvent changeEvent) {
+        //     //! this is not called when deleted
+        //     // changeEvent
+        //     Debug.Log("change p " + changeEvent.changedProperty.propertyPath + " on " + changeEvent.currentTarget.ToString());
+        //     if (changeEvent.changedProperty == null) {
+        //         Debug.Log("cp is null!");
+        //     }
+        //     if (property == null) {
+        //         Debug.Log("p is null!");
+        //     }
+        //     if (changeEvent.changedProperty == property) {
+        //         Debug.Log("prop changed!");
+        //         ToolManager.RefreshAvailableTools();
+        //         if (!BoundsEditorTool.IsAvailable(property.serializedObject.targetObject)) {
+
+        //         }
+        //     }
+        // }
 
         void OnContextMenuEvent(ContextualMenuPopulateEvent ce) {
             // Debug.Log("OnContextMenuEvent");
@@ -396,7 +449,25 @@ namespace Kutil {
             UpdateValueFromBounds();
         }
 
+        bool ValidateProperty(bool tryfind = true) {
+            if (property != null) {
+                try {
+                    _ = property.propertyType;
+                } catch (InvalidOperationException) {
+                    // Debug.Log("caught property fail " + e);
+                    property = null;
+                }
+            }
+            if (tryfind && property == null && propertyField != null) {
+                SerializedProperty serializedProperty = SerializedPropertyExtensions.GetBindedPropertyFromPropertyField(propertyField, false);
+                if (serializedProperty != null) property = serializedProperty;
+            }
+            return property != null;
+        }
+
         void OnToolChange() {
+            if (property == null) return;
+
             bool wasActive = toolActive;
             toolActive = IsBoundsToolActive();
 
@@ -432,25 +503,27 @@ namespace Kutil {
 
         void SceneGUI(SceneView sceneView) {
             if (!toolEnabled) return;
+            if (property == null || boundsTransform == null) return;
+            //! this can be called before detach is called
+            if (!ValidateProperty()) return;
 
             // Debug.Log($"BoundsEditorToolDrawer scenegui active:{toolActive} t:{boundsTransform}");
-
-            if (boundsTransform == null || Mathf.Approximately(boundsTransform.lossyScale.sqrMagnitude, 0f)) return;
 
             Matrix4x4 transformMatrix;
             if (boundsEditorToolAttribute.scale <= 0) {
                 boundsEditorToolAttribute.scale = 1f;
             }
-            // boundsEditorToolAttribute.scale = 0.5f;
             Vector3 viewScale = boundsEditorToolAttribute.scale * Vector3.one;
             bool useRotScale = boundsEditorToolAttribute.useTransformScaleAndRotation;
             // scale must be 0 for handle to work correctly
             if (useRotScale) {
+                if (Mathf.Approximately(boundsTransform.lossyScale.sqrMagnitude, 0f)) return;
                 transformMatrix = Matrix4x4.TRS(boundsTransform.position, boundsTransform.rotation, Vector3.one);
             } else {
                 // transformMatrix = Matrix4x4.TRS(boundsTransform.position, Quaternion.identity, Vector3.one);
                 transformMatrix = Matrix4x4.Translate(boundsTransform.position);
             }
+
             // Debug.Log("scale:" + scale + " " + boundsEditorToolAttribute.scale+" "+transformMatrix.lossyScale);
             if (!toolActive) {
                 // draw regular cube when tool not activated

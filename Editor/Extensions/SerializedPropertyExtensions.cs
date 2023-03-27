@@ -31,14 +31,14 @@ namespace Kutil {
                 Debug.LogError($"GetBindedPropertyFromDecorator mustbe called from a decorator root after GeometryChanged! no propertyField for '{rootElement.name}'");
                 return null;
             }
-            //     return GetBindedPropertyFromPropertyField(propertyField);
-            // }
-            // public static SerializedProperty GetBindedPropertyFromPropertyField(PropertyField propertyField) {
-            //     var rootElement = propertyField;
+            return GetBindedPropertyFromPropertyField(propertyField);
+        }
+        public static SerializedProperty GetBindedPropertyFromPropertyField(PropertyField propertyField, bool req = true) {
+            var rootElement = propertyField;
             // try to get on inspector
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
-                Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} inspectorElement null");
+                if (req) Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} inspectorElement null");
                 return null;
             }
             // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/UIElements/Inspector/InspectorElement.cs
@@ -72,12 +72,12 @@ namespace Kutil {
 
             SerializedObject serializedObject = editor.serializedObject;
             if (serializedObject == null) {
-                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editorElement.name} serializedObject null");
+                if (req) Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editorElement.name} serializedObject null");
                 return null;
             }
             SerializedProperty serializedProperty = serializedObject.FindProperty(propertyField.bindingPath);
             if (serializedProperty == null) {
-                Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editor} {propertyField.bindingPath} serializedProperty null");
+                if (req) Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editor} {propertyField.bindingPath} serializedProperty null");
                 return null;
             }
             return serializedProperty;
