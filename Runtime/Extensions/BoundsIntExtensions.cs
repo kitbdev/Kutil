@@ -190,6 +190,12 @@ namespace Kutil {
         public static Vector3Int CenterIntFloored(this BoundsInt bounds) => bounds.position + bounds.size / 2;
         public static Vector3Int CenterIntRounded(this BoundsInt bounds) =>
             bounds.position + Vector3Int.RoundToInt((Vector3)bounds.size / 2f);
+        public static BoundsInt SetCenterRounded(this BoundsInt bounds, Vector3Int newCenter) {
+            // Debug.Log($"center {newCenter} r{Vector3Int.RoundToInt((Vector3)bounds.size / 2f)} p:{bounds.position} s:{bounds.size}");
+            bounds.position = newCenter - Vector3Int.RoundToInt((Vector3)bounds.size / 2f);
+            //Vector3Int.RoundToInt((Vector3)bounds.size / 2f);
+            return bounds;
+        }
 
         /// <summary>
         /// grows bounds to include max(top,right,frwd) corner.

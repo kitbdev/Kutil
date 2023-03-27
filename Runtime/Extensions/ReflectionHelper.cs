@@ -268,12 +268,23 @@ namespace Kutil {
             return false;
         }
 
+        public static T GetAttribute<T>(this MemberInfo memberInfo) where T : Attribute {
+            Type attributeType = typeof(T);
+            Attribute[] attributes = Attribute.GetCustomAttributes(memberInfo);
+            for (int a = 0; a < attributes.Length; a++) {
+                Attribute attribute = attributes[a];
+                if (attributeType.IsInstanceOfType(attribute)) {
+                    return (T)attribute;
+                }
+            }
+            return default;
+        }
         public static bool HasAttribute<T>(this MemberInfo memberInfo) where T : Attribute => HasAttribute(memberInfo, typeof(T));
         public static bool HasAttribute(this MemberInfo memberInfo, Type attributeType) {
             Attribute[] attributes = Attribute.GetCustomAttributes(memberInfo);
             for (int a = 0; a < attributes.Length; a++) {
                 Attribute attribute = attributes[a];
-                if (attributeType.IsInstanceOfType(attribute)){
+                if (attributeType.IsInstanceOfType(attribute)) {
                     return true;
                 }
             }

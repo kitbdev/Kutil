@@ -104,6 +104,9 @@ namespace Kutil.PropertyDrawers {
             // }
 
             // todo override paste?
+
+            // todo add option to override drag and drop
+
         }
         void ContextMenuOverride(ContextualMenuPopulateEvent e) {
             //? how to append instead?

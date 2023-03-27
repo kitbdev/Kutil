@@ -13,6 +13,7 @@ namespace Kutil.PropertyDrawers {
     [CustomPropertyDrawer(typeof(AddButtonAttribute))]
     public class AddButtonDrawer : DecoratorDrawer {
 
+        public static readonly string addButtonClass = "kutil-add-button";
         AddButtonAttribute addButton => (AddButtonAttribute)attribute;
 
         SerializedProperty serializedProperty;
@@ -22,6 +23,7 @@ namespace Kutil.PropertyDrawers {
             serializedProperty = null;
 
             btn = new Button();
+            btn.AddToClassList(addButtonClass);
             btn.text = addButton.buttonLabel ?? addButton.buttonMethodName;
             btn.name = $"{btn.text} Button";
             btn.enableRichText = addButton.richText;

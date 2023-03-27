@@ -32,7 +32,7 @@ namespace Kutil.PropertyDrawers {
             postFieldDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
             PropertyField propertyField = postFieldDecorator.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
-                Debug.LogError($"PostFieldDecoratorDrawer failed to find containing property! {postFieldDecorator.name}");
+                Debug.LogError($"{GetType().Name} failed to find containing property! {postFieldDecorator.name}");
                 return;
             }
             // Debug.Log("MoveDecorators once "+propertyField.name);
@@ -47,7 +47,7 @@ namespace Kutil.PropertyDrawers {
             }
             VisualElement decoratorContainer = postFieldDecorator.parent;
             if (decoratorContainer == null) {
-                Debug.LogError($"CreateCollapsable root {root.name} {postFieldDecorator.name} missing decorator container!");
+                Debug.LogError($"{GetType().Name} root {root.name} {postFieldDecorator.name} missing decorator container!");
                 return;
             }
             if (decoratorContainer.childCount <= 1) {
@@ -56,7 +56,7 @@ namespace Kutil.PropertyDrawers {
             }
             int myDecIndex = decoratorContainer.IndexOf(postFieldDecorator);
             if (myDecIndex < 0 || myDecIndex >= decoratorContainer.childCount - 1) {
-                // no need to add our own decorator
+                // no need to move 
                 // Debug.Log($"{myDecIndex} / {decoratorContainer.childCount}");
             } else {
                 VisualElement newDecoratorContainer = new VisualElement();

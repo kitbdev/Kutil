@@ -38,13 +38,23 @@ namespace Kutil {
             // Debug.Log("btool onenable");
             // isAvailable = false;
             UpdateAvailability();
+            Selection.selectionChanged += OnSelectionChange;
         }
         private void OnDisable() {
+            Selection.selectionChanged -= OnSelectionChange;
             // disable tool, box collider does it 
             //? not working
             // if (ToolManager.IsActiveTool(this)) {
             //     ToolManager.RestorePreviousTool();
             // }
+        }
+        public override void OnWillBeDeactivated() {
+            ClearTargetData();
+
+        }
+
+        void OnSelectionChange() {
+            // UpdateTargets();
         }
 
         void UpdateAvailability() {
@@ -111,10 +121,60 @@ namespace Kutil {
             }
         }
 
+        readonly BoxBoundsHandle boundsHandle = new BoxBoundsHandle();
+        struct TargetData {
+            public Bounds bounds;
+            public Transform boundsTransform;
+            public SerializedProperty property;
+            public BoundsEditorToolAttribute boundsEditorToolAttribute;
+        }
+
+        List<TargetData> targetData = new List<TargetData>();
+        void ClearTargetData() {
+            targetData.Clear();
+        }
+        void UpdateTargets() {
+            ClearTargetData();
+            foreach (var obj in targets) {
+                if (obj is not Component c) continue;
+                SerializedObject so = new SerializedObject(obj);
+                // get all valid properties
+                so.ForEachProperty((prop) => {
+                    if (prop.propertyType != SerializedPropertyType.Bounds &&
+                        prop.propertyType != SerializedPropertyType.BoundsInt) {
+                        // continue
+                        return null;
+                    }
+                    // Debug.Log("checking " + prop.propertyPath);
+                    var fieldInfo = prop.GetFieldInfoOnProp();
+                    BoundsEditorToolAttribute bToolAttr = fieldInfo.GetAttribute<BoundsEditorToolAttribute>();
+                    if (fieldInfo != null && bToolAttr != null) {
+
+                        targetData.Add(new TargetData() {
+                            property = prop.Copy(),
+                            boundsEditorToolAttribute = bToolAttr,
+                            boundsTransform = c.transform,
+                        });
+                        // return SerializedPropertyExtensions.PropIterFlags.Break;
+                    }
+                    // skip bounds internal properties
+                    return SerializedPropertyExtensions.PropIterFlags.SkipChildren;
+                    // return null;
+                }, true);
+            }
+        }
+
         // todo make serialized object from target properties and do here?
         // for multiselect if noting else
 
         // do actual tool in BoundsEditorToolDrawer SceneView.duringSceneGui instead
+
+        // public override void OnToolGUI(EditorWindow window) {
+        void t() {
+            foreach (var validProp in targetData) {
+
+            }
+        }
     }
 
 
@@ -435,7 +495,15 @@ namespace Kutil {
             UpdateValueFromBounds();
         }
         void RecenterAndApplyBounds() {
-            bounds.center = Vector3.zero;
+            if (isBoundsInt) {
+                // this shouldnt affect the size but just setting center does
+                var b = bounds.AsBoundsInt();//.SetCenterRounded(Vector3Int.zero);
+                // Debug.Log($"recenter {bounds.AsBoundsInt()} to {b} ({bounds} to {b.AsBounds()})");
+                b.position = -b.size / 2;
+                bounds = b.AsBounds();
+            } else {
+                bounds.center = Vector3.zero;
+            }
             UpdateValueFromBounds();
         }
         void ResetAndApplyBounds() {
