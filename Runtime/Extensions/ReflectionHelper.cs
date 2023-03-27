@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Kutil {
     public static class ReflectionHelper {
 
-        public static BindingFlags defFlags = BindingFlags.Public
+        public readonly static BindingFlags defFlags = BindingFlags.Public
                                                     | BindingFlags.NonPublic
                                                     | BindingFlags.Instance
                                                     | BindingFlags.Static;
@@ -60,7 +60,7 @@ namespace Kutil {
             value = default;
             return false;
         }
-        static bool TryGetMemberInfo(ref object target, string memberPath, BindingFlags flags, out MemberInfo memberInfo) {
+        public static bool TryGetMemberInfo(ref object target, string memberPath, BindingFlags flags, out MemberInfo memberInfo) {
             if (target == null) {
                 memberInfo = default;
                 return false;
@@ -265,6 +265,18 @@ namespace Kutil {
                 classToInspect = classToInspect.BaseType;
             }
             while (classToInspect != null);
+            return false;
+        }
+
+        public static bool HasAttribute<T>(this MemberInfo memberInfo) where T : Attribute => HasAttribute(memberInfo, typeof(T));
+        public static bool HasAttribute(this MemberInfo memberInfo, Type attributeType) {
+            Attribute[] attributes = Attribute.GetCustomAttributes(memberInfo);
+            for (int a = 0; a < attributes.Length; a++) {
+                Attribute attribute = attributes[a];
+                if (attributeType.IsInstanceOfType(attribute)){
+                    return true;
+                }
+            }
             return false;
         }
 

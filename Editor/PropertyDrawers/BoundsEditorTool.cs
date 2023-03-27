@@ -6,6 +6,8 @@ using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Kutil {
 
@@ -30,14 +32,24 @@ namespace Kutil {
         // since this is a non-global tool, onenable is called everytime a different component is selected
         private void OnEnable() {
             // Debug.Log("btool onenable");
+            // isAvailable = false;
             UpdateAvailability();
         }
+        private void OnDisable() {
+            // disable tool, box collider does it 
+            //? not working
+            // if (ToolManager.IsActiveTool(this)) {
+            //     ToolManager.RestorePreviousTool();
+            // }
+        }
 
+        // todo this is called every time a selection is made, is reflection too costly? not really
         void UpdateAvailability() {
             isAvailable = false;
             // Debug.Log("btool selection change " + Selection.objects.ToStringFull(null, true));
             // Debug.Log("btool update " + targets?.ToStringFull(null, true));
             // targets
+
             foreach (var obj in targets) {
                 // Debug.Log($"check on {obj.name} b?{obj is Behaviour} t{obj.GetType().Name}");
                 isAvailable = IsAvailable(obj);
@@ -57,9 +69,41 @@ namespace Kutil {
         /// <returns></returns>
         public static bool IsAvailable(UnityEngine.Object obj) {
             if (obj is not Component) return false;
-            return ReflectionHelper.HasAnyFieldsWithAttributeType<BoundsEditorToolAttribute>(obj.GetType());
+            return IsAvailableCheckSO(obj);
+            // return ReflectionHelper.HasAnyFieldsWithAttributeType<BoundsEditorToolAttribute>(obj.GetType());
             // Debug.Log($"is available: {isAvailable} on {obj.name}");
             // todo? make sure those fields are of Bounds or BoundsInt type?
+        }
+
+        static bool IsAvailableCheckSO(UnityEngine.Object obj) {
+            if (obj is not Component) return false;
+            using (SerializedObject so = new SerializedObject(obj)) {
+                bool contains = false;
+                // var props = new List<SerializedProperty>();
+                so.ForEachProperty((prop) => {
+                    if (prop.propertyType != SerializedPropertyType.Bounds &&
+                        prop.propertyType != SerializedPropertyType.BoundsInt) {
+                        // continue
+                        return null;
+                    }
+                    // Debug.Log("checking " + prop.propertyPath);
+                    var fieldInfo = prop.GetFieldInfoOnProp();
+                    if (fieldInfo != null && fieldInfo.HasAttribute<BoundsEditorToolAttribute>()) {
+                        // return fieldInfo;
+                        // Debug.Log("found!");
+                        // props.Add(prop.Copy());
+                        contains = true;
+                        return SerializedPropertyExtensions.PropIterFlags.Break;
+                    }
+                    // skip bounds internal properties
+                    return SerializedPropertyExtensions.PropIterFlags.SkipChildren;
+                    // return null;
+                }, true);
+                // var filtered = props.Where(p => p.propertyType == SerializedPropertyType.Bounds ||
+                // p.propertyType == SerializedPropertyType.BoundsInt);
+                // return props.Count() > 0;
+                return contains;
+            }
         }
 
         // do actual tool in BoundsEditorToolDrawer SceneView.duringSceneGui instead
@@ -111,6 +155,7 @@ namespace Kutil {
             }
 
             // prevent the user from trying to enable the tool here where it is unavailable for this target
+            // ToolManager.
             if (!BoundsEditorTool.IsAvailable(property.serializedObject.targetObject)) {
                 // Debug.LogWarning("BoundsEditorTool is not available for " + property.serializedObject.targetObject.name + " " + property.serializedObject.targetObject.GetType().Name);
                 return propertyField;

@@ -6,6 +6,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Kutil.PropertyDrawers;
+using System.Collections.Generic;
 
 namespace Kutil {
     // originally from https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
@@ -106,6 +107,73 @@ namespace Kutil {
             return editor;
         }
 
+        // flags instead?
+        [System.Flags]
+        public enum PropIterFlags {
+            None = 0,
+            Break = 1,
+            SkipChildren = 2,
+        }
+
+        /// <summary>
+        /// invokes func on each property
+        /// </summary>
+        /// <param name="so"></param>
+        /// <param name="func"></param>
+        public static void ForEachProperty(this SerializedObject serializedObject, System.Func<SerializedProperty, PropIterFlags?> func, bool enterChildren = false) {
+            if (serializedObject == null) return;
+            SerializedProperty property = serializedObject.GetIterator();
+            // Expand first child.
+            if (property.NextVisible(true)) {
+                ForEachProperty(property, func, enterChildren);
+            }
+        }
+        /// <summary>
+        /// Iterates over all
+        /// May want to copy the property.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="func"></param>
+        /// <param name="enterChildren"></param>
+        public static void ForEachProperty(this SerializedProperty property, System.Func<SerializedProperty, PropIterFlags?> func, bool enterChildren = false) {
+            if (property == null || func == null) return;
+            bool shouldEnterChildren;
+            do {
+                shouldEnterChildren = enterChildren;
+                PropIterFlags? pir = func(property.Copy());
+                if (pir != null) {
+                    if ((pir & PropIterFlags.Break) > 0) break;
+                    shouldEnterChildren = (pir & PropIterFlags.SkipChildren) == 0;
+                }
+
+            }
+            while (property.NextVisible(shouldEnterChildren));
+        }
+
+        public static IEnumerator GetEnumeratorWithChildren(this SerializedProperty property) {
+            if (property == null) yield break;
+            do {
+                yield return property;
+            } while (property.NextVisible(true));
+        }
+
+        public static IEnumerable<SerializedProperty> GetAllChildren(this SerializedObject serializedObject, bool enterChildren = false) {
+            if (serializedObject == null) return new SerializedProperty[0];
+            SerializedProperty property = serializedObject.GetIterator();
+            // Expand first child.
+            if (property.NextVisible(true)) {
+                return GetAllChildren(property, enterChildren);
+            }
+            return new SerializedProperty[0];
+        }
+        public static IEnumerable<SerializedProperty> GetAllChildren(this SerializedProperty property, bool enterChildren = false) {
+            if (property == null) return new SerializedProperty[0];
+            var list = new List<SerializedProperty>();
+            do {
+                list.Add(property.Copy());
+            } while (property.NextVisible(enterChildren));
+            return list;
+        }
 
         // public static string GetElementName(this SerializedProperty property) {
         // this is literally what .displayName does
@@ -135,10 +203,37 @@ namespace Kutil {
         }
 
 
-        public static T GetValueOnPropRefl<T>(this SerializedProperty property, string fieldname = null) {
+        private static string GetPathRelative(SerializedProperty property, string relativeFieldname) {
+            if (relativeFieldname == null) return property.propertyPath;
+            //? replace from last
+            // todo .. to go up?
+            return property.propertyPath.Replace(property.name, relativeFieldname);
+        }
+
+        public static SerializedProperty GetNeighborProperty(this SerializedProperty property, string neighborFieldName) {
+            string path = property.propertyPath.Replace(property.name, neighborFieldName);
+            SerializedProperty neighborProp = property.serializedObject.FindProperty(path);
+            return neighborProp;
+        }
+
+
+        public static FieldInfo GetFieldInfoOnProp(this SerializedProperty property, string relativeFieldname = null) {
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
-            string path = fieldname == null ? property.propertyPath :
-                property.propertyPath.Replace(property.name, fieldname);
+            string path = GetPathRelative(property, relativeFieldname);
+            object target = targetObject;
+            if (ReflectionHelper.TryGetMemberInfo(ref target, path, ReflectionHelper.defFlags, out var memberInfo)) {
+                if (memberInfo is FieldInfo fieldInfo) {
+                    // fieldInfo.Attributes
+                    return fieldInfo;
+                }
+            }
+            return null;
+        }
+
+
+        public static T GetValueOnPropRefl<T>(this SerializedProperty property, string relativeFieldname = null) {
+            UnityEngine.Object targetObject = property.serializedObject.targetObject;
+            string path = GetPathRelative(property, relativeFieldname);
             if (ReflectionHelper.TryGetValue<T>(targetObject, path, out var val)) {
                 return val;
             }
@@ -159,8 +254,7 @@ namespace Kutil {
                 return false;
             }
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
-            string path = fieldname == null ? property.propertyPath :
-                property.propertyPath.Replace(property.name, fieldname);
+            string path = GetPathRelative(property, fieldname);
             if (ReflectionHelper.TryGetValue<T>(targetObject, path, out var val)) {
                 value = val;
                 return true;
@@ -168,23 +262,16 @@ namespace Kutil {
             value = default;
             return false;
         }
-        public static bool TrySetValueOnPropRefl(this SerializedProperty property, object value, string fieldname = null) {
+        public static bool TrySetValueOnPropRefl(this SerializedProperty property, object value, string relativeFieldname = null) {
             if (property == null || property.serializedObject == null || property.serializedObject.targetObject == null) {
                 value = default;
                 return false;
             }
             UnityEngine.Object targetObject = property.serializedObject.targetObject;
-            string path = fieldname == null ? property.propertyPath :
-                property.propertyPath.Replace(property.name, fieldname);
+            string path = GetPathRelative(property, relativeFieldname);
             return ReflectionHelper.TrySetValue(value, targetObject, path);
         }
 
-
-        public static SerializedProperty GetNeighborProperty(this SerializedProperty property, string neighborFieldName) {
-            string path = property.propertyPath.Replace(property.name, neighborFieldName);
-            SerializedProperty neighborProp = property.serializedObject.FindProperty(path);
-            return neighborProp;
-        }
 
 
         /// <summary>
