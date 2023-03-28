@@ -34,6 +34,10 @@ namespace Kutil {
             return GetBindedPropertyFromPropertyField(propertyField);
         }
         public static SerializedProperty GetBindedPropertyFromPropertyField(PropertyField propertyField, bool req = true) {
+            if (propertyField == null) {
+                if (req) Debug.LogError($"GetBindedPropertyFromDecorator property field is null!");
+                return null;
+            }
             var rootElement = propertyField;
             // try to get on inspector
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();

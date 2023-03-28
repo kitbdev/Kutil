@@ -25,6 +25,10 @@ namespace Kutil.PropertyDrawers {
 
         VisualElement collapsableDecorator;
 
+
+        // todo horizontal layout option?
+
+
         CollapsableAttribute collapsable => (CollapsableAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
@@ -41,7 +45,7 @@ namespace Kutil.PropertyDrawers {
             if (propertyField == null) {
                 Debug.LogError($"CollapsableDrawer failed to find containing property! {collapsableDecorator.name}");
                 return;
-            } 
+            }
             // Debug.Log("collapsable once "+propertyField.name);
             CreateCollapsable(propertyField);
         }

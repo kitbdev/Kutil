@@ -21,6 +21,21 @@ namespace Kutil {
         bool isAvailable = true;
         bool isBoundsInt = false;
 
+
+        // readonly BoxBoundsHandle boundsHandle = new BoxBoundsHandle();
+        struct TargetData {
+            public Bounds bounds;
+            public Transform boundsTransform;
+            public SerializedProperty property;
+            public BoundsEditorToolAttribute boundsEditorToolAttribute;
+            public bool isBoundsInt => property.propertyType == SerializedPropertyType.BoundsInt;
+        }
+
+        List<TargetData> targetData = new List<TargetData>();
+
+        Color handleColor => Handles.UIColliderHandleColor;
+
+
         // d_EditCollider is what boxtool uses. d_RectTool is also box editing like
         public override GUIContent toolbarIcon =>
             new GUIContent(EditorGUIUtility.IconContent("d_EditCollider").image, "Bounds Tool");
@@ -55,6 +70,7 @@ namespace Kutil {
 
         void OnSelectionChange() {
             // UpdateTargets();
+            // todo need to be able to update when properties get added or removed
         }
 
         void UpdateAvailability() {
@@ -92,6 +108,7 @@ namespace Kutil {
 
         static bool IsAvailableCheckSO(UnityEngine.Object obj) {
             if (obj is not Component) return false;
+            if (obj == null) return false;
             using (SerializedObject so = new SerializedObject(obj)) {
                 bool contains = false;
                 // var props = new List<SerializedProperty>();
@@ -121,20 +138,14 @@ namespace Kutil {
             }
         }
 
-        readonly BoxBoundsHandle boundsHandle = new BoxBoundsHandle();
-        struct TargetData {
-            public Bounds bounds;
-            public Transform boundsTransform;
-            public SerializedProperty property;
-            public BoundsEditorToolAttribute boundsEditorToolAttribute;
-        }
-
-        List<TargetData> targetData = new List<TargetData>();
         void ClearTargetData() {
+            // todo ? dispose serialized object  
             targetData.Clear();
+            curNumBounds = -1;
         }
-        void UpdateTargets() {
-            ClearTargetData();
+        int curNumBounds;
+        void CheckUpdateTargets() {
+            int checkCount = 0;
             foreach (var obj in targets) {
                 if (obj is not Component c) continue;
                 SerializedObject so = new SerializedObject(obj);
@@ -145,6 +156,30 @@ namespace Kutil {
                         // continue
                         return null;
                     }
+                    checkCount += 1;
+                    return SerializedPropertyExtensions.PropIterFlags.SkipChildren;
+                });
+                // just counting, so remove it
+                so.Dispose();
+            }
+            if (curNumBounds != checkCount) {
+                UpdateTargets();
+            }
+        }
+        void UpdateTargets() {
+            ClearTargetData();
+            curNumBounds = 0;
+            foreach (var obj in targets) {
+                if (obj is not Component c) continue;
+                SerializedObject so = new SerializedObject(obj);
+                // get all valid properties
+                so.ForEachProperty((prop) => {
+                    if (prop.propertyType != SerializedPropertyType.Bounds &&
+                        prop.propertyType != SerializedPropertyType.BoundsInt) {
+                        // continue
+                        return null;
+                    }
+                    curNumBounds += 1;
                     // Debug.Log("checking " + prop.propertyPath);
                     var fieldInfo = prop.GetFieldInfoOnProp();
                     BoundsEditorToolAttribute bToolAttr = fieldInfo.GetAttribute<BoundsEditorToolAttribute>();
@@ -171,9 +206,34 @@ namespace Kutil {
 
         // public override void OnToolGUI(EditorWindow window) {
         void t() {
-            foreach (var validProp in targetData) {
+            // update if needed
+            CheckUpdateTargets();
+            foreach (var data in targetData) {
 
             }
+        }
+
+
+        static Bounds UpdateBounds(SerializedProperty property) {
+            // update bounds
+            Bounds bounds;
+            if (property.propertyType == SerializedPropertyType.Bounds) {
+                bounds = property.boundsValue;
+            } else if (property.propertyType == SerializedPropertyType.BoundsInt) {
+                bounds = property.boundsIntValue.AsBounds();
+            } else {
+                bounds = default;
+            }
+            return bounds;
+        }
+        static void UpdateValueFromBounds(SerializedProperty property, Bounds bounds) {
+            property.serializedObject.Update();
+            if (property.propertyType == SerializedPropertyType.Bounds) {
+                property.boundsValue = bounds;
+            } else if (property.propertyType == SerializedPropertyType.BoundsInt) {
+                property.boundsIntValue = bounds.AsBoundsIntRounded();
+            }
+            property.serializedObject.ApplyModifiedProperties();
         }
     }
 
@@ -196,6 +256,7 @@ namespace Kutil {
         bool toolActive;
         Bounds bounds;
         Transform boundsTransform;
+        Color handleColor => Handles.UIColliderHandleColor;
 
         readonly BoxBoundsHandle boundsHandle = new BoxBoundsHandle();
 
@@ -577,6 +638,8 @@ namespace Kutil {
 
             // Debug.Log($"BoundsEditorToolDrawer scenegui active:{toolActive} t:{boundsTransform}");
 
+
+
             Matrix4x4 transformMatrix;
             if (boundsEditorToolAttribute.scale <= 0) {
                 boundsEditorToolAttribute.scale = 1f;
@@ -599,7 +662,7 @@ namespace Kutil {
                     UpdateBounds();
                     using (new Handles.DrawingScope(transformMatrix)) {
                         // ? disabled color instead
-                        Handles.color = (Handles.UIColliderHandleColor);
+                        Handles.color = handleColor;
 
                         var handleBounds = TransformBoundsToHandleSpace(bounds, boundsTransform, viewScale, useRotScale);
 
@@ -618,8 +681,10 @@ namespace Kutil {
                 boundsHandle.center = handleBounds.center;
                 boundsHandle.size = handleBounds.size;
 
+                Handles.color = handleColor;
                 // can change color or which axes to have handles on
-                boundsHandle.SetColor(Handles.UIColliderHandleColor);
+                boundsHandle.SetColor(handleColor);
+                // Debug.Log(Handles.UIColliderHandleColor + "c");
 
                 EditorGUI.BeginChangeCheck();
                 boundsHandle.DrawHandle();
