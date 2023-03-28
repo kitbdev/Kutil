@@ -11,6 +11,7 @@ namespace Kutil {
 
         public string buttonMethodName { get; set; }
         public string buttonLabel { get; set; }
+        public string buttonTooltip { get; set; }
         /// <summary>parameters to pass into the call (static)</summary>
         public object[] parameters { get; set; }
         public bool allowMultipleCalls { get; set; } = true;

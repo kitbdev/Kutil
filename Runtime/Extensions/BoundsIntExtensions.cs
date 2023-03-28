@@ -198,6 +198,36 @@ namespace Kutil {
         }
 
         /// <summary>
+        /// Returns a new bounds moved by amount
+        /// </summary>
+        /// <param name="amount"></param>
+        public static BoundsInt Moved(this BoundsInt bounds, Vector3Int amount) {
+            return new BoundsInt(bounds.position + amount, bounds.size);
+        }
+        /// <summary>
+        /// Returns a new bounds with size scaled by scale
+        /// </summary>
+        /// <param name="scale"></param>
+        public static BoundsInt Scaled(this BoundsInt bounds, int scale) => bounds.Scaled(new Vector3Int(scale, scale, scale));
+        /// <summary>
+        /// Returns a new bounds with size scaled by scale
+        /// </summary>
+        /// <param name="scale"></param>
+        public static BoundsInt Scaled(this BoundsInt bounds, Vector3Int scale) {
+            return new BoundsInt(bounds.position, Vector3Int.Scale(bounds.size, scale));
+        }
+        public static BoundsInt ScaledCentered(this BoundsInt bounds, Vector3Int scale) {
+            Vector3Int size = Vector3Int.Scale(bounds.size, scale);
+            Vector3Int offset = (size - bounds.size) / 2;
+            return new BoundsInt(bounds.position - offset, size);
+        }
+        public static BoundsInt ScaledCenteredRounded(this BoundsInt bounds, Vector3 scale) {
+            Vector3Int size = Vector3Int.RoundToInt(Vector3.Scale(bounds.size, scale));
+            Vector3Int offset = (size - bounds.size) / 2;
+            return new BoundsInt(bounds.position - offset, size);
+        }
+
+        /// <summary>
         /// grows bounds to include max(top,right,frwd) corner.
         /// ! doesnt actually change other boundsint method functionality
         /// </summary>

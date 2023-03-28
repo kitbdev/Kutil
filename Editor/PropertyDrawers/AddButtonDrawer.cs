@@ -26,6 +26,9 @@ namespace Kutil.PropertyDrawers {
             btn.AddToClassList(addButtonClass);
             btn.text = addButton.buttonLabel ?? addButton.buttonMethodName;
             btn.name = $"{btn.text} Button";
+            if (addButton.buttonTooltip != null) {
+                btn.tooltip = addButton.buttonTooltip;
+            }
             btn.enableRichText = addButton.richText;
             btn.clicked += () => {
                 // decorators dont have access to the property...

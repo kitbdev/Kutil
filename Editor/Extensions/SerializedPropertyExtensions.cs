@@ -38,50 +38,53 @@ namespace Kutil {
                 if (req) Debug.LogError($"GetBindedPropertyFromDecorator property field is null!");
                 return null;
             }
-            var rootElement = propertyField;
+
             // try to get on inspector
             InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
-            if (inspectorElement == null) {
-                if (req) Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} inspectorElement null");
-                return null;
-            }
-            // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/UIElements/Inspector/InspectorElement.cs
-            if (ReflectionHelper.TryGetValue<SerializedObject>(inspectorElement, "boundObject", out SerializedObject so)) {
-                SerializedProperty serializedPropertyI = so.FindProperty(propertyField.bindingPath);
-                if (serializedPropertyI != null) {
-                    return serializedPropertyI;
+            if (inspectorElement != null) {
+                // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/UIElements/Inspector/InspectorElement.cs
+                if (ReflectionHelper.TryGetValue<SerializedObject>(inspectorElement, "boundObject", out SerializedObject so)) {
+                    SerializedProperty serializedPropertyI = so.FindProperty((string)propertyField.bindingPath);
+                    if (serializedPropertyI != null) {
+                        return serializedPropertyI;
+                    }
                 }
             }
 
             // try to get on custom inspectorfield 
             InspectorField inspectorField = propertyField.GetFirstAncestorOfType<InspectorField>();
             if (inspectorField != null) {
-                SerializedProperty serializedPropertyIF = inspectorField.SerializedObject.FindProperty(propertyField.bindingPath);
+                SerializedProperty serializedPropertyIF = inspectorField.SerializedObject.FindProperty((string)propertyField.bindingPath);
                 if (serializedPropertyIF != null) {
                     return serializedPropertyIF;
                 }
             }
 
+
             // try to get on editor
+            if (inspectorElement == null) {
+                if (req) Debug.LogError($"GetBindedPropertyFromPropertyField {propertyField.name} inspectorElement not found!");
+                return null;
+            }
             VisualElement editorElement = inspectorElement.parent;
             if (editorElement == null) {
-                Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} {inspectorElement.name} editorElement null");
+                Debug.LogError($"GetBindedPropertyFromPropertyField {propertyField.name} {inspectorElement.name} editorElement null");
                 return null;
             }
             // EditorElement is internal, so get the editor via reflection
             if (!ReflectionHelper.TryGetValue<Editor>(editorElement, "editor", out Editor editor)) {
-                Debug.LogError($"GetBindedPropertyFromDecorator {rootElement.name} {editorElement.name} editor null");
+                Debug.LogError($"GetBindedPropertyFromPropertyField {propertyField.name} {editorElement.name} editor null");
                 return null;
             }
 
             SerializedObject serializedObject = editor.serializedObject;
             if (serializedObject == null) {
-                if (req) Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editorElement.name} serializedObject null");
+                if (req) Debug.LogError($"GetBindedPropertyFromPropertyField {propertyField.name} {editorElement.name} serializedObject null");
                 return null;
             }
-            SerializedProperty serializedProperty = serializedObject.FindProperty(propertyField.bindingPath);
+            SerializedProperty serializedProperty = serializedObject.FindProperty((string)propertyField.bindingPath);
             if (serializedProperty == null) {
-                if (req) Debug.LogError($"GetBindedSPropFromDecorator {rootElement.name} {editor} {propertyField.bindingPath} serializedProperty null");
+                if (req) Debug.LogError($"GetBindedPropertyFromPropertyField {propertyField.name} {editor} {propertyField.bindingPath} serializedProperty null");
                 return null;
             }
             return serializedProperty;

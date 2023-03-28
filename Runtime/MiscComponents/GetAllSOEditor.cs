@@ -17,6 +17,9 @@ namespace Kutil {
         /// <param name="filter"></param>
         /// <param name="folders"></param>
         /// <returns>array of ScriptableObjects</returns>
+        public static T[] GetAllInstancesInFolder<T>(string folder = "") where T : ScriptableObject {
+            return GetAllInstances<T>(folders: folder.InNewArray());
+        }
         public static T[] GetAllInstances<T>(string filter = "", string[] folders = null) where T : ScriptableObject {
 #if UNITY_EDITOR
             // http://answers.unity.com/answers/1425776/view.html

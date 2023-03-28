@@ -147,11 +147,31 @@ namespace Kutil {
 
     }
     public static class Vector3IntExt {
+        /// <summary>Creates a new Vector3Int with this integer as x, y, and z</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3Int ToVector3Int(this int i) {
+            return new Vector3Int(i, i, i);
+        }
+
         public static Vector3Int Mul(this Vector3Int vec, int val) {
             return new Vector3Int(
                 vec.x * val,
                 vec.y * val,
                 vec.z * val
+            );
+        }
+        public static Vector3Int Div(this Vector3Int vec, int val) {
+            return new Vector3Int(
+                vec.x / val,
+                vec.y / val,
+                vec.z / val
+            );
+        }
+        public static Vector3Int Div(this Vector3Int vec, Vector3Int val) {
+            return new Vector3Int(
+                vec.x / val.x,
+                vec.y / val.y,
+                vec.z / val.z
             );
         }
         public static Vector3Int Abs(this Vector3Int vec) {
@@ -161,6 +181,11 @@ namespace Kutil {
                 Mathf.Abs(vec.z)
             );
         }
+
+        public static int Volume(this Vector3Int vec) {
+            return vec.x * vec.y * vec.z;
+        }
+
         // public static Vector3Int Min(params Vector3Int[] vecs) {
         //     return new Vector3Int(
         //         Mathf.Min(vecs.Select(vecs => vecs.x).ToArray()),
@@ -194,7 +219,7 @@ namespace Kutil {
         }
         /// <summary>Get unit Vector for the Axis in the positive direction</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3Int GetAxisVector(Axis axis) {
+        public static Vector3Int GetAxisUnitVector(Axis axis) {
             switch (axis) {
                 case Axis.x: return Vector3Int.right;
                 case Axis.y: return Vector3Int.up;
