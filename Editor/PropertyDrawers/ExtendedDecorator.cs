@@ -16,8 +16,7 @@ namespace Kutil.PropertyDrawers {
 
         public static readonly string extendedDecoratorClass = "kutil-extended-decorator";
 
-        // can this be overriden?
-        // public static string additionalDecoratorClass => null;
+        protected virtual string decoratorName => null;
 
         protected VisualElement decorator;
 
@@ -58,6 +57,9 @@ namespace Kutil.PropertyDrawers {
                 // todo manage this better?
                 if (_serializedProperty == null) {
                     _serializedProperty = SerializedPropertyExtensions.GetBindedPropertyFromPropertyField(propertyField);
+                    if (_serializedProperty == null) {
+                        Debug.LogError($"{GetType().Name} failed to get decorator SerializedProperty! Make sure this is called after first GeometryChange");
+                    }
                 }
                 return _serializedProperty;
             }
@@ -78,14 +80,28 @@ namespace Kutil.PropertyDrawers {
 
 
         public override VisualElement CreatePropertyGUI() {
+            _serializedProperty = null;
             decorator = new VisualElement();
+            if (decoratorName != null) {
+                decorator.name = decoratorName;
+            }
             decorator.AddToClassList(extendedDecoratorClass);
             if (needSetupCall) {
-                // todo on panel attach instead?
-                decorator.RegisterCallback<GeometryChangedEvent>(OnDecGeoChange);
+                RegisterSetup();
             }
             return decorator;
         }
+
+        protected void RegisterSetup() {
+            if (decorator == null) {
+                Debug.LogError($"{GetType().Name} decorator must not be null to Setup!");
+                return;
+            }
+            // todo on panel attach instead?
+            decorator.RegisterCallback<AttachToPanelEvent>(OnAttach);
+            // decorator.RegisterCallback<GeometryChangedEvent>(OnDecGeoChange);
+        }
+
         private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
             decorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
             Setup();
@@ -97,14 +113,20 @@ namespace Kutil.PropertyDrawers {
         }
 
         void OnAttach(AttachToPanelEvent attachToPanelEvent) {
-
+            decorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
+            Setup();
+            if (registerUpdateCall) {
+                propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
+                // this properly responds to all changes
+                inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+            }
         }
         void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
             if (registerUpdateCall) {
                 inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
             }
             // todo properly handle property
-            // property = null;
+            // _serializedProperty = null;
             // ClearData();
         }
 

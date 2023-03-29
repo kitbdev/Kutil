@@ -17,6 +17,7 @@ namespace Kutil {
         /// <param name="maxCount">maximum number of elements to check. -1 disables</param>
         /// <returns>string with all elements</returns>
         public static string ToStringFull<T>(this IEnumerable<T> enumerable, Func<T, string> toStrFunc = null, bool includeCount = false, bool includeBraces = true, string seperator = ",", int maxCount = -1) {
+            if (enumerable == null) return "null";
             if (toStrFunc == null) toStrFunc = e => e.ToString();
             // todo? formatting
             System.Text.StringBuilder str = new System.Text.StringBuilder("");
