@@ -34,6 +34,8 @@ namespace Kutil.PropertyDrawers {
         VisualElement defaultInspector;
         Object valueReference;
 
+        string lastUsedAssetPath = null;
+
         // public VisualElement CreatePropertyGUI(SerializedProperty property) {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             VisualElement root = new VisualElement();
@@ -111,22 +113,27 @@ namespace Kutil.PropertyDrawers {
                 addButton.style.marginLeft = 4;
                 addButton.style.marginRight = 4;
                 addButton.text = "Create";
-                if (type.IsAbstract) {
+
+                lastUsedAssetPath = GetSelectedAssetPath(property);
+
+                IEnumerable<Type> assignableTypes = type.Assembly.GetTypes().Where(t => type.IsAssignableFrom(t));
+                if (type.IsAbstract || assignableTypes.Count() > 1) {
                     // todo test!
-                    IEnumerable<Type> assignableTypes = type.Assembly.GetTypes().Where(t => type.IsAssignableFrom(t));
                     addButton.AddManipulator(new ContextualMenuManipulator(evt => {
                         foreach (var assignableType in assignableTypes) {
                             if (assignableType.IsAbstract) continue;
                             evt.menu.AppendAction(assignableType.Name, action => {
-                                property.objectReferenceValue = CreateAssetWithSavePrompt(assignableType as Type, GetSelectedAssetPath(property));
+                                property.objectReferenceValue = CreateAssetWithSavePrompt(assignableType as Type, lastUsedAssetPath);
                                 property.serializedObject.ApplyModifiedProperties();
+                                UpdateUI();
                             }, DropdownMenuAction.AlwaysEnabled);
                         }
                     }));
                 } else {
                     addButton.clicked += () => {
                         // Debug.Log("create button clicked");
-                        property.objectReferenceValue = CreateAssetWithSavePrompt(type, GetSelectedAssetPath(property));
+                        property.objectReferenceValue = CreateAssetWithSavePrompt(type, lastUsedAssetPath);
+                        property.serializedObject.ApplyModifiedProperties();
                         UpdateUI();
                     };
                 }
@@ -138,6 +145,7 @@ namespace Kutil.PropertyDrawers {
         }
 
         private void AddInspector() {
+            if (fieldProperty.propertyType != SerializedPropertyType.ObjectReference) return;
             if (fieldProperty.objectReferenceValue != null) {
                 if (fieldProperty.objectReferenceValue == valueReference) {
                     // already updated
@@ -184,6 +192,13 @@ namespace Kutil.PropertyDrawers {
             hasValueFoldout.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
             noValueHBox.style.display = !hasValue ? DisplayStyle.Flex : DisplayStyle.None;
             AddInspector();
+
+            UpdateAssetPath();
+        }
+        void UpdateAssetPath() {
+            Object so = valueReference;
+            if (so == null) return;
+            lastUsedAssetPath = AssetDatabase.GetAssetPath(so).Replace($"/{so.name}.asset", "");
         }
 
 

@@ -256,7 +256,9 @@ namespace Kutil {
         bool toolActive;
         Bounds bounds;
         Transform boundsTransform;
-        Color handleColor => Handles.UIColliderHandleColor;
+
+        Color handleColor;
+        Color handleColorInactive;
 
         readonly BoxBoundsHandle boundsHandle = new BoxBoundsHandle();
 
@@ -278,7 +280,20 @@ namespace Kutil {
                 return propertyField;
             }
 
-            // todo multiselect support
+            handleColor = Handles.UIColliderHandleColor;
+            handleColorInactive = handleColor;
+            if (boundsEditorToolAttribute.handleColorHtmlString != null) {
+                if (ColorUtility.TryParseHtmlString(boundsEditorToolAttribute.handleColorHtmlString, out var color)) {
+                    handleColor = color;
+                }
+            }
+            if (boundsEditorToolAttribute.handleInactiveColorHtmlString != null) {
+                if (ColorUtility.TryParseHtmlString(boundsEditorToolAttribute.handleInactiveColorHtmlString, out var color)) {
+                    handleColorInactive = color;
+                }
+            }
+
+            // todo multiselect support (move to tool)
 
             // prevent the user from trying to enable the tool here where it is unavailable for this target
             ToolManager.RefreshAvailableTools();
@@ -661,8 +676,7 @@ namespace Kutil {
                 if (boundsEditorToolAttribute.showBoundsWhenInactive) {
                     UpdateBounds();
                     using (new Handles.DrawingScope(transformMatrix)) {
-                        // ? disabled color instead
-                        Handles.color = handleColor;
+                        Handles.color = handleColorInactive;
 
                         var handleBounds = TransformBoundsToHandleSpace(bounds, boundsTransform, viewScale, useRotScale);
 
@@ -682,9 +696,8 @@ namespace Kutil {
                 boundsHandle.size = handleBounds.size;
 
                 Handles.color = handleColor;
-                // can change color or which axes to have handles on
                 boundsHandle.SetColor(handleColor);
-                // Debug.Log(Handles.UIColliderHandleColor + "c");
+                //? can also set axes to have handles on
 
                 EditorGUI.BeginChangeCheck();
                 boundsHandle.DrawHandle();

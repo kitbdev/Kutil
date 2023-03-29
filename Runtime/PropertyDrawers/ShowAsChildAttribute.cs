@@ -1,21 +1,30 @@
-﻿using UnityEngine;
-using System;
-using System.Collections;
+﻿// using UnityEngine;
+// using System;
+// using System.Collections;
 
-namespace Kutil {
-    [AttributeUsage(
-        //AttributeTargets.Class | AttributeTargets.Struct
-     AttributeTargets.Field | AttributeTargets.Property, Inherited = true)]
-    public class ShowAsChildAttribute : PropertyAttribute {
-        public string childSourceField;
-        public bool showAsParent = false;// probably really dumb
-        // todo? multiple children?
-        // todo? keep label
-        // todo? show as all children
+//! ths only way this might be possible is to have a custom decorator that replaces the parent's property field
 
-        public ShowAsChildAttribute(string choicesListSourceField, bool showAsParent = false) {
-            this.childSourceField = choicesListSourceField;
-            this.showAsParent = showAsParent;
-        }
-    }
-}
+// namespace Kutil {
+//     [AttributeUsage(
+//      //AttributeTargets.Class | AttributeTargets.Struct
+//      AttributeTargets.Field | AttributeTargets.Property, Inherited = true)]
+//      /// <summary>
+//      /// </summary>
+//     public class ShowAsChildAttribute : PropertyAttribute {
+
+//         public string childSourceField { get; set; }
+
+//         // public bool showAsParent { get; set; } = false;// probably really dumb
+//         // todo? multiple children?
+//         // todo? keep label
+//         // todo? show as all children
+
+//         // this is a valid param
+//         public Type test { get; set; }
+
+//         public ShowAsChildAttribute(string childSourceField, bool showAsParent = false) {
+//             this.childSourceField = childSourceField;
+//             this.showAsParent = showAsParent;
+//         }
+//     }
+// }
