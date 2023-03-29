@@ -19,6 +19,8 @@ namespace Kutil.PropertyDrawers {
         SerializedProperty serializedProperty;
         Button btn;
 
+        // todo color
+
         public override VisualElement CreatePropertyGUI() {
             serializedProperty = null;
 

@@ -59,7 +59,7 @@ namespace Kutil {
         [Tooltip("Show on top of other MenuScreen when shown? (moves to last sibling)")]
         [SerializeField] protected bool showOnTop = true;
 
-        [Header("Fade")]
+        [Collapsable("Fade", includeSpaces = false)]
         [Tooltip("Use Fade In - linear using alpha")]
         [SerializeField] protected bool useFadeIn = true;
         [Tooltip("Use Fade Out - linear using alpha")]
@@ -106,7 +106,7 @@ namespace Kutil {
         [SerializeField, ReadOnly] private bool _isShown = false;
         public bool isShown { get => _isShown; protected set => _isShown = value; }
 
-        [Header("Events")]
+        [Collapsable("Events", true)]
         // for stuff like animation?
         public UnityEvent OnShownEvent;
         public UnityEvent OnHiddenEvent;

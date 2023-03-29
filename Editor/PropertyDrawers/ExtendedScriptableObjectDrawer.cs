@@ -157,6 +157,8 @@ namespace Kutil.PropertyDrawers {
                 }
                 valueReference = fieldProperty.objectReferenceValue;
                 hasValueSO = new SerializedObject(fieldProperty.objectReferenceValue);
+                // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/Inspector/Editor.cs
+                // todo? should be able to use InspectorElement if passed in an Editor wiht OnCreateInspectorGUI overridden to return InspectorElement.FillDefaultInspector()
                 // this uses imgui still
                 // InspectorElement defaultInspector = new InspectorElement(property.objectReferenceValue);
                 // use an InspectorElement to allow certain decorators to find the proper serializedobject?
@@ -397,13 +399,22 @@ namespace Kutil.PropertyDrawers {
             this.style.paddingLeft = 0;
             this.style.paddingTop = 0;
             this.style.paddingRight = 0;
-            //? need prefab stuff
-            try {
-                FillDefaultInspector(this, serializedObject, hideScript, true);
-            } catch (System.Exception) {
+            //? need prefab stuff?
+            // try {
+            // todo custom editor support?
+            // Editor.CreateEditor(serializedObject?.targetObject);
 
-                throw;
-            }
+            FillDefaultInspector(this, serializedObject, hideScript, true);
+
+            // this shows script field
+            // https://github.com/needle-mirror/com.unity.ui/blob/master/Editor/Inspector/InspectorElement.cs
+            // InspectorElement.FillDefaultInspector(this, serializedObject, null);
+
+            this.Bind(serializedObject);
+            // } catch (System.Exception) {
+
+            //     throw;
+            // }
         }
 
         /// <summary>
@@ -415,6 +426,9 @@ namespace Kutil.PropertyDrawers {
         /// <param name="hideScript"></param>
         /// <param name="hideSDMC"></param>
         public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, bool hideScript = false, bool hideSDMC = true) {
+            if (serializedObject == null)
+                return;
+
             SerializedProperty property = serializedObject.GetIterator();
             if (property.NextVisible(true)) // Expand first child.
             {
