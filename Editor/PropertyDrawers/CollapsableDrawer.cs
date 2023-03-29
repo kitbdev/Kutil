@@ -24,6 +24,7 @@ namespace Kutil.PropertyDrawers {
         public static readonly string collapsableEndClass = "kutil-collapsable-end-marker";
 
         VisualElement collapsableDecorator;
+        PropertyField propertyField;
 
 
         // todo horizontal layout option?
@@ -41,35 +42,37 @@ namespace Kutil.PropertyDrawers {
         }
         private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
             collapsableDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
-            PropertyField propertyField = collapsableDecorator.GetFirstAncestorOfType<PropertyField>();
+            propertyField = collapsableDecorator.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
                 Debug.LogError($"CollapsableDrawer failed to find containing property! {collapsableDecorator.name}");
                 return;
             }
             // Debug.Log("collapsable once "+propertyField.name);
-            CreateCollapsable(propertyField);
+            CreateCollapsable();
         }
 
+
         // ! note this modifies the inspector's visual tree hierarchy. hopefully it doesnt cause any problems
-        private void CreateCollapsable(VisualElement root) {
-            if (root == null) {
+        private void CreateCollapsable() {
+            if (propertyField == null) {
                 Debug.LogError("CreateCollapsable null");
                 return;
             }
-            if (root.ClassListContains(collapsableClass)) {
-                Debug.LogError($"CreateCollapsable root {root.name} is already collapsable!");
+            if (propertyField.ClassListContains(collapsableClass)) {
+                Debug.LogError($"CreateCollapsable root {propertyField.name} is already collapsable!");
                 return;
             }
-            root.AddToClassList(collapsableClass);
+            propertyField.AddToClassList(collapsableClass);
             // Debug.Log($"creating collapsable for {root.name}");
             // after layout
             VisualElement collapsableBase = new VisualElement();
-            collapsableBase.name = $"{root.name}__collapsable";
+            collapsableBase.name = $"{propertyField.name}__collapsable";
             collapsableBase.AddToClassList(collapsableBaseClass);
 
+            // take other decorators
             VisualElement decoratorContainer = collapsableDecorator.parent;
             if (decoratorContainer == null) {
-                Debug.LogError($"CreateCollapsable root {root.name} {collapsableDecorator.name} missing decorator container!");
+                Debug.LogError($"CreateCollapsable root {propertyField.name} {collapsableDecorator.name} missing decorator container!");
                 return;
             }
             if (decoratorContainer.childCount > 1) {
@@ -85,6 +88,7 @@ namespace Kutil.PropertyDrawers {
                     var decoratorsToSteal = decoratorContainer.Children().Take(collapsableDecIndex);
                     //? move later? 
                     foreach (var dec in decoratorsToSteal) {
+                        // remove first because new container doesnt have a panel yet
                         decoratorContainer.Remove(dec);
                         newDecoratorContainer.Add(dec);
                     }
@@ -100,12 +104,12 @@ namespace Kutil.PropertyDrawers {
             // value will be overwritten if viewdatakey is set and found, to keep state
             foldout.value = !collapsable.startCollapsed;
 
-            // styling
-            // Label label = foldout.Q<Label>();//null, Foldout.textUssClassName
+            // foldout styling
+            // Label label = foldout.Q<Label>();
             Label label = foldout.Q<Label>(null, Foldout.textUssClassName);
             if (label == null) {
                 Debug.Log(foldout.Children().ToStringFull(c => c.name));
-                Debug.LogError($"Collapsable drawer {root.name} invalid Foldout no label!");
+                Debug.LogError($"Collapsable drawer {propertyField.name} invalid Foldout no label!");
                 return;
             }
             if (collapsable.text != null) {
@@ -121,7 +125,7 @@ namespace Kutil.PropertyDrawers {
                 // remove checkmark triangle
                 VisualElement foldoutCheckmark = foldout.Q(null, Foldout.checkmarkUssClassName);
                 if (foldoutCheckmark == null) {
-                    Debug.LogError($"Collapsable drawer {root.name} invalid Foldout no foldoutCheckmark!");
+                    Debug.LogError($"Collapsable drawer {propertyField.name} invalid Foldout no foldoutCheckmark!");
                     return;
                 }
                 foldoutCheckmark.style.display = DisplayStyle.None;
@@ -133,7 +137,7 @@ namespace Kutil.PropertyDrawers {
                 // remove indent
                 VisualElement foldoutContainer = foldout.Q(null, Foldout.contentUssClassName);
                 if (foldoutContainer == null) {
-                    Debug.LogError($"Collapsable drawer {root.name} invalid Foldout no foldoutContainer!");
+                    Debug.LogError($"Collapsable drawer {propertyField.name} invalid Foldout no foldoutContainer!");
                     return;
                 }
                 foldoutContainer.style.marginLeft = new StyleLength(0f);
@@ -143,52 +147,56 @@ namespace Kutil.PropertyDrawers {
 
             // get parent
             // parent should be Inspector element (unless nested?)
-            InspectorElement inspectorElement = root.GetFirstAncestorOfType<InspectorElement>();
+            InspectorElement inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
-                Debug.LogError("cannot find inspector element");
-                return;
+                // Debug.LogError("cannot find inspector element");
+                // return;
             }
 
             // todo nestable?
-            VisualElement parent = inspectorElement;
-            VisualElement cPropVE = root;
-            while (cPropVE.parent != parent) {
-                cPropVE = cPropVE.parent;
+
+            // parent should be containing collapsable (or other group?) or inspector(or .parent?)
+            // var foldoutAncestor = root. .GetFirstAncestorOfType<Foldout>()
+
+
+
+            // VisualElement parent = inspectorElement;
+            VisualElement parent = propertyField.parent;
+            VisualElement childProp = propertyField;
+            while (childProp.parent != parent) {
+                childProp = childProp.parent;
             }
 
             // get all top level children to move into the foldout
             VisualElement[] childs = parent.Children()
-                    .SkipWhile((el) => el != cPropVE)
+                    .SkipWhile((el) => el != childProp)
                     .TakeWhile((el, i) => {
                         // return true to include this element
+                        // include the first item
                         if (i == 0) return true;
 
                         // todo end only if before field?
                         bool isEndMarker = el.Q(null, collapsableEndClass) != null;
                         if (isEndMarker) return false;
 
-                        // dont allow if is another collapsable
+                        // dont allow if is another collapsable, unless allowed
                         bool isCollapsable = el.Q(null, collapsableClass) != null
                                             || el.Q(null, collapsableBaseClass) != null
-                                            || el.Q(null, collapsableDecoratorClass) != null;
-                        if (isCollapsable) return false;
+                                            || HasDec(el, collapsableDecoratorClass);
+                        if (!collapsable.includeOtherCollapsables && isCollapsable) return false;
 
-                        // todo test all cases
-                        bool isHeaderDec = el.Q(null, unityHeaderDecoratorClass) != null;
+                        // todo? test all cases
+                        bool isHeaderDec = HasDec(el, unityHeaderDecoratorClass);
                         if (!collapsable.includeHeaders && isHeaderDec) return false;
 
-                        // bool takeHeaderDec = collapsable.includeHeaders || isHeaderDec;
-                        bool isSpaceDec = el.Q(null, unitySpaceDecoratorClass) != null;
+                        bool isSpaceDec = HasDec(el, unitySpaceDecoratorClass);
                         if (!collapsable.includeSpaces && isSpaceDec) return false;
 
-                        // bool takeSpaceDec = collapsable.includeSpaces || isSpaceDec;
-                        bool isDec = el.Q(null, unityDecoratorContainerClass) != null;
+                        bool isDec = HasDec(el, unityDecoratorContainerClass);
                         bool isOtherDec = isDec && !isSpaceDec && !isHeaderDec;
                         if (!collapsable.includeOtherDecorators && isOtherDec) return false;
-                        // bool takeOtherDec = isSpaceDec || isHeaderDec || (collapsable.includeOtherDecorators || isDec);
-                        // bool takeDec = takeSpaceDec && takeHeaderDec && takeOtherDec;
+
                         // ? any other end markers?
-                        // return takeDec;
                         return true;
                     })
                     .ToArray();
@@ -201,7 +209,8 @@ namespace Kutil.PropertyDrawers {
             collapsableBase.name = $"Collapsable_{childs.First().name}_to_{childs.Last().name}";
             // set viewdata uniquely to make foldout remember folded state
             // https://forum.unity.com/threads/can-someone-explain-the-view-data-key-and-its-uses.855145/#post-5638936
-            foldout.viewDataKey = $"{collapsableBaseClass}_{inspectorElement.name}_{childs.First().name}";
+            string inspectorName = inspectorElement?.name ?? "inspector-null";
+            foldout.viewDataKey = $"{collapsableBaseClass}_{inspectorName}_{childs.First().name}";
             // Debug.Log(foldout.viewDataKey);
 
             // move to foldout
@@ -209,6 +218,17 @@ namespace Kutil.PropertyDrawers {
                 parent.Remove(child);
                 foldout.Add(child);
             }
+        }
+
+
+        static IEnumerable<VisualElement> GetDecoratorContainer(VisualElement propertyField) {
+            return propertyField.Children().Where(el => el.ClassListContains(unityDecoratorContainerClass));
+        }
+        
+        static bool HasDec(VisualElement element, string className) { 
+            // return el.Q(null, className) != null;
+            // dont include embedded decorators, ie when property is a struct
+            return GetDecoratorContainer(element).Any(el => el.Q(null, className) != null);
         }
     }
 }

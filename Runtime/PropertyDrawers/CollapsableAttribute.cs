@@ -12,12 +12,18 @@ namespace Kutil {
 
         public string text { get; set; }
         public bool startCollapsed { get; set; } = false;
+
         public bool includeHeaders { get; set; } = false;
         public bool includeSpaces { get; set; } = true;
         public bool includeOtherDecorators { get; set; } = true;
+
+        /// <summary>allows nesting of other collapsables. Use CollapsableEnd to stop</summary>
+        public bool includeOtherCollapsables { get; set; } = false;
+        
         public bool hideFoloutTriangle { get; set; } = false;
         public bool dontIndent { get; set; } = false;
         public bool useRichText { get; set; } = false;
+
 
         public CollapsableAttribute(string text = "", bool startCollapsed = false, bool includeHeaders = false, bool includeSpaces = true, bool includeOtherDecorators = true, bool hideFoloutTriangle = false, bool dontIndent = false, bool useRichText = false){
             this.text = text;
