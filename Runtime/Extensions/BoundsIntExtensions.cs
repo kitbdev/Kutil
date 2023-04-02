@@ -85,7 +85,7 @@ namespace Kutil {
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsBounds(this BoundsInt bounds, BoundsInt smaller) {
-            return bounds.Contains(smaller.min) && bounds.Contains(smaller.max);
+            return bounds.Contains(smaller.min) && bounds.Contains(smaller.max - Vector3Int.one);
         }
         /// <summary>integer volume of this bounds</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

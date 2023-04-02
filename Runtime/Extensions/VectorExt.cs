@@ -167,6 +167,7 @@ namespace Kutil {
                 vec.z / val
             );
         }
+        /// <summary>divides this vector by another component wise</summary>
         public static Vector3Int Div(this Vector3Int vec, Vector3Int val) {
             return new Vector3Int(
                 vec.x / val.x,

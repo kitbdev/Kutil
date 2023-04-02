@@ -27,16 +27,18 @@ namespace Kutil {
             }
         }
         public static void DrawBounds(Bounds bounds, Color color, Transform t = null, float scale = 1, float duration = 0, bool depthTest = true) {
-            Vector3[] corners = bounds.CornerPositions();
-            foreach (var (e1, e2) in BoundsIntExtensions.edgeIndexes) {
-                Vector3 start = corners[e1];
-                Vector3 end = corners[e2];
-                if (t != null) {
-                    start = t.InverseTransformPoint(start);
-                    end = t.InverseTransformPoint(end);
-                }
-                Debug.DrawLine(start, end, color, duration, depthTest);
-            }
+            bounds.DrawBounds((a, b) => Debug.DrawLine(a, b, color, duration, depthTest), 
+                            Matrix4x4.Scale(scale * Vector3.one), t);
+            // Vector3[] corners = bounds.CornerPositions();
+            // foreach (var (e1, e2) in BoundsIntExtensions.edgeIndexes) {
+            //     Vector3 start = corners[e1];
+            //     Vector3 end = corners[e2];
+            //     if (t != null) {
+            //         start = t.InverseTransformPoint(start);
+            //         end = t.InverseTransformPoint(end);
+            //     }
+            //     Debug.DrawLine(start, end, color, duration, depthTest);
+            // }
         }
     }
 }
