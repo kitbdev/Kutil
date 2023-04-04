@@ -64,6 +64,25 @@ namespace Kutil.PropertyDrawers {
                 return _serializedProperty;
             }
         }
+        /// <summary>
+        /// Is the serialized property currently valid?
+        /// Call this instead of checking serializedProperty == null
+        /// </summary>
+        /// <returns>true if the serialized property is valid</returns>
+        protected bool HasSerializedProperty() {
+            // try {
+            //     _ = _serializedProperty;
+            // } catch (System.Exception) {
+            //     _serializedProperty = null;
+            // }
+            if (_serializedProperty != null && serializedProperty.serializedObject.targetObject == null) {
+                _serializedProperty = null;
+            }
+            if (_serializedProperty == null) {
+                _serializedProperty = SerializedPropertyExtensions.GetBindedPropertyFromPropertyField(propertyField, false);
+            }
+            return _serializedProperty != null;
+        }
 
         private System.Reflection.FieldInfo _fieldInfo;
         protected System.Reflection.FieldInfo fieldInfo {
@@ -103,6 +122,7 @@ namespace Kutil.PropertyDrawers {
         }
 
         private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
+            // _serializedProperty = null;
             decorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
             Setup();
             if (registerUpdateCall) {
@@ -113,6 +133,7 @@ namespace Kutil.PropertyDrawers {
         }
 
         void OnAttach(AttachToPanelEvent attachToPanelEvent) {
+            _serializedProperty = null;
             decorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
             Setup();
             if (registerUpdateCall) {
@@ -125,8 +146,7 @@ namespace Kutil.PropertyDrawers {
             if (registerUpdateCall) {
                 inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
             }
-            // todo properly handle property
-            // _serializedProperty = null;
+            _serializedProperty = null;
             // ClearData();
         }
 

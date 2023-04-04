@@ -65,6 +65,11 @@ namespace Kutil.Ref {
             return decorator;
         }
         protected override void Setup() {
+            if (!HasSerializedProperty()
+                || serializedProperty.serializedObject.targetObject is not Component) {
+                return;
+            }
+
             // get the property field, as decorators dont have access by default
             PropertyField propertyField = decorator.GetFirstAncestorOfType<PropertyField>();
             if (propertyField == null) {
@@ -75,6 +80,8 @@ namespace Kutil.Ref {
             if (propertyField.tooltip == null || propertyField.tooltip == "") {
                 propertyField.tooltip = $"Reference on [{componentRefAttribute.Loc.ToString()}]";
             }
+            propertyField.RegisterValueChangeCallback(ce => UpdateField());
+
             propertyFieldVE = propertyField;
             if (propertyField.childCount > 1) {
                 // the field is the first child after the decorator drawers container
@@ -91,7 +98,6 @@ namespace Kutil.Ref {
 
             // setup ref
 
-
             component = serializedProperty.serializedObject.targetObject as Component;
 
             isArrayOrList = serializedProperty.isArray;
@@ -103,7 +109,7 @@ namespace Kutil.Ref {
                     // isArray = true;
                     elementType = elementType.GetElementType();
                 } else if (elementType.IsGenericType) {
-                    if (elementType.GetGenericTypeDefinition() == typeof(List<>) 
+                    if (elementType.GetGenericTypeDefinition() == typeof(List<>)
                         && elementType.GenericTypeArguments.Length == 1) {
                         // list
                         // isList = true;
@@ -157,6 +163,7 @@ namespace Kutil.Ref {
         }
 
         protected override void OnUpdate(SerializedPropertyChangeEvent changeEvent) {
+            if (!HasSerializedProperty()) return;
             if (changeEvent.changedProperty == serializedProperty) {
                 UpdateField();
             }
