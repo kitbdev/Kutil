@@ -176,6 +176,17 @@ namespace Kutil {
             bounds.size += amount;
         }
         /// <summary>
+        /// Expand the bounds by increasing its size by amount along each axis.
+        /// only moves the maximum point if size and amount are positive.
+        /// if size is negative, amount should also be negative to expand.
+        /// </summary>
+        /// <param name="amount"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BoundsInt Expanded(this BoundsInt bounds, Vector3Int amount) {
+            BoundsInt b = new BoundsInt(bounds.position, bounds.size + amount);
+            return b;
+        }
+        /// <summary>
         /// Expand the bounds by moving its minimum point by amount.
         /// only moves the minimum point if size and amount are positive.
         /// if size is negative, amount should also be negative to expand.
@@ -186,6 +197,13 @@ namespace Kutil {
             bounds.position -= amount;
             bounds.size += amount;
         }
+
+
+        public static void MakePositive(this ref BoundsInt bounds){
+            bounds.SetMinMax(bounds.min, bounds.max);
+        }
+
+
 
         public static Vector3Int CenterIntFloored(this BoundsInt bounds) => bounds.position + bounds.size / 2;
         public static Vector3Int CenterIntRounded(this BoundsInt bounds) =>
@@ -556,32 +574,32 @@ namespace Kutil {
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawBoundsHandles(this BoundsInt bounds, Vector3 offset, Grid grid = null) {
+        public static void DrawBoundsHandles(this BoundsInt bounds, Vector3 offset, GridLayout grid = null) {
             DrawBounds(bounds, HandlesDrawLine, offset, grid);
         }
         /// <summary>
         /// draw the bounds using handles
         /// </summary>
-        public static void DrawBoundsHandles(this BoundsInt bounds, Transform transform = null, Grid grid = null) {
+        public static void DrawBoundsHandles(this BoundsInt bounds, Transform transform = null, GridLayout grid = null) {
             DrawBounds(bounds, HandlesDrawLine, transform, grid);
         }
 
 
-        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Vector3 offset, Grid grid = null) {
+        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Vector3 offset, GridLayout grid = null) {
             Matrix4x4 matrix4x4 = Matrix4x4.Translate(offset);
             DrawBounds(bounds, drawFunc, matrix4x4, null, grid);
         }
-        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Transform transform = null, Grid grid = null) {
+        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Transform transform = null, GridLayout grid = null) {
             DrawBounds(bounds, drawFunc, null, transform, grid);
         }
 
-        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null, Grid grid = null) {
+        public static void DrawBounds(this BoundsInt bounds, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null, GridLayout grid = null) {
             DrawCube(bounds.CornerPositions(), drawFunc, transformMatrix, transform, grid);
         }
         public static void DrawBounds(this Bounds bounds, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null) {
             DrawCube(bounds.CornerPositions(), drawFunc, transformMatrix, transform);
         }
-        public static void DrawCube(Vector3Int[] points, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null, Grid grid = null) {
+        public static void DrawCube(Vector3Int[] points, System.Action<Vector3, Vector3> drawFunc, Matrix4x4? transformMatrix = null, Transform transform = null, GridLayout grid = null) {
             // apply the grid
             Vector3[] ps;
             if (grid != null) {
