@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace Kutil {
     [SelectionBase]
-    [RequireComponent(typeof(CanvasGroup))]
+    [@RequireComponent(typeof(CanvasGroup))]
     public class MenuScreen : MonoBehaviour {
 
         protected enum ShowAction {

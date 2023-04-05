@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace Kutil {
     public enum Axis {
-        x = 0, y = 1, z = 2
+        x = 0, y = 1, z = 2,
+        Right = 0, Up = 1, Forward = 2,
     }
     /*
     ?
@@ -205,11 +206,17 @@ namespace Kutil {
             return new int2(vec.GetAxis(axis), vec.GetAxis(secondAxis));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int3 GetAxisSwizzle(this Vector3Int vec, Axis axis, Axis secondAxis, Axis thirdAxis) {
-            return new int3(vec.GetAxis(axis), vec.GetAxis(secondAxis), vec.GetAxis(thirdAxis));
+        // public static int3 GetAxisSwizzle(this Vector3Int vec, Axis axis, Axis secondAxis, Axis thirdAxis) {
+        //     return new int3(vec.GetAxis(axis), vec.GetAxis(secondAxis), vec.GetAxis(thirdAxis));
+        // }
+        public static Vector3Int Swizzle(this Vector3Int vec, Axis axis, Axis secondAxis, Axis thirdAxis) {
+            return new Vector3Int(vec.GetAxis(axis), vec.GetAxis(secondAxis), vec.GetAxis(thirdAxis));
         }
+        // public static Vector3Int Swizzle(this Vector3Int vec, GridLayout.CellSwizzle cellSwizzle) {
+        //     return new Vector3Int(vec.GetAxis(axis), vec.GetAxis(secondAxis), vec.GetAxis(thirdAxis));
+        // }
         /// <summary>Get vector with just the given Axis</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3Int GetAxisVector(this Vector3Int vec, Axis axis) {
             switch (axis) {
                 case Axis.x: return new(vec.x, 0, 0);
@@ -233,28 +240,52 @@ namespace Kutil {
             return Mathf.Abs(vec.x) + Mathf.Abs(vec.y) + Mathf.Abs(vec.z);
         }
 
-        public static Vector3Int RotateAround(this Vector3Int vec, Vector3Int newForward, Vector3Int point) {
-            return (vec - point).Rotate(newForward) + point;
+        public static Vector3Int TranslateAround(this Vector3Int vec, Vector3Int newForward, Vector3Int point) {
+            return (vec - point).TranslateDir(newForward) + point;
         }
-        public static Vector3Int Rotate(this Vector3Int vec, Vector3Int newForward) {
-            if (newForward == Vector3Int.forward) {
+        /// <summary>
+        /// transform.TranslateDirection but for Vector3Int
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <param name="forwardDir"></param>
+        /// <returns></returns>
+        public static Vector3Int TranslateDir(this Vector3Int vec, Vector3Int forwardDir) {
+            if (forwardDir == Vector3Int.forward) {
                 return vec;
-            } else if (newForward == Vector3Int.zero) {
+            } else if (forwardDir == Vector3Int.zero) {
                 return vec;
-            } else if (newForward == Vector3Int.back) {
+            } else if (forwardDir == Vector3Int.back) {
                 return new Vector3Int(-vec.x, vec.y, -vec.z);
-            } else if (newForward == Vector3Int.right) {
+            } else if (forwardDir == Vector3Int.right) {
                 return new Vector3Int(vec.z, vec.y, -vec.x);
-            } else if (newForward == Vector3Int.left) {
+            } else if (forwardDir == Vector3Int.left) {
                 return new Vector3Int(-vec.z, vec.y, vec.x);
-            } else if (newForward == Vector3Int.up) {
-                return new Vector3Int(vec.x, vec.z, -vec.z);
-            } else if (newForward == Vector3Int.down) {
-                return new Vector3Int(vec.x, -vec.z, vec.z);
+            } else if (forwardDir == Vector3Int.up) {
+                return new Vector3Int(vec.x, vec.z, -vec.y);
+            } else if (forwardDir == Vector3Int.down) {
+                return new Vector3Int(vec.x, -vec.z, vec.y);
             } else {
-                Debug.LogError($"Invalid rotation dir {newForward} for {vec}");
+                Debug.LogError($"Invalid rotation dir {forwardDir} for {vec}");
                 return default;
             }
+        }
+        /// <summary>
+        /// Rotate a vector around an axis.
+        /// Positve for clockwise.
+        /// </summary>
+        /// <param name="vec"></param>
+        /// <param name="axis"></param>
+        /// <param name="positive"></param>
+        /// <returns></returns>
+        public static Vector3Int RotateUnitDir(this Vector3Int vec, Axis axis, bool positive) {
+            int fMult = positive ? 1 : -1;
+            int sMult = positive ? -1 : 1;
+            switch (axis) {
+                case Axis.x: return new Vector3Int(vec.x, fMult * vec.z, sMult * vec.y);
+                case Axis.y: return new Vector3Int(fMult * vec.z, vec.y, sMult * vec.x);
+                case Axis.z: return new Vector3Int(fMult * vec.y, sMult * vec.x, vec.z);
+            }
+            return default;
         }
         // public static Vector3Int RotateAround(this Vector3Int vec, int ninetyTurns, Vector3Int point) {
         //     return (vec - point).Rotate(ninetyTurns);

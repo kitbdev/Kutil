@@ -8,6 +8,17 @@ using UnityEditor;
 #endif
 
 namespace Kutil {
+
+    // public static class GridExtentsions {
+    //     public Vector3Int GetStride(this GridLayout grid) {
+    //         // todo
+    //         return default;
+    //     }
+    //     public Vector3Int Swizzle(Vector3Int vec){
+    //         // todo v3i swizzle version
+    //         return default;
+    //     }
+    // }
     public static class BoundsExtensions {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Bounds Scale(this Bounds bounds, Vector3 scale) {
@@ -199,7 +210,7 @@ namespace Kutil {
         }
 
 
-        public static void MakePositive(this ref BoundsInt bounds){
+        public static void MakePositive(this ref BoundsInt bounds) {
             bounds.SetMinMax(bounds.min, bounds.max);
         }
 

@@ -83,12 +83,13 @@ namespace Kutil {
     }
 
     /// <summary>
-    /// Anywhere will only validate the reference isn't null, but relies on you to 
-    /// manually assign the reference yourself.
+    /// This field must be assigned in the inspector.
+    /// will show an error if it is null.
     /// </summary>
+    // todo make unable to enter playmode?
     [AttributeUsage(AttributeTargets.Field)]
-    public class GetAnywhereAttribute : ComponentRefAttribute {
-        public GetAnywhereAttribute(ComponentRefFlag flags = ComponentRefFlag.Editable)
+    public class RequiredFieldAttribute : ComponentRefAttribute {
+        public RequiredFieldAttribute(ComponentRefFlag flags = ComponentRefFlag.Editable)
             : base(RefLoc.Anywhere, flags: flags) { }
     }
 

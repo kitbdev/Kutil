@@ -16,7 +16,7 @@ namespace Kutil.Ref {
     /// <summary>
     /// Custom property drawer for the reference attributes.
     /// </summary>
-    [CustomPropertyDrawer(typeof(GetAnywhereAttribute))]
+    [CustomPropertyDrawer(typeof(RequiredFieldAttribute))]
     [CustomPropertyDrawer(typeof(GetOnSelfAttribute))]
     [CustomPropertyDrawer(typeof(GetOnChildAttribute))]
     [CustomPropertyDrawer(typeof(GetOnParentAttribute))]
@@ -163,6 +163,7 @@ namespace Kutil.Ref {
         }
 
         protected override void OnUpdate(SerializedPropertyChangeEvent changeEvent) {
+            // Debug.Log("test");
             if (!HasSerializedProperty()) return;
             if (changeEvent.changedProperty == serializedProperty) {
                 UpdateField();
