@@ -132,28 +132,27 @@ namespace Kutil.PropertyDrawers {
             }
         }
 
-        void OnAttach(AttachToPanelEvent attachToPanelEvent) {
+        protected virtual void OnAttach(AttachToPanelEvent attachToPanelEvent) {
             _serializedProperty = null;
             decorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
+            propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
             Setup();
             if (registerUpdateCall) {
-                propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
                 // this properly responds to all changes
                 inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
             }
         }
-        void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
+        protected virtual void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
             if (registerUpdateCall) {
                 inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
             }
             _serializedProperty = null;
-            // ClearData();
+            // OnDetach();
         }
 
 
         protected virtual void Setup() { }
         protected virtual void OnUpdate(SerializedPropertyChangeEvent changeEvent) { }
-        // public virtual void ClearData() {
-        // }
+        // protected virtual void OnDetach() { }
     }
 }
