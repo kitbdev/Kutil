@@ -17,51 +17,124 @@ namespace Kutil {
         VisualElement root;
         PropertyField shapeField;
         PropertyField inOutField;
-        // CurveField customCurveField;
-        PropertyField customCurveField;
+        // PropertyField customCurveField;
+        CurveField customCurveField;
+        CurveField previewCurveField;
+        Toggle previewToggle;
+        string easeFieldPath = null;
+
+        bool showPreview = false;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            easeFieldPath = property.propertyPath;
             SerializedProperty easingShape = property.FindPropertyRelative(nameof(Easing.shape));
             SerializedProperty easingInOut = property.FindPropertyRelative(nameof(Easing.inOut));
             SerializedProperty easingCustomCurve = property.FindPropertyRelative(nameof(Easing.customCurve));
+
             root = new VisualElement();
+            root.name = "EasingDrawer";
             var easeContainer = new VisualElement();
+            easeContainer.name = "EaseHContainer";
             root.Add(easeContainer);
 
             shapeField = new PropertyField(easingShape, property.displayName);
+            shapeField.name = "EaseShapeField";
             inOutField = new PropertyField(easingInOut, "");
+            inOutField.name = "EaseInOutField";
             easeContainer.Add(shapeField);
             easeContainer.Add(inOutField);
             easeContainer.style.flexDirection = FlexDirection.Row;
             easeContainer.style.justifyContent = Justify.FlexStart;
 
-            customCurveField = new PropertyField(easingCustomCurve, "Easing Curve");
-            // customCurveField = new CurveField();
+
+            previewToggle = new Toggle();
+            previewToggle.name = "EasePreviewToggle";
+            previewToggle.tooltip = "preview";
+            previewToggle.value = showPreview;
+            previewToggle.viewDataKey = property.propertyPath + " ease preview toggle vdk";
+            // todo toggle align right?
+            // toggle.AddToClassList(Button.ussClassName);
+            easeContainer.Add(previewToggle);
+            previewToggle.RegisterValueChangedCallback(ce => {
+                showPreview = ce.newValue;
+                UpdateProp(property);
+            });
+            const int indentAmount = 10;
+
+            // customCurveField = new PropertyField(easingCustomCurve, "Easing Curve");
+            customCurveField = new CurveField("Easing Curve");
+            customCurveField.name = "EasingCustomCurve";
+            customCurveField.tooltip = "Curve evalutated from 0 - 1";
+            customCurveField.AddToClassList(CurveField.alignedFieldUssClassName);
+            customCurveField.style.paddingLeft = indentAmount;
+            customCurveField.bindingPath = easingCustomCurve.propertyPath;
             customCurveField.style.display = DisplayStyle.None;
             root.Add(customCurveField);
+
+            previewCurveField = new CurveField("Preview Curve");
+            previewCurveField.name = "EasingPreviewCurve";
+            previewCurveField.AddToClassList(CurveField.alignedFieldUssClassName);
+            // todo make look disabled?
+            // previewCurveField.AddToClassList(CurveField.disabledUssClassName);
+            // previewCurveField.AddToClassList(PropertyField.disabledUssClassName);
+            previewCurveField.style.paddingLeft = indentAmount;
+            previewCurveField.style.display = DisplayStyle.None;
+            root.Add(previewCurveField);
 
             // ? show additional settings for certain easing types
 
             // ? show preview of easing as a graph popup on hover...
 
             shapeField.RegisterValueChangeCallback(UpdateProp);
-            UpdateProp(easingShape);
+            inOutField.RegisterValueChangeCallback(UpdateProp);
+            // previewCurveField.RegisterValueChangedCallback(c => UpdateProp(property));
+
+            UpdateProp(property);
             return root;
         }
 
         private void UpdateProp(SerializedPropertyChangeEvent evt) {
-            UpdateProp(evt.changedProperty);
+            UpdateProp(evt.changedProperty.serializedObject.FindProperty(easeFieldPath));
         }
 
-        private void UpdateProp(SerializedProperty easeShapeProp) {
-            // if easing type is linear, hide inout field
+        private void UpdateProp(SerializedProperty property) {
+            if (property == null) {
+                Debug.LogError("Easing Drawer cant update property null");
+                return;
+            }
+            SerializedProperty easeShapeProp = property.FindPropertyRelative(nameof(Easing.shape));
+            SerializedProperty easingInOut = property.FindPropertyRelative(nameof(Easing.inOut));
+            SerializedProperty easingCustomCurve = property.FindPropertyRelative(nameof(Easing.customCurve));
+
             if (easeShapeProp.propertyType != SerializedPropertyType.Enum) return;
+
+
             int propEnumValue = easeShapeProp.enumValueFlag;
             bool showCustomCurve = propEnumValue == (int)Easing.Shape.Custom;
+            // if easing type is linear, hide inout field
             bool showInOut = propEnumValue != (int)Easing.Shape.Linear && !showCustomCurve;
 
             inOutField.SetDisplay(showInOut);
-            customCurveField.SetDisplay(showCustomCurve);
+
+            if (showPreview && !showCustomCurve) {
+                customCurveField.SetDisplay(false);
+                previewCurveField.SetDisplay(true);
+                previewToggle.SetDisplay(true);
+                // if (customCurveField.IsBound()) customCurveField.Unbind();
+                // customCurveField.
+                // todo dont use a curve field, show a readonly preview somehow else
+                // ? internal...
+                // CurveEditorSettings
+                // CurveEditorWindow
+                // customCurveField.SetEnabled(false);
+                Easing easing = new Easing((Easing.Shape)easeShapeProp.enumValueFlag, (Easing.InOut)easingInOut.enumValueFlag);
+                previewCurveField.value = easing.ToAnimationCurve();
+            } else {
+                // if (!customCurveField.IsBound()) customCurveField.Bind();
+                previewCurveField.SetDisplay(false);
+                customCurveField.SetDisplay(showCustomCurve);
+                previewToggle.SetDisplay(!showCustomCurve);
+            }
             // Debug.Log($"scc:{showCustomCurve} ev{propEnumValue} {(int)Easing.Shape.Custom}");
         }
     }
@@ -71,7 +144,7 @@ namespace Kutil {
     public struct Easing {
         public Shape shape;// = EasingTypeShape.Linear;
         public InOut inOut;// = EasingTypeInOut.InOut;
-        
+
         [Tooltip("Curve evalutated from 0 - 1")]
         public AnimationCurve customCurve;// = AnimationCurve.Linear;
         public float option;
@@ -122,6 +195,44 @@ namespace Kutil {
         }
 
 
+        public AnimationCurve ToAnimationCurve(float accuracy = 0.1f) {
+            if (shape == Shape.Custom) {
+                return customCurve;
+            }
+            if (shape == Shape.Linear) {
+                return AnimationCurve.Linear(0, 0, 1, 1);
+            }
+            // if (shape == Shape.Sine && inOut== InOut.InOut) {
+            //     return AnimationCurve.EaseInOut(0,0,1,1);
+            // }
+            // todo better for various shapes using tangents
+
+
+            if (accuracy <= 0) {
+                return AnimationCurve.Linear(0, 0, 1, 1);
+            }
+            int numKeyFrames = Mathf.CeilToInt(1 / accuracy);
+            Keyframe[] keyframes = new Keyframe[numKeyFrames];
+            for (int i = 0; i < numKeyFrames - 1; i++) {
+                float time = i / (numKeyFrames - 1f);
+                keyframes[i] = new Keyframe(time, Ease(time));
+                keyframes[i].weightedMode = WeightedMode.None;
+            }
+            keyframes[numKeyFrames - 1] = new Keyframe(1f, 1f);
+            // for (float i = 0; i < 1; i += accuracy) {
+            // }
+            AnimationCurve animCurve = new(keyframes);
+            for (int i = 0; i < numKeyFrames; i++) {
+                AnimationUtility.SetKeyBroken(animCurve, i, true);
+                AnimationUtility.SetKeyLeftTangentMode(animCurve, i, AnimationUtility.TangentMode.Auto);
+                AnimationUtility.SetKeyRightTangentMode(animCurve, i, AnimationUtility.TangentMode.Auto);
+                // animCurve[i].weightedMode = WeightedMode.Both;
+                // animCurve.SmoothTangents(i, 1f);
+            }
+            return animCurve;
+        }
+
+
         public static implicit operator EasingType(Easing easing) => easing.easingType;
         public static implicit operator Easing(EasingType easingType) =>
             easingType == EasingType.Linear ? new Easing(Shape.Linear) :
@@ -129,6 +240,8 @@ namespace Kutil {
             new Easing(
                     (Shape)((int)easingType / 3),
                     (InOut)((int)easingType % 3));
+        public static implicit operator Easing(AnimationCurve animationCurve) =>
+            new Easing(Shape.Custom) { customCurve = animationCurve };
 
         public enum Shape {
             Custom = -1,
