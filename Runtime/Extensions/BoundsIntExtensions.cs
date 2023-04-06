@@ -467,6 +467,127 @@ namespace Kutil {
             }
         }
 
+        /// <summary>
+        /// Get the surface of this BoundsInt as array of BoundsInts
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="removeOverlaps">should the result be optimized without overlaps?</param>
+        /// <returns></returns>
+        public static BoundsInt[] GetSurfaceBounds(this BoundsInt bounds, bool removeOverlaps = true) {
+            if (bounds.size.x <= 1 || bounds.size.y <= 1 || bounds.size.z <= 1) {
+                return bounds.InNewArray();
+            }
+            var pos = bounds.min;
+            var posMax = bounds.max - Vector3Int.one;
+            var size = bounds.size;
+            var nBounds = new BoundsInt[]{
+                new BoundsInt(new Vector3Int(pos.x, pos.y, pos.z),    new Vector3Int(size.x, 1, size.z)),
+                new BoundsInt(new Vector3Int(pos.x, posMax.y, pos.z), new Vector3Int(size.x, 1, size.z)),
+                new BoundsInt(new Vector3Int(pos.x, pos.y, pos.z),    new Vector3Int(1, size.y, size.z)),
+                new BoundsInt(new Vector3Int(posMax.x, pos.y, pos.z), new Vector3Int(1, size.y, size.z)),
+                new BoundsInt(new Vector3Int(pos.x, pos.y, pos.z),    new Vector3Int(size.x, size.y, 1)),
+                new BoundsInt(new Vector3Int(pos.x, pos.y, posMax.z), new Vector3Int(size.x, size.y, 1)),
+            };
+            if (removeOverlaps) {
+                return Optimize(nBounds);
+            }
+            return nBounds;
+        }
+
+        /// <summary>
+        /// Remove overlaps and represent the space with the least amount of BoundsInts.
+        /// Not garunteed to be 100% best solution.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns>more optimized set of BoundsInts</returns>
+        public static BoundsInt[] Optimize(this BoundsInt[] bounds) {
+            // todo more efficient jobs version?
+            // ? Bounds float version
+
+            int maxX = bounds.Select(b => b.xMax).Max();
+            // int capacity = bounds.Select(b => b.size.y * b.size.z).Sum();
+            // sort by x
+            bounds = bounds.ToList().OrderBy((a) => a.position.x).ToArray();
+            //.Sort((a, b) => b.position.x - a.position.x).ToArray();
+            List<BoundsInt> newBounds = new();
+            // merge and remove overlaps
+            foreach (var bound in bounds) {
+                for (int y = bound.yMin; y < bound.yMax; y++) {
+                    for (int z = bound.zMin; z < bound.zMax; z++) {
+                        Vector3Int pos = new(bound.position.x, y, z);
+                        if (newBounds.Any(b => b.Contains(pos))) {
+                            // bound already created for here
+                            continue;
+                        }
+                        // create new bounds
+                        // size x is at least as wide as the current bound
+                        int sizex = bound.size.x;
+                        for (int x = bound.xMax; x < maxX; x++) {
+                            Vector3Int npos = new(x, y, z);
+                            if (!bounds.Any(b => b.Contains(npos))) {
+                                break;
+                            }
+                            sizex += 1;
+                        }
+                        Vector3Int size = new(sizex, 1, 1);
+                        BoundsInt newBound = new(pos, size);
+                        newBounds.Add(newBound);
+                    }
+                }
+            }
+
+            // merge bounds on z axis
+            for (int i = newBounds.Count - 1; i >= 0; i--) {
+                BoundsInt nb = newBounds[i];
+                Vector3Int nextPos = nb.position + new Vector3Int(0, 0, 1);
+                int ni = newBounds.FindIndex(b => b.Contains(nextPos));
+                if (ni >= 0) {
+                    var adjBound = newBounds[ni];
+                    // try to expand
+                    if (nb.position.x == adjBound.position.x
+                        && nb.size.x == adjBound.size.x
+                        ) {
+                        // expand by one in z axis
+                        Vector3Int expand = new Vector3Int(0, 0, adjBound.size.z);
+                        BoundsInt nBounds = new(nb.position, nb.size + expand);
+                        newBounds[i] = nBounds;
+                        // safely remove
+                        newBounds.RemoveAt(ni);
+                        if (ni <= i) {
+                            i -= 1;
+                        }
+                    }
+                } // none adjacent, continue
+            }
+
+            // merge bounds on y axis
+            for (int i = newBounds.Count - 1; i >= 0; i--) {
+                BoundsInt nb = newBounds[i];
+                Vector3Int nextPos = nb.position + new Vector3Int(0, 1, 0);
+                int ni = newBounds.FindIndex(b => b.Contains(nextPos));
+                if (ni >= 0) {
+                    var adjBound = newBounds[ni];
+                    // try to expand
+                    if (nb.position.x == adjBound.position.x
+                        && nb.size.x == adjBound.size.x
+                        && nb.position.z == adjBound.position.z
+                        && nb.size.z == adjBound.size.z
+                        ) {
+                        // expand by one in y axis
+                        Vector3Int expand = new Vector3Int(0, adjBound.size.y, 0);
+                        BoundsInt nBounds = new(nb.position, nb.size + expand);
+                        newBounds[i] = nBounds;
+                        // safely remove
+                        newBounds.RemoveAt(ni);
+                        if (ni <= i) {
+                            i -= 1;
+                        }
+                    }
+                } // none adjacent, continue
+            }
+            return newBounds.ToArray();
+        }
+
         // /// <summary>
         // /// Returns true if bounds can be turned into one without adding new volume
         // /// </summary>

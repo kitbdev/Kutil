@@ -13,13 +13,6 @@ namespace Kutil {
         protected enum ShowAction {
             NONE, SHOW, HIDE
         }
-        protected enum FadeEasing {
-            Linear,
-            InOutSine,
-            // InSine is probably the best, given how the alpha seems kinda exp 
-            InSine,
-            OutSine,
-        }
         // protected enum TransitionMode {
         //     Fade, Slide,
         //     Dynamic//?
@@ -67,7 +60,8 @@ namespace Kutil {
         bool inspectorShowFadeOptions => useFadeIn || useFadeOut;
 
         [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
-        [SerializeField] protected FadeEasing fadeEasing = FadeEasing.Linear;
+        // InSine is probably the best, given how the alpha seems kinda exp 
+        [SerializeField] protected Easing fadeEasing = Easing.EasingType.Linear;
         [ConditionalHide(nameof(inspectorShowFadeOptions), true)]
         [Tooltip("Duration (seconds) to fade")]
         // [UnityEngine.Serialization.FormerlySerializedAs("fadeDuration")]
@@ -77,6 +71,11 @@ namespace Kutil {
         [SerializeField] protected bool fadeUnscaled = true;
 
         // todo other transition options
+        // ? animation
+        // [SerializeField] protected bool useAnimation;
+        // [ConditionalHide(nameof(useAnimation), true)]
+        // [SerializeField] protected string animationStringIn;
+
         // [Header("Sliding")]
         // [SerializeField] protected bool useSliding;
         // // [ConditionalHide(nameof(useSliding), true)]
@@ -320,15 +319,7 @@ namespace Kutil {
                 yield return null;
                 timer += fadeUnscaled ? Time.unscaledDeltaTime : Time.deltaTime;
                 progress = Mathf.InverseLerp(0, fadeDuration, timer);
-                // todo more easings?
-                float val = progress;
-                if (fadeEasing == FadeEasing.InOutSine) {
-                    val = Easing.EaseInOutSine(progress);
-                } else if (fadeEasing == FadeEasing.InSine) {
-                    val = Easing.EaseInSine(progress);
-                } else if (fadeEasing == FadeEasing.OutSine) {
-                    val = Easing.EaseOutSine(progress);
-                } // linear = progress
+                float val = Mathf.Clamp01(fadeEasing.Ease(progress));
 
                 if (shown) {
                     canvasGroup.alpha = val;

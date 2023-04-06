@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using Unity.Mathematics;
 using System.Linq;
+using UnityEngine.UIElements;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -155,5 +156,10 @@ namespace Kutil {
             return value;
         }
 
+    }
+    public static class UIToolkitExtensions {
+        public static void SetDisplay(this VisualElement ve, bool shown) {
+            ve.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+        }
     }
 }

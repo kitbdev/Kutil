@@ -27,7 +27,7 @@ namespace Kutil {
             }
         }
         public static void DrawBounds(Bounds bounds, Color color, Transform t = null, float scale = 1, float duration = 0, bool depthTest = true) {
-            bounds.DrawBounds((a, b) => Debug.DrawLine(a, b, color, duration, depthTest), 
+            bounds.DrawBounds((a, b) => Debug.DrawLine(a, b, color, duration, depthTest),
                             Matrix4x4.Scale(scale * Vector3.one), t);
             // Vector3[] corners = bounds.CornerPositions();
             // foreach (var (e1, e2) in BoundsIntExtensions.edgeIndexes) {
@@ -39,6 +39,12 @@ namespace Kutil {
             //     }
             //     Debug.DrawLine(start, end, color, duration, depthTest);
             // }
+        }
+        public static void DrawBounds(BoundsInt bounds, Color color, Transform t = null, GridLayout grid = null, float scale = 1, float duration = 0, bool depthTest = true) {
+            bounds.DrawBounds((a, b) => Debug.DrawLine(a, b, color, duration, depthTest),
+                            transformMatrix: Matrix4x4.Scale(scale * Vector3.one),
+                            transform: t,
+                            grid: grid);
         }
     }
 }

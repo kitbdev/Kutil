@@ -17,17 +17,28 @@ namespace Kutil {
         VisualElement root;
         PropertyField shapeField;
         PropertyField inOutField;
+        // CurveField customCurveField;
+        PropertyField customCurveField;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             SerializedProperty easingShape = property.FindPropertyRelative(nameof(Easing.shape));
             SerializedProperty easingInOut = property.FindPropertyRelative(nameof(Easing.inOut));
+            SerializedProperty easingCustomCurve = property.FindPropertyRelative(nameof(Easing.customCurve));
             root = new VisualElement();
+            var easeContainer = new VisualElement();
+            root.Add(easeContainer);
+
             shapeField = new PropertyField(easingShape, property.displayName);
             inOutField = new PropertyField(easingInOut, "");
-            root.Add(shapeField);
-            root.Add(inOutField);
-            root.style.flexDirection = FlexDirection.Row;
-            root.style.justifyContent = Justify.FlexStart;
+            easeContainer.Add(shapeField);
+            easeContainer.Add(inOutField);
+            easeContainer.style.flexDirection = FlexDirection.Row;
+            easeContainer.style.justifyContent = Justify.FlexStart;
+
+            customCurveField = new PropertyField(easingCustomCurve, "Easing Curve");
+            // customCurveField = new CurveField();
+            customCurveField.style.display = DisplayStyle.None;
+            root.Add(customCurveField);
 
             // ? show additional settings for certain easing types
 
@@ -42,29 +53,40 @@ namespace Kutil {
             UpdateProp(evt.changedProperty);
         }
 
-        private void UpdateProp(SerializedProperty changedProperty) {
+        private void UpdateProp(SerializedProperty easeShapeProp) {
             // if easing type is linear, hide inout field
-            // if (changedProperty.propertyType != SerializedPropertyType.Enum) return;
-            bool showInOut = changedProperty.enumValueIndex != (int)Easing.EasingTypeShape.Linear;
-            inOutField.style.display = showInOut ? DisplayStyle.Flex : DisplayStyle.None;
+            if (easeShapeProp.propertyType != SerializedPropertyType.Enum) return;
+            int propEnumValue = easeShapeProp.enumValueFlag;
+            bool showCustomCurve = propEnumValue == (int)Easing.Shape.Custom;
+            bool showInOut = propEnumValue != (int)Easing.Shape.Linear && !showCustomCurve;
+
+            inOutField.SetDisplay(showInOut);
+            customCurveField.SetDisplay(showCustomCurve);
+            // Debug.Log($"scc:{showCustomCurve} ev{propEnumValue} {(int)Easing.Shape.Custom}");
         }
     }
 #endif
 
     [System.Serializable]
     public struct Easing {
-        public EasingTypeShape shape;
-        public EasingTypeInOut inOut;
+        public Shape shape;// = EasingTypeShape.Linear;
+        public InOut inOut;// = EasingTypeInOut.InOut;
+        
+        [Tooltip("Curve evalutated from 0 - 1")]
+        public AnimationCurve customCurve;// = AnimationCurve.Linear;
+        public float option;
 
         // ? show additional settings for certain easing types
 
         // public Easing(){}
-        public Easing(EasingTypeShape shape, EasingTypeInOut inOut) {
+        public Easing(Shape shape, InOut inOut = InOut.InOut) {
             this.shape = shape;
             this.inOut = inOut;
+            this.customCurve = AnimationCurve.Linear(0, 0, 1, 1);
+            this.option = 0;
         }
 
-        public EasingType easingType => shape == EasingTypeShape.Linear ? EasingType.Linear :
+        public EasingType easingType => shape == Shape.Linear ? EasingType.Linear :
             (EasingType)(((int)shape) * 3 + (int)inOut);
 
         /// <summary>
@@ -73,20 +95,44 @@ namespace Kutil {
         /// <param name="x"></param>
         /// <returns>eased value</returns>
         public float Ease(float x) {
+            if (shape == Shape.Custom) {
+                return customCurve.Evaluate(x);
+            }
             return EaseByType(x, easingType);
         }
-        public float Ease(float start, float end, float value) {
+        public float EaseClamped(float x) {
+            if (shape == Shape.Custom) {
+                return Mathf.Clamp01(customCurve.Evaluate(x));
+            }
+            return Mathf.Clamp01(EaseByType(x, easingType));
+        }
+        /// <summary>Ease between start and end values, where x is between 0 and 1</summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="x"></param>
+        /// <returns>eased value between start and end, unclamped</returns>
+        public float Ease(float start, float end, float x) {
+            if (shape == Shape.Custom) {
+                return Mathf.LerpUnclamped(start, end, customCurve.Evaluate(x));
+            }
+            return Mathf.LerpUnclamped(start, end, EaseByType(x, easingType));
+        }
+        public float EaseInverseLerp(float start, float end, float value) {
             return EaseByTypeLerp(start, end, value, easingType);
         }
 
 
         public static implicit operator EasingType(Easing easing) => easing.easingType;
-        public static implicit operator Easing(EasingType easingType) => new Easing(
-                (EasingTypeShape)((int)easingType / 3),
-                (EasingTypeInOut)((int)easingType % 3));
+        public static implicit operator Easing(EasingType easingType) =>
+            easingType == EasingType.Linear ? new Easing(Shape.Linear) :
+            easingType == EasingType.Custom ? new Easing(Shape.Custom) :
+            new Easing(
+                    (Shape)((int)easingType / 3),
+                    (InOut)((int)easingType % 3));
 
-        public enum EasingTypeShape {
-            Linear,
+        public enum Shape {
+            Custom = -1,
+            Linear = 0,
             Sine,
             Cubic,
             Expo,
@@ -95,13 +141,14 @@ namespace Kutil {
             Elastic,
             Bounce,
         }
-        public enum EasingTypeInOut {
+        public enum InOut {
             InOut,
             In,
             Out,
         }
         public enum EasingType {
-            Linear,
+            Linear = 0,
+            Custom = 1,
             InOutSine = 3,
             InSine,
             OutSine,
