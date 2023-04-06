@@ -24,14 +24,17 @@ namespace Kutil.Ref {
     // use a decorator to work on top level arrays
     public class ComponentRefAttributePropertyDrawer : ExtendedDecoratorDrawer {
 
-        public static readonly string componentRefPropFieldClass = "component-ref-attribute";
-        public static readonly string componentRefDecoratorClass = "component-ref-decorator";
-        public static readonly string componentRefHelpBoxClass = "component-ref-help-box";
+        public static readonly string componentRefPropFieldClass = "kutil-component-ref-attribute";
+        public static readonly string componentRefDecoratorClass = "kutil-component-ref-decorator";
+        public static readonly string componentRefHelpBoxClass = "kutil-component-ref-help-box";
+        public static readonly string componentRefContainerClass = "kutil-component-ref-container";
 
         public override bool needSetupCall => true;
         public override bool registerUpdateCall => true;
 
-        VisualElement propertyFieldVE;
+        VisualElement refField;
+        VisualElement refFieldContainer;
+        Button refreshButton;
         HelpBox missingRefBox;
 
         bool isValidFieldType;
@@ -44,6 +47,8 @@ namespace Kutil.Ref {
         bool hasValue = false;
 
         // todo ISerializableRef support
+
+        // todo is runtime option possible?
 
         bool isSatisfied => componentRefAttribute.HasFlags(ComponentRefFlag.Optional) || hasValue;
 
@@ -65,10 +70,16 @@ namespace Kutil.Ref {
             return decorator;
         }
         protected override void Setup() {
+            //     Debug.Log("s1");
+            // }
+            // protected override void FirstSetup() {
+            //     Debug.Log("s2");
+            // Debug.Log($"{Application.isPlaying} setup ");
             if (!HasSerializedProperty()
                 || serializedProperty.serializedObject.targetObject is not Component) {
                 return;
             }
+            // Debug.Log($"setup p2");
 
             // get the property field, as decorators dont have access by default
             PropertyField propertyField = decorator.GetFirstAncestorOfType<PropertyField>();
@@ -82,18 +93,36 @@ namespace Kutil.Ref {
             }
             propertyField.RegisterValueChangeCallback(ce => UpdateField());
 
-            propertyFieldVE = propertyField;
+            refField = propertyField;
             if (propertyField.childCount > 1) {
                 // the field is the first child after the decorator drawers container
-                propertyFieldVE = propertyField[1];
+                refField = propertyField[1];
             }
+
+            // create refresh button
+            // refFieldContainer = new VisualElement();
+            // refFieldContainer.AddToClassList(componentRefContainerClass);
+            // refFieldContainer.layout = 
+            // propertyField.Add(refFieldContainer);
+            // refFieldContainer.Add(refField);
+            // refreshButton = new Button();
+            // refFieldContainer.Add(refreshButton);
+
+            if (isArrayOrList || componentRefAttribute.HasFlags(ComponentRefFlag.Optional)) {
+                // todo append to context menu instead of overriding
+                //? property in attribute to control?
+                propertyField.AddManipulator(new ContextualMenuManipulator(cmpe => {
+                    cmpe.menu.AppendAction("Force Update Ref", dda => { ForceUpdateRef(); });
+                }));
+            }
+
 
             if (!componentRefAttribute.HasFlags(ComponentRefFlag.Editable)) {
                 // disable the property
-                propertyFieldVE.SetEnabled(false);
+                refField.SetEnabled(false);
             }
             if (componentRefAttribute.HasFlags(ComponentRefFlag.Hidden)) {
-                propertyFieldVE.style.display = DisplayStyle.None;
+                refField.style.display = DisplayStyle.None;
             }
 
             // setup ref
@@ -203,13 +232,20 @@ namespace Kutil.Ref {
             missingRefBox.text = $"{serializedProperty.propertyPath} missing {typeName} reference on {componentRefAttribute.Loc}!";
         }
 
-        void UpdateRef(Component component) {
+        void ForceUpdateRef() {
+            UpdateRef(component, true);
+        }
+
+        void UpdateRef(Component component, bool forceUpdate = false) {
             // Debug.Log("update ref!" + component.name + " " + propertyField.name);
 
             serializedProperty.serializedObject.UpdateIfRequiredOrScript();
             CheckHasValue();
 
-            if (hasValue) {
+            // arrays need to update more often
+            bool needUpdate = false;// = isArrayOrList && !componentRefAttribute.HasFlags(ComponentRefFlag.Optional);
+
+            if (!forceUpdate && hasValue && !needUpdate) {
                 // no need to set
                 return;
             }
@@ -263,6 +299,19 @@ namespace Kutil.Ref {
                 if (values == null || values.Length == 0) {
                     return;
                 }
+                if (serializedProperty.arraySize == values.Length) {
+                    bool isSame = true;
+                    for (int i = 0; i < serializedProperty.arraySize; i++) {
+                        if (serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue != values[i]) {
+                            isSame = false;
+                            break;
+                        }
+                    }
+                    if (isSame) {
+                        // same, no update
+                        return;
+                    }
+                }
                 // serializedProperty.ClearArray();
                 serializedProperty.arraySize = values.Length;
                 for (int i = 0; i < serializedProperty.arraySize; i++) {
@@ -270,6 +319,10 @@ namespace Kutil.Ref {
                 }
             } else {
                 if (value == null) {
+                    return;
+                }
+                if (serializedProperty.objectReferenceValue == value) {
+                    // no update
                     return;
                 }
                 serializedProperty.objectReferenceValue = value;

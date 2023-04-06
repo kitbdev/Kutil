@@ -31,6 +31,8 @@ namespace Kutil {
 
             // ? show additional settings for certain easing types
 
+            // ? show preview of easing as a graph popup on hover...
+
             shapeField.RegisterValueChangeCallback(UpdateProp);
             UpdateProp(easingShape);
             return root;

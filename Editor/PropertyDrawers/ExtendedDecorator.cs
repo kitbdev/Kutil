@@ -23,6 +23,8 @@ namespace Kutil.PropertyDrawers {
         public virtual bool needSetupCall => true;
         public virtual bool registerUpdateCall => false;
 
+        private bool didFirstSetup = false;
+
 
         private PropertyField _propertyField = null;
         protected PropertyField propertyField {
@@ -79,6 +81,12 @@ namespace Kutil.PropertyDrawers {
                 _serializedProperty = null;
             }
             if (_serializedProperty == null) {
+                // _inspectorElement = null;
+                // todo sometimes this will fail, not being able to find inspector element
+                // especially when updating scripts or entering playmode
+                // deselecting and reselecting makes it work
+
+                // Debug.Log($"insp: '{inspectorElement?.name ?? "null"}'");
                 _serializedProperty = SerializedPropertyExtensions.GetBindedPropertyFromPropertyField(propertyField, false);
             }
             return _serializedProperty != null;
@@ -116,31 +124,40 @@ namespace Kutil.PropertyDrawers {
                 Debug.LogError($"{GetType().Name} decorator must not be null to Setup!");
                 return;
             }
+            didFirstSetup = false;
             // todo on panel attach instead?
             decorator.RegisterCallback<AttachToPanelEvent>(OnAttach);
+            decorator.RegisterCallback<DetachFromPanelEvent>(OnDetach);
             // decorator.RegisterCallback<GeometryChangedEvent>(OnDecGeoChange);
         }
 
         private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
             // _serializedProperty = null;
-            decorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
-            Setup();
-            if (registerUpdateCall) {
-                propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
-                // this properly responds to all changes
-                inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
-            }
+            // decorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
+            // Debug.Log("geo changed");
+            // Setup();
+            // if (registerUpdateCall) {
+            //     propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
+            //     // this properly responds to all changes
+            //     inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+            // }
         }
 
         protected virtual void OnAttach(AttachToPanelEvent attachToPanelEvent) {
             _serializedProperty = null;
-            decorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
-            propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
-            Setup();
-            if (registerUpdateCall) {
-                // this properly responds to all changes
-                inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+            if (!didFirstSetup) {
+                didFirstSetup = true;
+                // decorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
+                // propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
+                if (registerUpdateCall) {
+                    // this properly responds to all changes
+                    inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+                }
+
+                //     FirstSetup();
+                Setup();
             }
+            // Setup();
         }
         protected virtual void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
             if (registerUpdateCall) {
@@ -151,6 +168,7 @@ namespace Kutil.PropertyDrawers {
         }
 
 
+        // protected virtual void FirstSetup() { }
         protected virtual void Setup() { }
         protected virtual void OnUpdate(SerializedPropertyChangeEvent changeEvent) { }
         // protected virtual void OnDetach() { }
