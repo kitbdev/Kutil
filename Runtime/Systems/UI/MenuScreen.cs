@@ -323,12 +323,13 @@ namespace Kutil {
                 // todo more easings?
                 float val = progress;
                 if (fadeEasing == FadeEasing.InOutSine) {
-                    val = easeInOutSine(progress);
+                    val = Easing.EaseInOutSine(progress);
                 } else if (fadeEasing == FadeEasing.InSine) {
-                    val = easeInSine(progress);
+                    val = Easing.EaseInSine(progress);
                 } else if (fadeEasing == FadeEasing.OutSine) {
-                    val = easeOutSine(progress);
-                }
+                    val = Easing.EaseOutSine(progress);
+                } // linear = progress
+
                 if (shown) {
                     canvasGroup.alpha = val;
                 } else {
@@ -338,16 +339,6 @@ namespace Kutil {
             SetDirect(shown);
             AfterSet(wasShown, invokeEvents, sendEvents);
             fadeCoroutine = null;
-        }
-        // https://easings.net/
-        float easeInOutSine(float x) {
-            return -(Mathf.Cos(Mathf.PI * x) - 1) / 2;
-        }
-        float easeInSine(float x) {
-            return 1 - Mathf.Cos((x * Mathf.PI) / 2);
-        }
-        float easeOutSine(float x) {
-            return Mathf.Sin((x * Mathf.PI) / 2);
         }
     }
 }

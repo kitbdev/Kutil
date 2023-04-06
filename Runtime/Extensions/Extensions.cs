@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using Unity.Mathematics;
 using System.Linq;
-using System;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -120,8 +120,8 @@ namespace Kutil {
             return q.normalized;
         }
     }
-    public static class MathfExt {
-        public static float Remap(float value, float fromMin, float fromMax, float toMin, float toMax) {
+    public static class MathExt {
+        public static float Remap(this float value, float fromMin, float fromMax, float toMin, float toMax) {
             return ((value - fromMin) / (fromMax - fromMin)) * (toMax - toMin) + toMin;
         }
         /// <summary>
@@ -154,5 +154,6 @@ namespace Kutil {
             value += min + (value < 0 ? range : 0);
             return value;
         }
+
     }
 }
