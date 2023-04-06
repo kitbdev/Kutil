@@ -74,19 +74,13 @@ namespace Kutil.Ref {
             // }
             // protected override void FirstSetup() {
             //     Debug.Log("s2");
-            // Debug.Log($"{Application.isPlaying} setup ");
-            if (!HasSerializedProperty()
-                || serializedProperty.serializedObject.targetObject is not Component) {
-                return;
-            }
-            // Debug.Log($"setup p2");
 
-            // get the property field, as decorators dont have access by default
-            PropertyField propertyField = decorator.GetFirstAncestorOfType<PropertyField>();
+            // setup property field
             if (propertyField == null) {
                 Debug.LogError($"{this.GetType().Name} failed to find containing property!");
                 return;
             }
+
             propertyField.AddToClassList(componentRefPropFieldClass);
             if (propertyField.tooltip == null || propertyField.tooltip == "") {
                 propertyField.tooltip = $"Reference on [{componentRefAttribute.Loc.ToString()}]";
@@ -124,6 +118,15 @@ namespace Kutil.Ref {
             if (componentRefAttribute.HasFlags(ComponentRefFlag.Hidden)) {
                 refField.style.display = DisplayStyle.None;
             }
+
+
+
+            // Debug.Log($"{Application.isPlaying} setup ");
+            if (!HasSerializedProperty()
+                || serializedProperty.serializedObject.targetObject is not Component) {
+                return;
+            }
+            // Debug.Log($"setup p2");
 
             // setup ref
 
