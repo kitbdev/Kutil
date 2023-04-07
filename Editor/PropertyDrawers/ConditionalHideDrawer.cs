@@ -14,7 +14,7 @@ namespace Kutil.PropertyDrawers {
     /// </summary>
 #if UNITY_2022_2_OR_NEWER
     [CustomPropertyDrawer(typeof(ConditionalHideAttribute))]
-    public class ConditionalHidePropertyDrawer : ExtendedDecoratorDrawer {
+    public class ConditionalHideDrawer : ExtendedDecoratorDrawer {
 
         public static readonly string conditionalHideClass = "kutil-conditional-hide";
         public static readonly string conditionalHideDecoratorClass = "kutil-conditional-hide-decorator";

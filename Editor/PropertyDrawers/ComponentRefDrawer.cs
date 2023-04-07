@@ -22,7 +22,7 @@ namespace Kutil.Ref {
     [CustomPropertyDrawer(typeof(GetOnParentAttribute))]
     [CustomPropertyDrawer(typeof(GetInSceneAttribute))]
     // use a decorator to work on top level arrays
-    public class ComponentRefAttributePropertyDrawer : ExtendedDecoratorDrawer {
+    public class ComponentRefAttributeDrawer : ExtendedDecoratorDrawer {
 
         public static readonly string componentRefPropFieldClass = "kutil-component-ref-attribute";
         public static readonly string componentRefDecoratorClass = "kutil-component-ref-decorator";

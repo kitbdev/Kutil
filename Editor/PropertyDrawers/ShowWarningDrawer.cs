@@ -8,7 +8,7 @@ using UnityEditor.UIElements;
 namespace Kutil.PropertyDrawers {
 
     [CustomPropertyDrawer(typeof(ShowWarningAttribute))]
-    public class ShowWarningPropertyDrawer : ExtendedDecoratorDrawer {
+    public class ShowWarningDrawer : ExtendedDecoratorDrawer {
 
         public static readonly string showWarningDecoratorClass = "kutil-show-warning-decorator";
 
@@ -79,7 +79,7 @@ namespace Kutil.PropertyDrawers {
 
 
         private bool ShouldShowWarning(ShowWarningAttribute att, SerializedProperty property) {
-            return ConditionalHidePropertyDrawer.GetPropertyConditionalValue(property, att.conditionalSourceField, att.enumIndices);
+            return ConditionalHideDrawer.GetPropertyConditionalValue(property, att.conditionalSourceField, att.enumIndices);
         }
 
 

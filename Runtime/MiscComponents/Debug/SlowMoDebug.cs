@@ -12,15 +12,19 @@ namespace Kutil {
     /// </summary>
     public class SlowMoDebug : MonoBehaviour {
 
-        // [PostField]
+        // [PostFieldDecorator]
         [AddButton(nameof(ResetTimeScale))]
         [AddButton(nameof(SlowMo))]
         public float slowSpeed = 0.2f;
         public bool toggleOnLKey = true;
+#if ENABLE_INPUT_SYSTEM       
+        // public InputKey
+#endif
 
         void Update() {
             if (toggleOnLKey) {
 #if ENABLE_INPUT_SYSTEM                
+                // if (Keyboard.current[key].wasPressedThisFrame) {
                 if (Keyboard.current.lKey.wasPressedThisFrame) {
                     ToggleSlowmo();
                 }
