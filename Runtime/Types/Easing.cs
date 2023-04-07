@@ -141,7 +141,7 @@ namespace Kutil {
 #endif
 
     [System.Serializable]
-    public struct Easing {
+    public struct Easing : IEquatable<Easing> {
         public Shape shape;// = EasingTypeShape.Linear;
         public InOut inOut;// = EasingTypeInOut.InOut;
 
@@ -159,7 +159,9 @@ namespace Kutil {
             this.option = 0;
         }
 
-        public EasingType easingType => shape == Shape.Linear ? EasingType.Linear :
+        public EasingType easingType => 
+            shape == Shape.Linear ? EasingType.Linear :
+            shape == Shape.Custom ? EasingType.Custom :
             (EasingType)(((int)shape) * 3 + (int)inOut);
 
         /// <summary>
@@ -192,6 +194,11 @@ namespace Kutil {
         }
         public float EaseInverseLerp(float start, float end, float value) {
             return EaseByTypeLerp(start, end, value, easingType);
+        }
+
+        bool UsesOptionData() {
+            // todo
+            return false;
         }
 
 
@@ -232,6 +239,29 @@ namespace Kutil {
             return animCurve;
         }
 
+        public override string ToString() => $"Easing {easingType}";
+
+        public override int GetHashCode() {
+            if (this.shape == Shape.Custom) return HashCode.Combine(shape, customCurve.GetHashCode());
+            if (this.shape == Shape.Linear) return HashCode.Combine(shape);
+            if (this.UsesOptionData()) return HashCode.Combine(shape, inOut, option);
+            return HashCode.Combine(shape, inOut);
+            //? not equal?
+            // return HashCode.Combine(shape, inOut, customCurve, option);
+        }
+        public override bool Equals(object obj) {
+            if (obj is Easing other) return this.Equals(other);
+            return false;
+        }
+
+        public bool Equals(Easing other) {
+            if (this.shape != other.shape) return false;
+            if (this.shape == Shape.Custom) return this.customCurve.Equals(other.customCurve);
+            if (this.shape == Shape.Linear) return true;
+            if (this.UsesOptionData()) return this.inOut == other.inOut && this.option == other.option;
+            return this.inOut == other.inOut;
+        }
+
 
         public static implicit operator EasingType(Easing easing) => easing.easingType;
         public static implicit operator Easing(EasingType easingType) =>
@@ -242,6 +272,10 @@ namespace Kutil {
                     (InOut)((int)easingType % 3));
         public static implicit operator Easing(AnimationCurve animationCurve) =>
             new Easing(Shape.Custom) { customCurve = animationCurve };
+
+        public static bool operator ==(Easing a, Easing b) => a.Equals(b);
+        public static bool operator !=(Easing a, Easing b) => !(a.Equals(b));
+
 
         public enum Shape {
             Custom = -1,
@@ -467,7 +501,6 @@ namespace Kutil {
         public static float EaseCustom(float x, AnimationCurve curve) {
             return curve.Evaluate(x);
         }
-
     }
 
 }
