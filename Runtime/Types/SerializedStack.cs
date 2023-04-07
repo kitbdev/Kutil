@@ -6,15 +6,23 @@ using System.Linq;
 using UnityEngine;
 
 namespace Kutil {
+#if UNITY_EDITOR
+    [UnityEditor.CustomPropertyDrawer(typeof(SerializedStack<>))]
+    public class SerializedStackDrawer : ShowAsChildPropertyDrawer {
+        // public override string childName => nameof(SerializedStack<int>.serialized);
+        public override string childName => "serialized";
+    }
+#endif
+
     [System.Serializable]
-    public class SerializableStack<T> : Stack<T>, ISerializationCallbackReceiver {
+    public class SerializedStack<T> : Stack<T>, ISerializationCallbackReceiver {
 
         [SerializeField]
         // [SerializeReference]
         private T[] serialized;
 
         public void OnAfterDeserialize() {
-            if (serialized==null) {
+            if (serialized == null) {
                 Debug.LogError("Failed to serialize Stack!");
                 return;
             }
@@ -23,6 +31,7 @@ namespace Kutil {
                 T item = serialized[i];
                 this.Push(item);
             }
+            serialized = null;
         }
 
         public void OnBeforeSerialize() {

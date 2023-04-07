@@ -7,7 +7,7 @@ namespace Kutil {
     /// first person camera control.
     /// Call Turn with mouse delta to use.
     /// </summary>
-    public class FPSCameraControl : MonoBehaviour {
+    public class FirstPersonCameraController : MonoBehaviour {
 
         [System.Serializable]
         public class TurnControls {

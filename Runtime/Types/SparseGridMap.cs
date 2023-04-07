@@ -19,7 +19,7 @@ namespace Kutil {
         // literally just a dict with bounds calculation and maybe some util functions
 
         public Grid grid;
-        [SerializeField] SerializableDictionary<Vector3Int, TCellObject> cells;
+        [SerializeField] SerializedDictionary<Vector3Int, TCellObject> cells;
         [SerializeField] BoundsInt bounds = new BoundsInt();
         public TCellObject defCellValue;
 
@@ -33,13 +33,13 @@ namespace Kutil {
 
         public SparseGridMap() {
             this.defCellValue = default;
-            cells = new SerializableDictionary<Vector3Int, TCellObject>();
+            cells = new SerializedDictionary<Vector3Int, TCellObject>();
             RecalculateBounds();
         }
         public SparseGridMap(Grid grid, TCellObject defCellValue = default) {
             this.grid = grid;
             this.defCellValue = defCellValue;
-            cells = new SerializableDictionary<Vector3Int, TCellObject>();
+            cells = new SerializedDictionary<Vector3Int, TCellObject>();
             RecalculateBounds();
         }
 

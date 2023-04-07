@@ -1,11 +1,18 @@
 {
     "name": "kutil",
-    "version": "0.7.4",
+    "version": "0.7.5",
     "displayName": "Kutil",
     "description": "Utilty scripts for unity",
-    "unity":"2020.1",
+    "unity": "2020.1",
     "author": {
         "name": "kitbdev",
         "email": "kitbdev@gmail.com"
-    }
+    },
+    "samples": [
+        {
+            "displayName": "Test",
+            "description": "Contains test code",
+            "path": "Samples~/Test"
+        }
+    ]
 }

@@ -16,7 +16,7 @@ namespace Kutil {
     /// to use: attach to the camera and assign the camFollowTarget.
     /// </summary>
     [DefaultExecutionOrder(4)]
-    public class CameraControls : MonoBehaviour {
+    public class TopDownCameraController : MonoBehaviour {
 
 
         // [ConditionalHide(nameof(disableDragMovement), true)]

@@ -1,13 +1,17 @@
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.UIElements;
+#if UNITY_EDITOR
+using UnityEditor;
 using UnityEditor.UIElements;
+#endif
 // using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil {
+
+#if UNITY_EDITOR
     /// <summary>
     /// Inherit this for an easy way to show as child.
     /// Use [UnityEditor.CustomPropertyDrawer(typeof(...))] and override childName property.
@@ -20,6 +24,7 @@ namespace Kutil.PropertyDrawers {
         public abstract string childName { get; }
 
         public virtual bool forceLabelUpdate => true;
+
 
         protected PropertyField childField;
 
@@ -89,4 +94,5 @@ namespace Kutil.PropertyDrawers {
             // Debug.Log(childField.label + " - " + property.displayName);
         }
     }
+#endif
 }

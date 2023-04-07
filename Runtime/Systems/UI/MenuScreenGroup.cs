@@ -38,7 +38,7 @@ namespace Kutil {
         // does not include current
         [SerializeField]
         [ConditionalHide(nameof(debug), true)]
-        protected SerializableStack<ScreenSet> menuScreenHistory = new SerializableStack<ScreenSet>();
+        protected SerializedStack<ScreenSet> menuScreenHistory = new SerializedStack<ScreenSet>();
 
         /// <summary>
         /// All MenuScreens that are currently shown
