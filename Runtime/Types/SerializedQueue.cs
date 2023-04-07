@@ -10,7 +10,12 @@ namespace Kutil {
         public override string childName => "serializedQueue";
     }
     #endif
-    
+    /// <summary>
+    /// Serialized Queue. type T must be serializable.
+    /// Editable in inspector.
+    /// Only serialized in UnityEditor.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     [System.Serializable]
     public class SerializedQueue<T> : Queue<T>, ISerializationCallbackReceiver {
     #if UNITY_EDITOR

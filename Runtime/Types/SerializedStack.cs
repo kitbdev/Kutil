@@ -14,6 +14,12 @@ namespace Kutil {
     }
 #endif
 
+    /// <summary>
+    /// Serialized Stack. type T must be serializable.
+    /// Editable in inspector.
+    /// Only serialized in UnityEditor.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     [System.Serializable]
     public class SerializedStack<T> : Stack<T>, ISerializationCallbackReceiver {
 

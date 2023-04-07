@@ -14,65 +14,37 @@ namespace Kutil.PropertyDrawers {
     /// </summary>
 #if UNITY_2022_2_OR_NEWER
     [CustomPropertyDrawer(typeof(ConditionalHideAttribute))]
-    public class ConditionalHidePropertyDrawer : DecoratorDrawer {
+    public class ConditionalHidePropertyDrawer : ExtendedDecoratorDrawer {
 
         public static readonly string conditionalHideClass = "kutil-conditional-hide";
         public static readonly string conditionalHideDecoratorClass = "kutil-conditional-hide-decorator";
 
         ConditionalHideAttribute conditionalHide => (ConditionalHideAttribute)attribute;
 
-        VisualElement decorator;
-        PropertyField propertyField;
-        SerializedProperty serializedProperty;
-        InspectorElement inspectorElement;
+        protected override string decoratorName => "ConditionalHide";
+        protected override string decoratorClass => conditionalHideDecoratorClass;
 
-        public override VisualElement CreatePropertyGUI() {
-            decorator = new VisualElement();
-            decorator.AddToClassList(conditionalHideDecoratorClass);
-            decorator.RegisterCallback<GeometryChangedEvent>(SetupField);
-            return decorator;
-        }
+        public override bool registerUpdateCall => true;
 
-        private void SetupField(GeometryChangedEvent evt) {
-            decorator.UnregisterCallback<GeometryChangedEvent>(SetupField);
+        protected override void Setup() {
+            base.Setup();
             // Debug.Log("Setting up c hide decorator...");
-            // get propertyfield
-            propertyField = decorator.GetFirstAncestorOfType<PropertyField>();
-            if (propertyField == null) {
-                Debug.LogError($"{GetType().Name} decorator failed to find containing property!");
-                return;
-            }
             propertyField.AddToClassList(conditionalHideClass);
-
-            // get serialized property
-            serializedProperty = SerializedPropertyExtensions.GetBindedPropertyFromDecorator(decorator);
-            if (serializedProperty == null) {
-                Debug.LogError($"{GetType().Name} decorator cannot find serialized property!, cannot bind.");
-                return;
-            }
-
-            // get inspector element to register an onvalidate callback
-            inspectorElement = propertyField.GetFirstAncestorOfType<InspectorElement>();
-            if (inspectorElement == null) {
-                Debug.LogError($"Conditional Hide - inspectorElement null!");
-                return;
-            }
-            // this properly responds to all changes
-            inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
-            decorator.RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
             UpdateField();
         }
 
-        void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
-            inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
-        }
-        void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
+        protected override void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
         void UpdateField() {
             // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
             bool enabled = GetConditionalHideAttributeResult(conditionalHide, serializedProperty) == conditionalHide.showIfTrue;
-            propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+            if (conditionalHide.readonlyInstead) {
+                propertyField.SetEnabled(enabled);
+            } else {
+                propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
+
 
 #else
     [CustomPropertyDrawer(typeof(ConditionalHideAttribute))]
@@ -100,63 +72,61 @@ namespace Kutil.PropertyDrawers {
         }
 #endif
 
-        bool GetConditionalHideAttributeResult(ConditionalHideAttribute condHAtt, SerializedProperty property) {
-            SerializedProperty sourcePropertyValue = null;
+        private bool GetConditionalHideAttributeResult(ConditionalHideAttribute condHAtt, SerializedProperty property) {
+            return GetPropertyConditionalValue(property, condHAtt.conditionalSourceField, condHAtt.enumIndices);
+        }
+
+        public static bool GetPropertyConditionalValue(SerializedProperty property, string conditionalSourceField, int[] enumIndices = null) {
+            if (property == null || conditionalSourceField == null) {
+                Debug.LogError("GetPropertyConditionalValue failed, null sourceProp or sourcefield!");
+                return false;
+            }
+            //? use attribute interface instead? maybe struct?
 
             // Get the full relative property path of the sourcefield so we can have nested hiding.
-            // Use old method when dealing with arrays
-            if (!property.isArray) {
-                // returns the property path of the property we want to apply the attribute to
-                string propertyPath = property.propertyPath;
-                // changes the path to the conditionalsource property path
-                string conditionPath = propertyPath.Replace(property.name, condHAtt.conditionalSourceField);
-                sourcePropertyValue = property.serializedObject.FindProperty(conditionPath);
-
-            } else {
-                // original implementation (doens't work with nested serializedObjects)
-                sourcePropertyValue = property.serializedObject.FindProperty(condHAtt.conditionalSourceField);
-            }
-
-            // if the find failed->fall back to the old system
-            if (sourcePropertyValue == null) {
-                // original implementation (doens't work with nested serializedObjects)
-                sourcePropertyValue = property.serializedObject.FindProperty(condHAtt.conditionalSourceField);
-            }
+            // string conditionPath = propertyPath.Replace(property.name, condHAtt.conditionalSourceField);
+            SerializedProperty sourcePropertyValue = property.GetNeighborProperty(conditionalSourceField);
+            // Debug.Log($"cond hide {property.propertyPath} {sourcePropertyValue?.name ?? "no spv"} spvp:{sourcePropertyValue?.propertyPath}");
             if (sourcePropertyValue != null) {
-                return CheckPropertyType(condHAtt, sourcePropertyValue);
-            } else {
-                // use reflection instead, should support arrays and nesting
-                string path = property.propertyPath.Replace(property.name, condHAtt.conditionalSourceField);
-                Object targetObject = property.serializedObject.targetObject;
-                if (ReflectionHelper.TryGetValue<bool>(targetObject, path, out var value)) {
-                    return value;
-                } else if (ReflectionHelper.TryGetValue<System.Enum>(targetObject, path, out var evalue)) {
-                    if (condHAtt.enumIndices == null || condHAtt.enumIndices.Length == 0) {
-                        return false;
-                    }
-                    if (System.Enum.GetUnderlyingType(typeof(System.Enum)) != typeof(int)) {
-                        return true;
-                    }
-                    // todo test this
-                    int eintval = (int)System.Convert.ChangeType(evalue, typeof(int));
-                    return condHAtt.enumIndices.Contains(eintval);
+                return CheckPropertyValue(sourcePropertyValue, enumIndices);
+            }
+
+            string path = property.GetPathRelative(conditionalSourceField);
+            // use reflection instead, should support arrays and nesting
+            Object targetObject = property.serializedObject.targetObject;
+            if (ReflectionHelper.TryGetValue<bool>(targetObject, path, out var value)) {
+                return value;
+            } else if (ReflectionHelper.TryGetValue<System.Enum>(targetObject, path, out var evalue)) {
+                if (enumIndices == null || enumIndices.Length == 0) {
+                    return false;
                 }
+                if (System.Enum.GetUnderlyingType(typeof(System.Enum)) != typeof(int)) {
+                    return true;
+                }
+                int eintval = (int)System.Convert.ChangeType(evalue, typeof(int));
+                return enumIndices.Contains(eintval);
+            } else {
+                Debug.LogWarning($"GetPropertyConditionalValue failed cannot find property or reflection data of a valid type! path:{path} o:{property.propertyPath} r:{conditionalSourceField} ");
             }
             return true;
         }
 
-        bool CheckPropertyType(ConditionalHideAttribute condHAtt, SerializedProperty sourcePropertyValue) {
+        static bool CheckPropertyValue(SerializedProperty sourcePropertyValue, int[] enumIndices = null) {
+            if (sourcePropertyValue == null) {
+                Debug.LogError("CheckPropertyValue failed, null sourceProp!");
+                return false;
+            }
             //Note: add others for custom handling if desired
             switch (sourcePropertyValue.propertyType) {
                 case SerializedPropertyType.Boolean:
                     return sourcePropertyValue.boolValue;
                 case SerializedPropertyType.Enum:
-                    if (condHAtt.enumIndices == null || condHAtt.enumIndices.Length == 0) {
+                    if (enumIndices == null || enumIndices.Length == 0) {
                         return false;
                     }
-                    return condHAtt.enumIndices.Contains(sourcePropertyValue.enumValueIndex);
+                    return enumIndices.Contains(sourcePropertyValue.enumValueIndex);
                 default:
-                    Debug.LogError($"Data type of the property used for conditional hiding [{sourcePropertyValue.propertyType}] is currently not supported");
+                    Debug.LogError($"CheckPropertyValue Property {sourcePropertyValue.propertyPath} Data type [{sourcePropertyValue.propertyType}] is currently not supported");
                     return true;
             }
         }

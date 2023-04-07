@@ -48,6 +48,7 @@ namespace Kutil {
                 action.Invoke(v);
             }
         }
+        /// <summary>Append, because union is a set operation</summary>
         public static IEnumerable<T> AppendRange<T>(this IEnumerable<T> enumerable, IEnumerable<T> other) {
             IEnumerable<T> result = enumerable;
             foreach (var v in other) {
@@ -55,9 +56,42 @@ namespace Kutil {
             }
             return result;
         }
+        /// <summary>basically union with a single value</summary>
         public static void AppendIfUnique<T>(this IEnumerable<T> enumerable, T value) {
             if (!enumerable.Contains(value)) {
                 enumerable.Append(value);
+            }
+        }
+        /// <summary>
+        /// Removes a single instance each element of the other enumerable if found.
+        /// ex. if enumerable has [0,0,1] and other has [0,2] the result will be [0,1]
+        /// </summary>
+        /// <param name="enumerable"></param>
+        /// <param name="other"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static IEnumerable<T> RemoveRangeOnce<T>(this IEnumerable<T> enumerable, IEnumerable<T> other) {
+            IEnumerable<T> result = enumerable;
+            foreach (var v in other) {
+                result = result.RemoveOnce(v);
+            }
+            return result;
+        }
+        /// <summary>
+        /// Remove a single instance of value
+        /// </summary>
+        /// <param name="enumerable"></param>
+        /// <param name="value"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static IEnumerable<T> RemoveOnce<T>(this IEnumerable<T> enumerable, T value) {
+            if (enumerable.Contains(value)) {
+                IEnumerable<T> result;
+                result = enumerable.TakeWhile(v => !v.Equals(value));
+                result = result.AppendRange(enumerable.Skip(result.Count() + 1));
+                return result;
+            } else {
+                return enumerable;
             }
         }
     }

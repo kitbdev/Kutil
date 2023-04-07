@@ -13,9 +13,11 @@ namespace Kutil {
     /// </summary>
     public class ConditionalHideAttribute : PropertyAttribute {
 
-        public string conditionalSourceField;
-        public bool showIfTrue = true;
-        public int[] enumIndices = new int[0];
+        public string conditionalSourceField { get; set; }
+        public bool showIfTrue { get; set; } = true;
+        public int[] enumIndices { get; set; } = null;
+
+        public bool readonlyInstead { get; set; } = false;
 
         public ConditionalHideAttribute(string boolVariableName, bool showIfTrue) {
             conditionalSourceField = boolVariableName;

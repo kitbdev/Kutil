@@ -7,8 +7,8 @@ Types
 - Easing - helpful Easing functions
 - GridMap - stores 3d data
 - Direction - 4 way
-- SerializableDictionary
-- SerializableStack
+- SerializedDictionary
+- SerializedStack
 - SerializedType
 - TypeChoice - shows a type in the inspector
 
@@ -45,8 +45,9 @@ Decorator Drawers
 - ReadOnly - makes a field readonly
 - GetOnSelf, GetOnChild, GetOnParent (ComponentRefAttributes) - tries to automatically get a component. [inspired by scene ref attibute](https://github.com/KyleBanks/scene-ref-attribute)
 - Required - show an error if this field is not set
-- Add button - adds a button above the field, like space or header
-- Add note - adds a label note
+- Add Button - adds a button above the field, like space or header
+- Add Note - adds a label note
+- Add Warning - adds a warning help box
 - Collapsable - makes this field and those below it into a collapsable foldout in the inspector
 - ConditionalHide - hide this field contditionally
 - PostFieldDecorator - moves decorators after this after the field

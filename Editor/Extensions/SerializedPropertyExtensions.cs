@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Kutil.PropertyDrawers;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Kutil {
     // originally from https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
@@ -210,16 +211,49 @@ namespace Kutil {
         }
 
 
-        private static string GetPathRelative(SerializedProperty property, string relativeFieldname) {
+        public static string GetPathRelative(this SerializedProperty property, string relativeFieldname) {
             if (relativeFieldname == null) return property.propertyPath;
-            //? replace from last
-            // todo .. to go up?
-            return property.propertyPath.Replace(property.name, relativeFieldname);
+            // todo? handle arrays properly
+            // if (property.IsElementInArray()) {
+            //     // todo 
+            // }
+            // for when Regex.Matches(property.propertyPath, property.name)>1;
+
+            // replace last
+            int index = property.propertyPath.LastIndexOf(property.name);
+            // string result = property.propertyPath.Remove(index, property.name.Length).Insert(index, relativeFieldname);
+            // removes any pathing after
+            string result = property.propertyPath.Remove(index).Insert(index, relativeFieldname);
+            return result;
+
+            // todo use .. to go up?
+            // return property.propertyPath.Replace(property.name, relativeFieldname);
         }
 
+        /// <summary>
+        /// Find a Property relative to this one.
+        /// Returns null if not found.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <param name="neighborFieldName"></param>
+        /// <returns></returns>
         public static SerializedProperty GetNeighborProperty(this SerializedProperty property, string neighborFieldName) {
+
+            SerializedProperty neighborProp;
+
+            // check with relative path
+            neighborProp = property.serializedObject.FindProperty(GetPathRelative(property, neighborFieldName));
+            if (neighborProp != null) return neighborProp;
+
+            // check with original replace
             string path = property.propertyPath.Replace(property.name, neighborFieldName);
-            SerializedProperty neighborProp = property.serializedObject.FindProperty(path);
+            neighborProp = property.serializedObject.FindProperty(path);
+            if (neighborProp != null) return neighborProp;
+
+            // check on root
+            neighborProp = property.serializedObject.FindProperty(neighborFieldName);
+            if (neighborProp != null) return neighborProp;
+
             return neighborProp;
         }
 

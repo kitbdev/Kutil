@@ -17,6 +17,8 @@ namespace Kutil.PropertyDrawers {
         public static readonly string extendedDecoratorClass = "kutil-extended-decorator";
 
         protected virtual string decoratorName => null;
+        protected virtual string decoratorClass => null;
+        // protected virtual string propertyFieldClass => null;
 
         protected VisualElement decorator;
 
@@ -112,6 +114,9 @@ namespace Kutil.PropertyDrawers {
             if (decoratorName != null) {
                 decorator.name = decoratorName;
             }
+            if (decoratorClass != null) {
+                decorator.AddToClassList(decoratorClass);
+            }
             decorator.AddToClassList(extendedDecoratorClass);
             if (needSetupCall) {
                 RegisterSetup();
@@ -120,6 +125,7 @@ namespace Kutil.PropertyDrawers {
         }
 
         protected void RegisterSetup() {
+            _serializedProperty = null;
             if (decorator == null) {
                 Debug.LogError($"{GetType().Name} decorator must not be null to Setup!");
                 return;
