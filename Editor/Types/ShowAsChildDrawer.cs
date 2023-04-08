@@ -7,7 +7,7 @@
 // using System.Collections.Generic;
 // using System.Linq;
 
-// namespace Kutil {
+// namespace Kutil.Editor {
 //     [CustomPropertyDrawer(typeof(ShowAsChildAttribute))]
 //     public class ShowAsChildDrawer : PropertyDrawer {
 //         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {

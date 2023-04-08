@@ -3,16 +3,16 @@ using UnityEngine;
 // using System.Reflection;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-// using Kutil.Ref;
-using Kutil.PropertyDrawers;
+using Kutil.Ref;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Kutil.Editor.PropertyDrawers;
 
 // originally from: https://github.com/KyleBanks/scene-ref-attribute
 
-namespace Kutil.Ref {
+namespace Kutil.Editor.Ref {
     /// <summary>
     /// Custom property drawer for the reference attributes.
     /// </summary>

@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     [CustomPropertyDrawer(typeof(AnimPlayer.AnimTrigger))]
     public class AnimPlayerDrawer : PropertyDrawer {
 

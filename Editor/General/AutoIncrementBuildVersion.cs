@@ -5,7 +5,7 @@ using UnityEditor;
 using System;
 using System.Diagnostics;
 
-namespace Kutil {
+namespace Kutil.Editor {
     public class AutoIncrementBuildVersion : MonoBehaviour {
 
         /**

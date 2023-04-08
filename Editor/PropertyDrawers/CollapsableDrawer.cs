@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     /// <summary>
     /// create a foldout from the attribute to the next CollapsableAttribute or the next decorator(header or space)
     /// </summary>

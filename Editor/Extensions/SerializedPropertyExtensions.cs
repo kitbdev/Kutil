@@ -5,11 +5,11 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Kutil.PropertyDrawers;
 using System.Collections.Generic;
 using System.Linq;
+using Kutil.Editor.PropertyDrawers;
 
-namespace Kutil {
+namespace Kutil.Editor {
     // originally from https://gist.github.com/aholkner/214628a05b15f0bb169660945ac7923b 
     // Unity editor extension providing value get/set methods for SerializedProperty. This simplifies writing PropertyDrawers against non-trivial objects.
 
@@ -73,7 +73,7 @@ namespace Kutil {
                 return null;
             }
             // EditorElement is internal, so get the editor via reflection
-            if (!ReflectionHelper.TryGetValue<Editor>(editorElement, "editor", out Editor editor)) {
+            if (!ReflectionHelper.TryGetValue<UnityEditor.Editor>(editorElement, "editor", out UnityEditor.Editor editor)) {
                 Debug.LogError($"GetBindedPropertyFromPropertyField {propertyField.name} {editorElement.name} editor null");
                 return null;
             }
@@ -96,7 +96,7 @@ namespace Kutil {
         /// must be called after geochanged.
         /// </summary>
         /// <param name="fieldElement"></param>
-        public static Editor GetEditorFromField(VisualElement fieldElement) {
+        public static UnityEditor.Editor GetEditorFromField(VisualElement fieldElement) {
             InspectorElement inspectorElement = fieldElement.GetFirstAncestorOfType<InspectorElement>();
             if (inspectorElement == null) {
                 Debug.LogError($"GetEditorFromDecorator {fieldElement.name} inspectorElement null");
@@ -108,7 +108,7 @@ namespace Kutil {
                 return null;
             }
             // EditorElement is internal, so get the editor via reflection
-            if (!ReflectionHelper.TryGetValue<Editor>(editorElement, "editor", out Editor editor)) {
+            if (!ReflectionHelper.TryGetValue<UnityEditor.Editor>(editorElement, "editor", out UnityEditor.Editor editor)) {
                 Debug.LogError($"GetEditorFromDecorator {fieldElement.name} {editorElement.name} editor null");
                 return null;
             }

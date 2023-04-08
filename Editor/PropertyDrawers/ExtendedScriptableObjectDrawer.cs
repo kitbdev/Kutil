@@ -15,7 +15,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     /// <summary>
     /// Extends how ScriptableObject object references are displayed in the inspector
     /// Shows you all values under the object reference

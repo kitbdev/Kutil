@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     /// Original version of the ConditionalHideAttribute created by Brecht Lecluyse (www.brechtos.com)
     /// Modified by: Sebastian Lague and Kit
     /// using a decorator to properly handle top level arrays 

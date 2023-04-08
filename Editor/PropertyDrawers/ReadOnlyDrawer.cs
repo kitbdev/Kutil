@@ -7,7 +7,7 @@ using UnityEditor.UIElements;
 using System.Linq;
 using System;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     // [DefaultExecutionOrder(10)]// after other drawers
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : DecoratorDrawer {

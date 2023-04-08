@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     [CustomPropertyDrawer(typeof(Layer))]
     public class LayerDrawer : PropertyDrawer {
 

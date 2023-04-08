@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
 
     [CustomPropertyDrawer(typeof(ShowWarningAttribute))]
     public class ShowWarningDrawer : ExtendedDecoratorDrawer {

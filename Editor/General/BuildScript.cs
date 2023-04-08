@@ -5,7 +5,7 @@ using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 // todo build window with checkmarks and settings
-namespace Kutil {
+namespace Kutil.Editor {
     public class BuildScript {
 
         public static string buildroot = "/builds/auto/";

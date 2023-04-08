@@ -2,7 +2,7 @@ using System.Linq;
 using System.Xml.Linq;
 using UnityEditor;
 
-namespace Kutil {
+namespace Kutil.Editor {
     /// <summary>
     /// Workaround to fix a bug that causes Quick Actions to not work
     /// https://github.com/OmniSharp/omnisharp-vscode/issues/5494

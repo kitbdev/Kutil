@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     /// <summary>
     /// DecoratorDrawer with some additional features.
     /// Accessors for PropertyField, SerializedProperty, and FieldInfo.

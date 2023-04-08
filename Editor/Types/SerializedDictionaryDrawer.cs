@@ -7,7 +7,7 @@ using UnityEditor;
 using System;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.Editor.PropertyDrawers {
 
     // [CustomPropertyDrawer(typeof(SerializedDictionary<,>))]
     public class SerializedDictionaryDrawer : PropertyDrawer {

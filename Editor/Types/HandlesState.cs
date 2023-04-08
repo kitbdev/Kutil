@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor;
 
-namespace Kutil {
+namespace Kutil.Editor {
     public static class HandlesExt {
         public static HandlesState SaveState() {
             return new HandlesState();

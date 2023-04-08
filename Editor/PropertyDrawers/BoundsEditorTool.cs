@@ -9,7 +9,7 @@ using UnityEditor.UIElements;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kutil {
+namespace Kutil.Editor {
 
     // ref https://github.com/Unity-Technologies/UnityCsReference/blob/master/Modules/PhysicsEditor/BoxColliderEditor.cs
     //https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/GUI/EditModeTools/PrimitiveColliderTool.cs

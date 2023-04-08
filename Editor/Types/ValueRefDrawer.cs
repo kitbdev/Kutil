@@ -7,7 +7,7 @@ using System;
 using Object = UnityEngine.Object;
 using System.Linq;
 
-namespace Kutil.PropertyDrawers {
+namespace Kutil.Editor.PropertyDrawers {
     [CustomPropertyDrawer(typeof(ValueRef<>))]
     public class ValueRefDrawer : PropertyDrawer {
         private const string kTargetPath = "target";

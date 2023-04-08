@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 
 // https://gist.github.com/aarthificial/f2dbb58e4dbafd0a93713a380b9612af
-namespace Kutil.PropertyDrawers
+namespace Kutil.Editor.PropertyDrawers
 {
     [CustomPropertyDrawer(typeof(Optional<>))]
     public class OptionalPropertyDrawer : PropertyDrawer

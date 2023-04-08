@@ -15,7 +15,7 @@ using System;
 // 
 // * Requires the latest version of JSON.net compatible with Unity
 
-namespace Kutil {
+namespace Kutil.Editor {
     using UnityEngine;
     using UnityEditor;
 

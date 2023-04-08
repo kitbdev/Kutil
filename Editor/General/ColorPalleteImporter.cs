@@ -4,9 +4,9 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 using System.Collections.Generic;
-using Kutil.PropertyDrawers;
+using Kutil.Editor.PropertyDrawers;
 
-namespace Kutil {
+namespace Kutil.Editor {
     public class ColorPalleteImporter : EditorWindow {
 
         [Multiline]

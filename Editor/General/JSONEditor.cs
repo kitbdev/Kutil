@@ -18,7 +18,7 @@ using System;
 // 
 // * Requires the latest version of JSON.net compatible with Unity
 
-namespace Kutil {
+namespace Kutil.Editor {
 
     //If you want to edit a JSON file in the "StreammingAssets" Folder change this to DefaultAsset.
     //Hacky solution to a weird problem :/

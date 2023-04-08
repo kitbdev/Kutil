@@ -4,7 +4,7 @@ using UnityEditor;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace Kutil {
+namespace Kutil.Editor {
     public class SpriteAtlasRenamerEditor : EditorWindow {
 
         [MenuItem("Kutil/SpriteAtlasRenamer")]
