@@ -504,7 +504,9 @@ namespace Kutil {
             // todo more efficient jobs version?
             // ? Bounds float version
 
-            int maxX = bounds.Select(b => b.xMax).Max();
+            int xMax = bounds.Select(b => b.xMax).Max();
+            int yMax = bounds.Select(b => b.yMax).Max();
+            int zMax = bounds.Select(b => b.zMax).Max();
             // int capacity = bounds.Select(b => b.size.y * b.size.z).Sum();
             // sort by x
             bounds = bounds.ToList().OrderBy((a) => a.position.x).ToArray();
@@ -521,70 +523,102 @@ namespace Kutil {
                         }
                         // create new bounds
                         // size x is at least as wide as the current bound
-                        int sizex = bound.size.x;
-                        for (int x = bound.xMax; x < maxX; x++) {
-                            Vector3Int npos = new(x, y, z);
-                            if (!bounds.Any(b => b.Contains(npos))) {
+                        Vector3Int size = new(bound.size.x, 1, 1);
+                        int cxStart = pos.x + size.x;
+                        // int cxStart = bound.xMax;
+                        for (int cx = cxStart; cx < xMax; cx++) {
+                            Vector3Int checkpos = new(cx, y, z);
+                            if (!bounds.Any(b => b.Contains(checkpos))) {
                                 break;
                             }
-                            sizex += 1;
+                            size.x += 1;
                         }
-                        Vector3Int size = new(sizex, 1, 1);
+                        // try to expand size z
+                        // todo test
+                        for (int cz = pos.z + 1; cz < zMax; cz++) {
+                            bool checkPass = true;
+                            for (int cxi = 0; cxi < size.x; cxi++) {
+                                Vector3Int checkpos = new(pos.x + cxi, y, cz);
+                                if (!bounds.Any(b => b.Contains(checkpos))) {
+                                    checkPass = false;
+                                    break;
+                                }
+                            }
+                            if (!checkPass) break;
+                            size.z += 1;
+                        }
+                        // try to expand size y
+                        for (int cy = pos.y + 1; cy < yMax; cy++) {
+                            bool checkPass = true;
+                            for (int czi = 0; czi < size.z; czi++) {
+                                for (int cxi = 0; cxi < size.x; cxi++) {
+                                    Vector3Int checkpos = new(pos.x + cxi, cy, pos.z + czi);
+                                    if (!bounds.Any(b => b.Contains(checkpos))) {
+                                        checkPass = false;
+                                        break;
+                                    }
+                                }
+                                if (!checkPass) break;
+                            }
+                            if (!checkPass) break;
+                            size.y += 1;
+                        }
                         BoundsInt newBound = new(pos, size);
                         newBounds.Add(newBound);
                     }
                 }
             }
 
-            // merge bounds on z axis
-            for (int i = newBounds.Count - 1; i >= 0; i--) {
-                BoundsInt nb = newBounds[i];
-                Vector3Int nextPos = nb.position + new Vector3Int(0, 0, 1);
-                int ni = newBounds.FindIndex(b => b.Contains(nextPos));
-                if (ni >= 0) {
-                    var adjBound = newBounds[ni];
-                    // try to expand
-                    if (nb.position.x == adjBound.position.x
-                        && nb.size.x == adjBound.size.x
-                        ) {
-                        // expand by one in z axis
-                        Vector3Int expand = new Vector3Int(0, 0, adjBound.size.z);
-                        BoundsInt nBounds = new(nb.position, nb.size + expand);
-                        newBounds[i] = nBounds;
-                        // safely remove
-                        newBounds.RemoveAt(ni);
-                        if (ni <= i) {
-                            i -= 1;
-                        }
-                    }
-                } // none adjacent, continue
-            }
+            // // todo replaced?
+            // // merge bounds on z axis
+            // for (int i = newBounds.Count - 1; i >= 0; i--) {
+            //     BoundsInt nb = newBounds[i];
+            //     Vector3Int nextPos = nb.position + new Vector3Int(0, 0, 1);
+            //     int ni = newBounds.FindIndex(b => b.Contains(nextPos));
+            //     if (ni >= 0) {
+            //         var adjBound = newBounds[ni];
+            //         // try to expand
+            //         if (nb.position.x == adjBound.position.x
+            //             && nb.size.x == adjBound.size.x
+            //             ) {
+            //             // expand by one in z axis
+            //             Vector3Int expand = new Vector3Int(0, 0, adjBound.size.z);
+            //             BoundsInt nBounds = new(nb.position, nb.size + expand);
+            //             newBounds[i] = nBounds;
+            //             // safely remove
+            //             newBounds.RemoveAt(ni);
+            //             if (ni <= i) {
+            //                 i -= 1;
+            //             }
+            //         }
+            //     } // none adjacent, continue
+            // }
 
-            // merge bounds on y axis
-            for (int i = newBounds.Count - 1; i >= 0; i--) {
-                BoundsInt nb = newBounds[i];
-                Vector3Int nextPos = nb.position + new Vector3Int(0, 1, 0);
-                int ni = newBounds.FindIndex(b => b.Contains(nextPos));
-                if (ni >= 0) {
-                    var adjBound = newBounds[ni];
-                    // try to expand
-                    if (nb.position.x == adjBound.position.x
-                        && nb.size.x == adjBound.size.x
-                        && nb.position.z == adjBound.position.z
-                        && nb.size.z == adjBound.size.z
-                        ) {
-                        // expand by one in y axis
-                        Vector3Int expand = new Vector3Int(0, adjBound.size.y, 0);
-                        BoundsInt nBounds = new(nb.position, nb.size + expand);
-                        newBounds[i] = nBounds;
-                        // safely remove
-                        newBounds.RemoveAt(ni);
-                        if (ni <= i) {
-                            i -= 1;
-                        }
-                    }
-                } // none adjacent, continue
-            }
+            // // merge bounds on y axis
+            // for (int i = newBounds.Count - 1; i >= 0; i--) {
+            //     BoundsInt nb = newBounds[i];
+            //     Vector3Int nextPos = nb.position + new Vector3Int(0, 1, 0);
+            //     int ni = newBounds.FindIndex(b => b.Contains(nextPos));
+            //     if (ni >= 0) {
+            //         var adjBound = newBounds[ni];
+            //         // try to expand
+            //         if (nb.position.x == adjBound.position.x
+            //             && nb.size.x == adjBound.size.x
+            //             && nb.position.z == adjBound.position.z
+            //             && nb.size.z == adjBound.size.z
+            //             ) {
+            //             // expand by one in y axis
+            //             Vector3Int expand = new Vector3Int(0, adjBound.size.y, 0);
+            //             BoundsInt nBounds = new(nb.position, nb.size + expand);
+            //             newBounds[i] = nBounds;
+            //             // safely remove
+            //             newBounds.RemoveAt(ni);
+            //             if (ni <= i) {
+            //                 i -= 1;
+            //             }
+            //         }
+            //     } // none adjacent, continue
+            // }
             return newBounds.ToArray();
         }
 

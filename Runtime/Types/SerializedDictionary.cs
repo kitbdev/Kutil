@@ -11,6 +11,10 @@ namespace Kutil {
     // public class SerializedDictonaryRendering<TKey, TValue> : UnityEngine.Rendering.SerializedDictionary<TKey, TValue> {
     // }
 
+    // [System.Serializable]
+    // public class SerializedDictionary1<TKey, TValue> : Dictionary<TKey, TValue> {
+    //     // see SerializedDictionaryDrawer
+    // }
 
     /// <summary>
     /// Serialized dictionary. TKey and TValue must both be serializable

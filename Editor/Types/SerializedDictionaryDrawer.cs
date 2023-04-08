@@ -9,6 +9,11 @@ using System.Linq;
 
 namespace Kutil.Editor.PropertyDrawers {
 
+    // [CustomPropertyDrawer(typeof(SerializedDictionary1<,>))]
+    // public class SerializedDictionaryDrawer1 : PropertyDrawer {
+
+    //     // public List<KeyVal> serializedDict = new List<KeyVal>();
+    // }
     // [CustomPropertyDrawer(typeof(SerializedDictionary<,>))]
     public class SerializedDictionaryDrawer : PropertyDrawer {
 
