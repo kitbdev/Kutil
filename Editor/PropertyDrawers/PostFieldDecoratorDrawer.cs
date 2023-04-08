@@ -55,18 +55,26 @@ namespace Kutil.Editor.PropertyDrawers {
                 return;
             }
             int myDecIndex = decoratorContainer.IndexOf(postFieldDecorator);
+            // Debug.Log($"{myDecIndex} / {decoratorContainer.childCount}");
             if (myDecIndex < 0 || myDecIndex >= decoratorContainer.childCount - 1) {
                 // no need to move 
-                // Debug.Log($"{myDecIndex} / {decoratorContainer.childCount}");
             } else {
                 VisualElement newDecoratorContainer = new VisualElement();
                 newDecoratorContainer.AddToClassList(unityDecoratorContainerClass);
                 newDecoratorContainer.AddToClassList(decoratorPostContainerClass);
                 decoratorContainer.parent.Add(newDecoratorContainer);
                 // take the last elements
-                var decoratorsToSteal = decoratorContainer.Children().Skip(myDecIndex + 1);
+                var decoratorsToSteal = decoratorContainer.Children().Skip(myDecIndex + 1).Reverse();
+                // Debug.Log(decoratorsToSteal.ToStringFull(v => v.ToStringBetter(), true));
+                List<VisualElement> nDecs = new();
                 foreach (var dec in decoratorsToSteal) {
                     decoratorContainer.Remove(dec);
+                    nDecs.Add(dec);
+                    // newDecoratorContainer.Add(dec);
+                }
+                nDecs.Reverse();
+                foreach (var dec in nDecs) {
+                    // decoratorContainer.Remove(dec);
                     newDecoratorContainer.Add(dec);
                 }
             }

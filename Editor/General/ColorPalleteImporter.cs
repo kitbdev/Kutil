@@ -19,7 +19,7 @@ namespace Kutil.Editor {
         [HideInInspector]
         public SerializedObject serializedObject;
 
-        [MenuItem("Winter Storm Witch/ColorPalleteImporter")]
+        [MenuItem("Kutil/ColorPalleteImporter")]
         private static void ShowWindow() {
             var window = GetWindow<ColorPalleteImporter>();
             window.titleContent = new GUIContent("ColorPalleteImporter");
