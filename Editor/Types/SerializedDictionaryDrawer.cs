@@ -5,6 +5,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEditor;
 using System;
+using System.Linq;
 
 namespace Kutil {
 
@@ -126,8 +127,30 @@ namespace Kutil {
             container.name = $"SDictKV container {property.displayName}";
             root.Add(container);
 
-            keyPropField = new PropertyField(keyProp, property.displayName);//elementProperty.displayName
-            valPropField = new PropertyField(valProp, " ");
+            // todo check if these are bigger than a single line and fix
+            SerializedPropertyType[] singleLineTypes = new SerializedPropertyType[]{
+                SerializedPropertyType.Integer,
+                SerializedPropertyType.Boolean,
+                SerializedPropertyType.Enum,
+                SerializedPropertyType.Float,
+                SerializedPropertyType.ObjectReference,
+                SerializedPropertyType.Character,
+                SerializedPropertyType.String,// only if not multiline
+            };
+            bool singleLineMode = singleLineTypes.Contains(keyProp.propertyType)
+                    && singleLineTypes.Contains(valProp.propertyType);
+
+            if (fieldInfo.HasAttribute<MultilineAttribute>()) {
+                //? will this work on list elements?
+                singleLineMode = false;
+            }
+
+            //elementProperty.displayName
+            string keyLabel = singleLineMode ? property.displayName : property.displayName + " Key";
+            string valueLabel = singleLineMode ? " " : "Value";
+
+            keyPropField = new PropertyField(keyProp, keyLabel);
+            valPropField = new PropertyField(valProp, valueLabel);
             keyPropField.name = $"{property.displayName}-Key";
             valPropField.name = $"{property.displayName}-Value";
             keyPropField.style.flexGrow = 1;
@@ -135,8 +158,10 @@ namespace Kutil {
             container.Add(keyPropField);
             container.Add(valPropField);
 
-            container.style.flexDirection = FlexDirection.Row;
-            container.style.justifyContent = Justify.FlexStart;
+            if (singleLineMode) {
+                container.style.flexDirection = FlexDirection.Row;
+                container.style.justifyContent = Justify.FlexStart;
+            }
 
             // root.RegisterCallback<AttachToPanelEvent>(OnAttach);
             // root.RegisterCallback<DetachFromPanelEvent>(OnDetach);

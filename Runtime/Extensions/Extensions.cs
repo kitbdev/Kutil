@@ -161,5 +161,9 @@ namespace Kutil {
         public static void SetDisplay(this VisualElement ve, bool shown) {
             ve.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
         }
+        public static string ToStringBetter(this VisualElement ve) {
+            if (ve==null) return "null";
+            return $"({ve.GetType().Name}){ve.name}";
+        }
     }
 }

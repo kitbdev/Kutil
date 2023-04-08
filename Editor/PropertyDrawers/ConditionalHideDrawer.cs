@@ -39,7 +39,8 @@ namespace Kutil.PropertyDrawers {
             // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
             bool enabled = GetConditionalHideAttributeResult(conditionalHide, serializedProperty) == conditionalHide.showIfTrue;
             if (conditionalHide.readonlyInstead) {
-                propertyField.SetEnabled(enabled);
+                // propertyField.SetEnabled(enabled);
+                ReadOnlyDrawer.MakeReadOnly(propertyField, enabled);
             } else {
                 propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
             }

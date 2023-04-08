@@ -52,6 +52,7 @@ namespace Kutil {
         // [ShowWarning(nameof(editInEditor), "Uncheck to save dictionary!", showIfTrue = true)]
         [ShowWarning(nameof(editInEditor), nameof(warningText), useTextAsSourceField = true)]
         [Tooltip("Remember to turn off when finished or may not be able to update in scripts!")]
+        //? possible to hide if disabled?
         [SerializeField] bool editInEditor = false;
         // show in editor
         [System.Serializable]
