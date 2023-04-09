@@ -436,7 +436,11 @@ namespace Kutil {
         }
 
         private void UpdateCursorPos() {
+#if ENABLE_INPUT_SYSTEM
             Vector2 mousepos = Mouse.current.position.ReadValue();
+            #else
+            Vector2 mousepos = Input.mousePosition;
+            #endif
             cursorpos = GetCursorPos(mousepos) ?? cursorpos;
         }
 

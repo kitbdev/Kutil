@@ -108,11 +108,14 @@ namespace Kutil {
         }
 #endif
 #if !ENABLE_INPUT_SYSTEM
-        // private void Update() {
-        //     if (Input.GetKeyDown("Escape")){
-        //         TogglePause();
-        //     }
-        // }
+        private void Update() {
+            if (handleInput) {
+                //? gamepad
+                if (Input.GetKeyDown("Escape")) {
+                    TogglePause();
+                }
+            }
+        }
 #endif
 
 
