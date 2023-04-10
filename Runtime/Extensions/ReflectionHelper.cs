@@ -129,7 +129,7 @@ namespace Kutil {
         /// <param name="value"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns>true if successful</returns>
-        public static bool TryGetValue<T>(object target, MemberInfo memberInfo, out T value) {
+        public static bool TryGetValue<T>(object target, MemberInfo memberInfo, out T value, bool required = false) {
             object obj;
             // Debug.Log($"{target}.{memberInfo.Name} checkt type {typeof(T)}!");
             if (memberInfo is FieldInfo) {
@@ -147,7 +147,7 @@ namespace Kutil {
                 // Debug.Log($"{target}-{methodInfo.Name} ({methodInfo.ReturnType}) ncheck type {typeof(T)}");
                 obj = methodInfo.Invoke(targetObj, new object[0]);
             } else {
-                Debug.LogWarning($"Failed to find valid member info on '{target}' {memberInfo}");
+                if (required) Debug.LogWarning($"Failed to find valid member info on '{target}' {memberInfo}");
                 value = default;
                 return false;
             }
@@ -155,7 +155,7 @@ namespace Kutil {
                 value = (T)obj;
                 return true;
             } catch {
-                Debug.LogWarning($"{target}.{memberInfo.Name} is not of type {typeof(T)}!");
+                if (required) Debug.LogWarning($"{target}.{memberInfo.Name} is not of type {typeof(T)}!");
                 value = default;
                 return false;
             }

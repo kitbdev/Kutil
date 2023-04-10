@@ -8,6 +8,9 @@ namespace Kutil {
         public static GizmosState SaveState() {
             return new GizmosState();
         }
+        public static void ReturnToDefault() {
+            new GizmosState().LoadState();
+        }
     }
 
     /// <summary>

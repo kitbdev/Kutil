@@ -7,41 +7,66 @@ namespace Kutil {
     /// Follows a target position, rotation, and/or scale
     /// </summary>
     public class FollowTransform : MonoBehaviour {
+
+        [SerializeField] bool targetMainCam = false;
+        [ConditionalHide(nameof(targetMainCam), false, readonlyInstead = true)]
         [SerializeField]
         private Transform _target;
         public Transform target { get => _target; set => SetTarget(value); }
 
+        [Space]
         public bool followPosition = true;
         public bool followRotation = true;
         public bool followScale = false;
-        public float smoothPositionRate = 0;
-        public float smoothRotationRate = 0;
 
-        [SerializeField] bool targetMainCam = false;
+        [Space]
+        [Min(0f)] public float smoothPositionRate = 0;
+        [Min(0f)] public float smoothRotationRate = 0;
+
+        [Space]
         [SerializeField] bool useExistingPosOffset = false;
         [SerializeField] bool useExistingRotOffset = false;
 
+        [ConditionalHide(nameof(useExistingPosOffset), false, readonlyInstead = true)]
+        [ContextMenuItem("Reset", nameof(ZeroPosition))]
         public Vector3 positionOffset = Vector3.zero;
-        [SerializeField, HideInInspector] Quaternion rotationOffset = Quaternion.identity;
+
+        [ConditionalHide(nameof(useExistingRotOffset), false, readonlyInstead = true)]
+        [ContextMenuItem("Reset", nameof(ZeroRotation))]
         [SerializeField] Vector3 rotationOffsetEuler = Vector3.zero;
+        [SerializeField, HideInInspector] Quaternion rotationOffset = Quaternion.identity;
+        [ContextMenuItem("Reset", nameof(ZeroScale))]
         [SerializeField] Vector3 scaleOffset = Vector3.one;
+
+        [Space]
         [SerializeField] bool useUpdate = true;
         [SerializeField] bool useFixedUpdate = false;
         [SerializeField] bool useLateUpdate = false;
 
-        private void Awake() {
+
+
+        void OnValidate() {
+            ValidateFields();
+        }
+        void Awake() {
+            ValidateFields();
+        }
+
+        void ValidateFields() {
             if (targetMainCam) {
                 target = Camera.main.transform;
             } else if (target) {
                 UpdateOffsets();
             }
         }
+
         void UpdateOffsets() {
             if (useExistingPosOffset) {
                 positionOffset = transform.position - target.position;
             }
             if (useExistingRotOffset) {
                 rotationOffset = Quaternion.Inverse(transform.rotation) * target.rotation;
+                rotationOffsetEuler = transform.rotation.eulerAngles;
             } else {
                 rotationOffset = Quaternion.Euler(rotationOffsetEuler);
             }
@@ -73,11 +98,27 @@ namespace Kutil {
             followRotation = followrot;
             followScale = followscale;
         }
+        [ContextMenu("Reset offsets")]
         public void ZeroOffsets() {
-            positionOffset = Vector3.zero;
-            rotationOffset = Quaternion.identity;
+            ZeroPosition();
+            ZeroRotation();
+            ZeroScale();
+        }
+
+        private void ZeroScale() {
             scaleOffset = Vector3.one;
         }
+
+        // seperated for context menu
+        private void ZeroPosition() {
+            positionOffset = Vector3.zero;
+        }
+        private void ZeroRotation() {
+            rotationOffset = Quaternion.identity;
+        }
+
+
+        //? any way to not have a callback if not needed
         private void Update() {
             if (useUpdate) {
                 Follow();

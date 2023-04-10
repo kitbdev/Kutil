@@ -21,6 +21,8 @@ namespace Kutil.Editor.PropertyDrawers {
 
         // todo color
 
+        // todo option to add button to the right of the field, instead of on top
+
         public override VisualElement CreatePropertyGUI() {
             serializedProperty = null;
 

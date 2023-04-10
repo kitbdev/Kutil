@@ -53,6 +53,7 @@ namespace Kutil.Editor.PropertyDrawers {
                 return;
             }
             propertyField.RegisterCallback<GeometryChangedEvent>(OnPropGeometryChanged);
+            MakeReadOnly(propertyField);
 
             //PropDisable(propertyField);
             // PropDisableNew(propertyField);
@@ -112,6 +113,7 @@ namespace Kutil.Editor.PropertyDrawers {
         // }
         public static void PropDisableNew(PropertyField propertyField) {
             // dont need to not disable foldouts anymore...
+            propertyField.AddToClassList(readonlyPropertyClass);
             propertyField.SetEnabled(false);
             // maybe still remove list stuff?
         }

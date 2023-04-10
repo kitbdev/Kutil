@@ -6,9 +6,13 @@ using UnityEngine.Rendering;
 using UnityEditor;
 
 namespace Kutil.Editor {
+    // todo? move to runtime namespace and have #if editor blocks? eh if using, already have those blocks
     public static class HandlesExt {
         public static HandlesState SaveState() {
             return new HandlesState();
+        }
+        public static void ReturnToDefault() {
+            new HandlesState().LoadState();
         }
     }
 
