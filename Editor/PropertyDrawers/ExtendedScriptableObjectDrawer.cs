@@ -26,9 +26,10 @@ namespace Kutil.Editor.PropertyDrawers {
 
         public static readonly string extendedSOClass = "kutil-extented-so";
 
+        VisualElement root;
         Foldout hasValueFoldout;
         VisualElement noValueHBox;
-        SerializedProperty fieldProperty;
+        // SerializedProperty fieldProperty;
 
         SerializedObject hasValueSO;
         VisualElement defaultInspector;
@@ -38,10 +39,10 @@ namespace Kutil.Editor.PropertyDrawers {
 
         // public VisualElement CreatePropertyGUI(SerializedProperty property) {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            VisualElement root = new VisualElement();
+            root = new VisualElement();
             root.name = $"ExtendedSO:{property.propertyPath}";
             root.AddToClassList(extendedSOClass);
-            this.fieldProperty = property;
+            // this.fieldProperty = property;//.Copy();
 
             var type = GetFieldType();
             ExtendedSOAttribute extendedSOAttribute = type.GetCustomAttribute<ExtendedSOAttribute>(true);
@@ -60,6 +61,8 @@ namespace Kutil.Editor.PropertyDrawers {
                 propertySO = (ScriptableObject)property.serializedObject.targetObject;
             }
 
+
+
             // has value ui
             hasValueFoldout = new Foldout();
             hasValueFoldout.name = "hasValueFoldout";
@@ -77,18 +80,27 @@ namespace Kutil.Editor.PropertyDrawers {
             checkMark.style.marginRight = 0;
             root.Add(hasValueFoldout);
 
-            string fieldName = property.displayName;
+            // string fieldName = property.displayName;
+            string fieldName = preferredLabel;
             ObjectField hvObjectField = new ObjectField(fieldName);
             hvObjectField.name = "ESO-has-value-objectfield";
-            hvObjectField.label = preferredLabel;
             hvObjectField.objectType = type;
-            hvObjectField.bindingPath = property.propertyPath;
+            // hvObjectField.bindingPath = property.propertyPath;
+            hvObjectField.BindProperty(property);
             hvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             hvObjectField.style.paddingLeft = 2;
             hvObjectField.style.flexGrow = 1;
             hvObjectField.style.flexShrink = 1;
             hvObjectField.style.marginRight = 0;
-            hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
+            // hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
+            // hvObjectField.TrackPropertyValue
+            hvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
+                UpdateUI(p);
+            }, property);
+            // hvObjectField.RegisterValueChangedCallback(ce => {
+            //     // Debug.Log("hv update " + ce.newValue + " me:" + property.propertyPath + " uh:" + fieldProperty.propertyPath);
+            //     UpdateUI(ce.newValue != null);
+            // });
             Label label = hvObjectField.Q<Label>();
             label.AddToClassList(PropertyField.labelUssClassName);
             label.style.marginRight = 5;
@@ -106,14 +118,25 @@ namespace Kutil.Editor.PropertyDrawers {
 
             ObjectField nvObjectField = new ObjectField(fieldName);
             nvObjectField.name = "ESO-no-value-objectfield";
-            nvObjectField.label = preferredLabel;
-            nvObjectField.bindingPath = property.propertyPath;
+            // nvObjectField.bindingPath = property.propertyPath;
+            nvObjectField.BindProperty(property);
             nvObjectField.style.flexGrow = 1;
             nvObjectField.style.flexShrink = 1;
             nvObjectField.objectType = type;
             nvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             nvObjectField.Q<Label>().AddToClassList(PropertyField.labelUssClassName);
-            nvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
+            //? callback not working
+            // nvObjectField.RegisterValueChangedCallback(ce => {
+            //     Debug.Log($"nv update {ce.previousValue}-{ce.newValue} hv:{ce.newValue != null} me:{fieldProperty.propertyPath} {property.propertyPath}");
+            //     // UpdateUI();
+            //     UpdateUI(ce.newValue != null);
+            // });
+            //me:{fieldProperty.propertyPath} 
+            nvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
+                // Debug.Log($"nv update2 {ce.previousValue}-{ce.newValue} hv:{ce.newValue != null} {property.propertyPath} {p.propertyPath}");
+                UpdateUI(p);
+            }, property);
+
             noValueHBox.Add(nvObjectField);
 
             if (allowCreation) {
@@ -135,7 +158,7 @@ namespace Kutil.Editor.PropertyDrawers {
                             evt.menu.AppendAction(assignableType.Name, action => {
                                 property.objectReferenceValue = CreateAssetWithSavePrompt(assignableType as Type, lastUsedAssetPath);
                                 property.serializedObject.ApplyModifiedProperties();
-                                UpdateUI();
+                                UpdateUI(true);
                             }, DropdownMenuAction.AlwaysEnabled);
                         }
                     }));
@@ -144,20 +167,24 @@ namespace Kutil.Editor.PropertyDrawers {
                         // Debug.Log("create button clicked");
                         property.objectReferenceValue = CreateAssetWithSavePrompt(type, lastUsedAssetPath);
                         property.serializedObject.ApplyModifiedProperties();
-                        UpdateUI();
+                        UpdateUI(true);
                     };
                 }
                 noValueHBox.Add(addButton);
             }
 
-            UpdateUI();
+            UpdateUI(property);
             return root;
         }
 
-        private void AddInspector() {
-            if (fieldProperty.propertyType != SerializedPropertyType.ObjectReference) return;
-            if (fieldProperty.objectReferenceValue != null) {
-                if (fieldProperty.objectReferenceValue == valueReference) {
+        private void AddInspector(SerializedProperty property) {
+            if (property == null || property.serializedObject.targetObject == null) {
+                ClearValueSO();
+                return;
+            }
+            if (property.propertyType != SerializedPropertyType.ObjectReference) return;
+            if (property.objectReferenceValue != null) {
+                if (property.objectReferenceValue == valueReference) {
                     // already updated
                     return;
                 }
@@ -165,8 +192,8 @@ namespace Kutil.Editor.PropertyDrawers {
                     // clear the old SO
                     ClearValueSO();
                 }
-                valueReference = fieldProperty.objectReferenceValue;
-                hasValueSO = new SerializedObject(fieldProperty.objectReferenceValue);
+                valueReference = property.objectReferenceValue;
+                hasValueSO = new SerializedObject(property.objectReferenceValue);
                 // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/Inspector/Editor.cs
                 // todo? should be able to use InspectorElement if passed in an Editor wiht OnCreateInspectorGUI overridden to return InspectorElement.FillDefaultInspector()
                 // this uses imgui still
@@ -198,15 +225,36 @@ namespace Kutil.Editor.PropertyDrawers {
             valueReference = null;
         }
 
-        void UpdateUI() {
-            bool hasValue = fieldProperty.propertyType == SerializedPropertyType.ObjectReference && fieldProperty.objectReferenceValue != null;
-            // Debug.Log($"Updating ui on {property.name} hasValue:{hasValue}");
+        // void UpdateUI() {
+        //     fieldProperty.serializedObject.Update();
+        //     bool hasValue = fieldProperty.propertyType == SerializedPropertyType.ObjectReference && fieldProperty.objectReferenceValue != null;
+        //     Debug.Log($"Updating ui on {fieldProperty.propertyPath} hasValue:{hasValue}");
+        //     UpdateUI(hasValue);
+        // }
+        void UpdateUI(SerializedProperty property) {
+            if (property == null) {
+                Debug.LogError("update ui property null!");
+                return;
+            }
+            property.serializedObject.Update();
+            bool hasValue = property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue != null;
+            Debug.Log($"Updating ui on {property.propertyPath} hasValue:{hasValue} p:{root.parent?.ToStringBetter()}");
+            UpdateUI(hasValue);
+            AddInspector(property);
+        }
+
+        private void UpdateUI(bool hasValue) {
+            // todo sometimes works, sometimes doesnt
+            // hasValueFoldout.SetDisplay(hasValue);
             hasValueFoldout.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
             noValueHBox.style.display = !hasValue ? DisplayStyle.Flex : DisplayStyle.None;
-            AddInspector();
+            hasValueFoldout.MarkDirtyRepaint();
+            // AddInspector();
+            // Debug.Log(hasValueFoldout.style.display+" "+hasValue);
 
             UpdateAssetPath();
         }
+
         void UpdateAssetPath() {
             Object so = valueReference;
             if (so == null) return;

@@ -143,6 +143,7 @@ namespace Kutil.Editor.PropertyDrawers {
             for (int i = cellsPropertyFields.Length - 1; i >= 0; i--) {
                 cellsContainer.Remove(cellsPropertyFields[i]);
             }
+            // cellsContainer.Clear();
             cellsPropertyFields = null;
         }
 
