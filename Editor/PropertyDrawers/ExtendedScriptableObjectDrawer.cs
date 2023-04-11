@@ -83,6 +83,9 @@ namespace Kutil.Editor.PropertyDrawers {
             var hasValueFoldout = new Foldout();
             args.hasValueFoldout = hasValueFoldout;
             hasValueFoldout.name = "hasValueFoldout";
+            // hasValueFoldout.style.flexShrink = 1;
+            // hasValueFoldout.style.justifyContent = Justify.FlexEnd;
+            // hasValueFoldout.style.flexDirection = FlexDirection.RowReverse;
             // foldout.text = "test";
             // start closed
             hasValueFoldout.value = false;
@@ -109,10 +112,11 @@ namespace Kutil.Editor.PropertyDrawers {
             hvObjectField.style.flexGrow = 1;
             hvObjectField.style.flexShrink = 1;
             hvObjectField.style.marginRight = 0;
-
             Label label = hvObjectField.Q<Label>();
-            label.AddToClassList(PropertyField.labelUssClassName);
+            //? make sure it is the propfield label, and not the object text
+            // label.AddToClassList(PropertyField.labelUssClassName);
             label.style.marginRight = 5;
+            // add inside the foldout
             VisualElement foldoutLabelContainer = toggle.Children().FirstOrDefault();
             foldoutLabelContainer.Add(hvObjectField);
 
@@ -134,7 +138,7 @@ namespace Kutil.Editor.PropertyDrawers {
             nvObjectField.style.flexShrink = 1;
             nvObjectField.objectType = type;
             nvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
-            nvObjectField.Q<Label>().AddToClassList(PropertyField.labelUssClassName);
+            // nvObjectField.Q<Label>().AddToClassList(PropertyField.labelUssClassName);
 
             hvObjectField.RegisterCallback<ChangeEvent<Object>, ExtendedSOArgs>(UpdateFieldUI, args);
             nvObjectField.RegisterCallback<ChangeEvent<Object>, ExtendedSOArgs>(UpdateFieldUI, args);
