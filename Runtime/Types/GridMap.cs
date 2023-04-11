@@ -89,7 +89,7 @@ namespace Kutil {
         /// <summary>
         /// called when any value is set. wont handle internal object modifications
         /// </summary>
-        public event System.Action OnValueSetEvent;
+        public System.Action onValueSetEvent;
 
         protected int Volume => bounds.size.x * bounds.size.z * bounds.size.y;
 
@@ -133,9 +133,18 @@ namespace Kutil {
             // fill cells with nulls (or defaults if struct)
             SetForEach((coord, ival) => default);
         }
+        /// <summary>
+        /// Offsets the gridmap bounds, moving all cells within
+        /// </summary>
+        /// <param name="offsetBy"></param>
         public void OffsetBounds(Vector3Int offsetBy) {
             bounds.position += offsetBy;
         }
+        /// <summary>
+        /// Move and resize the gridmap to match the new rect.
+        /// cells will keep their same position, old cells are destroyed and new cells are created
+        /// </summary>
+        /// <param name="newRect"></param>
         void ResizeMap(BoundsInt newBounds) {
             BoundsInt originalBounds = bounds;
             TCellObject[] originalCells = cells;
@@ -201,8 +210,9 @@ namespace Kutil {
         int CoordToGridIndex(Vector3Int coord) => CoordToGridIndex(coord, bounds);
         static int CoordToGridIndex(Vector3Int coord, BoundsInt bounds) {
             // assumes in bounds
-            coord -= bounds.position;
-            return coord.x + coord.z * bounds.size.x + coord.y * bounds.size.x * bounds.size.z;
+            // coord -= bounds.position;
+            // return coord.x + coord.z * bounds.size.x + coord.y * bounds.size.x * bounds.size.z;
+            return coord.x - bounds.x + (coord.z - bounds.z) * bounds.size.x + (coord.y - bounds.y) * bounds.size.x * bounds.size.z;
         }
         Vector3Int IndexToCoord(int gridIndex) => IndexToCoord(gridIndex, bounds);
         static Vector3Int IndexToCoord(int gridIndex, BoundsInt bounds) {
@@ -216,22 +226,14 @@ namespace Kutil {
 
 
 
-        /// <summary>
-        /// No bounds check
-        /// </summary>
+        /// <summary>Get the cell at the specified coordinate. no boundary check</summary>
         public TCellObject GetCellAtRaw(Vector3Int coord) {
             return cells[CoordToGridIndex(coord)];
         }
         TCellObject GetCellAtRaw(int index) {
             return cells[index];
         }
-        public TCellObject GetCellAtSilent(Vector3Int coord) {
-            if (!IsCoordInBounds(coord)) {
-                // invalid position
-                return default;
-            }
-            return cells[CoordToGridIndex(coord)];
-        }
+        /// <summary>Get the cell at the specified coordinate. checks bounds</summary>
         public TCellObject GetCellAt(Vector3Int coord) {
             if (!IsCoordInBounds(coord)) {
                 // invalid position
@@ -240,9 +242,16 @@ namespace Kutil {
             }
             return cells[CoordToGridIndex(coord)];
         }
+        /// <summary>Get all of the cells in the gridmap</summary>
         public TCellObject[] GetAllCells() {
             return cells;
         }
+        /// <summary>
+        /// get the cells in each of the neighbor offset directions
+        /// </summary>
+        /// <param name="coord"></param>
+        /// <param name="neighborDirs"></param>
+        /// <returns></returns>
         public IEnumerable<TCellObject> GetCellNeighbors(Vector3Int coord, IEnumerable<Vector3Int> neighborDirs) {
             return neighborDirs.Where(v => IsCoordInBounds(v + coord)).Select(v => GetCellAtRaw(v + coord));
         }
@@ -298,11 +307,12 @@ namespace Kutil {
             bounds = newBounds;
             cells = newValues;
         }
+        /// <summary>sets every cell in the gridmap to newvalue</summary>
         public void SetAllCells(TCellObject newValue) {
             for (int i = 0; i < Volume; i++) {
                 cells[i] = newValue;
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
         public void SetCells(TCellObject[] newCells, BoundsInt area) {
             if (newCells.Length != area.size.x * area.size.y) {
@@ -317,8 +327,14 @@ namespace Kutil {
                 }
                 i++;
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
+        /// <summary>
+        /// Set the cell at the coord to newValue. dsetroys old cell
+        /// </summary>
+        /// <param name="coord"></param>
+        /// <param name="newValue"></param>
+        /// <returns>true coord is in bounds</returns>
         public bool SetCell(Vector3Int coord, TCellObject newValue) {
             if (!IsCoordInBounds(coord)) {
                 // invalid position
@@ -334,19 +350,19 @@ namespace Kutil {
                 }
             }
             cells[gridindex] = newValue;
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
             return true;
         }
         public void SetCellRaw(Vector3Int coord, TCellObject newValue) {
             cells[CoordToGridIndex(coord)] = newValue;
-            //? OnValueSetEvent?.Invoke();
+            //? TriggerSetEvent();
         }
 
         public void SetForEach(System.Func<Vector3Int, TCellObject, TCellObject> setFunc) {
             for (int i = 0; i < Volume; i++) {
                 cells[i] = setFunc.Invoke(IndexToCoord(i), cells[i]);
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
         public void ForEach(System.Action<Vector3Int, TCellObject> action, bool triggerSetEvent = true) {
             // ? try to allow early out
@@ -354,7 +370,7 @@ namespace Kutil {
                 action.Invoke(IndexToCoord(i), cells[i]);
             }
             if (triggerSetEvent) {
-                OnValueSetEvent?.Invoke();
+                TriggerSetEvent();
             }
         }
         public void ForEach(IEnumerable<Vector3Int> coords, System.Action<TCellObject> action, bool triggerUpdate = true) {
@@ -366,12 +382,12 @@ namespace Kutil {
                 action.Invoke(cells[CoordToGridIndex(coord)]);
             }
             if (triggerUpdate) {
-                OnValueSetEvent?.Invoke();
+                TriggerSetEvent();
             }
         }
 
         public void TriggerSetEvent() {
-            OnValueSetEvent?.Invoke();
+            onValueSetEvent?.Invoke();
         }
 
 

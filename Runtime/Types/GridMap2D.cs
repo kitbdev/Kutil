@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using Kutil;
 using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -10,7 +9,7 @@ using UnityEditor;
 
 namespace Kutil {
     /// <summary>
-    /// Holds an array of values for a grid
+    /// Holds an array of values for a 2d grid
     /// </summary>
     /// <typeparam name="TCellObject">type of data for each cell</typeparam>
     [System.Serializable]
@@ -26,10 +25,10 @@ namespace Kutil {
         /// <summary>
         /// called when any value is set. wont handle internal object modifications
         /// </summary>
-        public event Action OnValueSetEvent;
+        public Action onValueSetEvent;
 
         public RectInt Rect => rect;
-        protected int area => rect.size.x * rect.size.y;
+        public int area => rect.size.x * rect.size.y;
 
         public GridMap2D(RectInt rect, Grid grid,
             Func<GridMap2D<TCellObject>, Vector2Int, TCellObject> createFunc = null,
@@ -43,7 +42,7 @@ namespace Kutil {
             cells = new TCellObject[area];
             RecreateCells();
         }
-
+        /// <summary>destroys and recreates all cells</summary>
         public void RecreateCells() {
             if (destroyAction != null) {
                 ForEach((pos, ival) => {
@@ -56,6 +55,7 @@ namespace Kutil {
                 SetForEach((coord, ival) => createFunc(this, coord));
             }
         }
+        /// <summary>Destroys all cells</summary>
         public void ClearAllCells() {
             if (destroyAction != null) {
                 ForEach((pos, ival) => destroyAction(ival, pos), true);
@@ -63,11 +63,19 @@ namespace Kutil {
             // fill cells with nulls (or defaults if struct)
             SetForEach((pos, ival) => default);
         }
-
+        /// <summary>
+        /// Offsets the gridmap rect, moving all cells within
+        /// </summary>
+        /// <param name="offsetBy"></param>
         public void OffsetRect(Vector2Int offsetBy) {
             rect.position += offsetBy;
-            // todo shift cells?
+            // todo? different func to offest and not shift cells?
         }
+        /// <summary>
+        /// Move and resize the gridmap to match the new rect.
+        /// cells will keep their same position, old cells are destroyed and new cells are created
+        /// </summary>
+        /// <param name="newRect"></param>
         public void Resize(RectInt newRect) {
             RectInt originalRect = rect;
             // Rect origRect = new Rect(offset, size);
@@ -127,8 +135,9 @@ namespace Kutil {
 
         int CoordToGridIndex(Vector2Int coord) => CoordToGridIndex(coord, rect);
         static int CoordToGridIndex(Vector2Int coord, RectInt rect) {
-            coord -= rect.position;
-            return coord.x + coord.y * rect.size.x;
+            // coord -= rect.position;
+            // return coord.x + coord.y * rect.size.x;
+            return coord.x - rect.x + (coord.y - rect.y) * rect.width;
         }
         Vector2Int IndexToCoord(int gridIndex) => IndexToCoord(gridIndex, rect);
         static Vector2Int IndexToCoord(int gridIndex, RectInt rect) {
@@ -148,12 +157,11 @@ namespace Kutil {
         }
 
 
-        /// <summary>
-        /// No bounds check
-        /// </summary>
+        /// <summary>Get the cell at the specified coordinate. no boundary check</summary>
         public TCellObject GetCellAtRaw(Vector2Int coord) {
             return cells[CoordToGridIndex(coord)];
         }
+        /// <summary>Get the cell at the specified coordinate. checks bounds</summary>
         public TCellObject GetCellAt(Vector2Int coord) {
             if (!IsCoordInBounds(coord)) {
                 // invalid position
@@ -162,9 +170,16 @@ namespace Kutil {
             }
             return cells[CoordToGridIndex(coord)];
         }
+        /// <summary>Get all of the cells in the gridmap</summary>
         public TCellObject[] GetAllCells() {
             return cells;
         }
+        /// <summary>
+        /// get the cells in each of the neighbor offset directions
+        /// </summary>
+        /// <param name="coord"></param>
+        /// <param name="neighborDirs"></param>
+        /// <returns></returns>
         public IEnumerable<TCellObject> GetCellNeighbors(Vector2Int coord, IEnumerable<Vector2Int> neighborDirs) {
             return neighborDirs.Where(v => IsCoordInBounds(v + coord)).Select(v => GetCellAtRaw(v + coord));
         }
@@ -180,12 +195,12 @@ namespace Kutil {
             return cellObjects;
         }
 
-
+        /// <summary>sets every cell in the gridmap to newvalue</summary>
         public void SetAllCells(TCellObject newValue) {
             for (int i = 0; i < area; i++) {
                 cells[i] = newValue;
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
         public void SetCells(TCellObject[] newCells, RectInt area) {
             if (newCells.Length != area.size.x * area.size.y) {
@@ -200,7 +215,7 @@ namespace Kutil {
                 }
                 i++;
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
         public void SetCells(Vector2Int offset, TCellObject[,] newCells) {
             int w = newCells.GetLength(0);//? switch these
@@ -211,9 +226,14 @@ namespace Kutil {
                     cells[CoordToGridIndex(coord)] = newCells[x, y];
                 }
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
-
+        /// <summary>
+        /// Set the cell at the coord to newValue. dsetroys old cell
+        /// </summary>
+        /// <param name="coord"></param>
+        /// <param name="newValue"></param>
+        /// <returns>true coord is in bounds</returns>
         public bool SetCell(Vector2Int coord, TCellObject newValue) {
             if (!IsCoordInBounds(coord)) {
                 // invalid position
@@ -229,31 +249,54 @@ namespace Kutil {
                 }
             }
             cells[gridindex] = newValue;
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
             return true;
         }
         public void SetCellRaw(Vector2Int coord, TCellObject newValue) {
             cells[CoordToGridIndex(coord)] = newValue;
-            //? OnValueSetEvent?.Invoke();
+            //? TriggerSetEvent();
         }
 
         public void SetForEach(System.Func<Vector2Int, TCellObject, TCellObject> setFunc) {
             for (int i = 0; i < area; i++) {
                 cells[i] = setFunc.Invoke(IndexToCoord(i), cells[i]);
             }
-            OnValueSetEvent?.Invoke();
+            TriggerSetEvent();
         }
+        /// <summary>
+        /// iterate over each cell.
+        /// return true to break out of loop
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="triggerSetEvent"></param>
+        public void ForEach(System.Func<Vector2Int, TCellObject, bool> action, bool triggerSetEvent = true) {
+            for (int i = 0; i < area; i++) {
+                bool earlyOut = action.Invoke(IndexToCoord(i), cells[i]);
+                if (earlyOut) {
+                    break;
+                }
+            }
+            if (triggerSetEvent) {
+                TriggerSetEvent();
+            }
+        }
+        /// <summary>
+        /// iterate over each cell.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="triggerSetEvent"></param>
         public void ForEach(System.Action<Vector2Int, TCellObject> action, bool triggerSetEvent = true) {
             // ? try to allow early out
             for (int i = 0; i < area; i++) {
                 action.Invoke(IndexToCoord(i), cells[i]);
             }
             if (triggerSetEvent) {
-                OnValueSetEvent?.Invoke();
+                TriggerSetEvent();
             }
         }
+        /// <summary>invoke the OnValueSetEvent</summary>
         public void TriggerSetEvent() {
-            OnValueSetEvent?.Invoke();
+            onValueSetEvent?.Invoke();
         }
 
         public void DrawGizmosValues() {
@@ -320,7 +363,7 @@ namespace Kutil {
         }
 
         public override string ToString() {
-            return $"GridCells({rect}) of {typeof(TCellObject).Name}";
+            return $"GridMap({rect}) of {typeof(TCellObject).Name}";
         }
     }
 }
