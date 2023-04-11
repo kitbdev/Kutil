@@ -168,9 +168,11 @@ namespace Kutil {
             } else if (col is SphereCollider scol) {
                 overlapColliders = Physics.OverlapSphere(scol.center + col.transform.position + offset, scol.radius * col.transform.lossyScale.MinValue(), layerMask, queryTriggerInteraction);
             } else if (col is CapsuleCollider ccol) {
-                Vector3 p0 = ccol.center + ccol.transform.up * ccol.height / 2 + col.transform.position + offset;
-                Vector3 p1 = ccol.center - ccol.transform.up * ccol.height / 2 + col.transform.position + offset;
+                Vector3 cHeight = ccol.transform.up * (ccol.height / 2 - ccol.radius);
+                Vector3 p0 = ccol.center + cHeight + col.transform.position + offset;
+                Vector3 p1 = ccol.center - cHeight + col.transform.position + offset;
                 overlapColliders = Physics.OverlapCapsule(p0, p1, ccol.radius * col.transform.lossyScale.MinValue(), layerMask, queryTriggerInteraction);
+                // Debug.DrawLine(p0, p1, Color.blue, 10, false);
             } else {
                 Debug.LogError($"Cannot check collider {col.GetType()} {col.name}!");
                 //? do a aabb overlap? then a physics.compute penetration?
