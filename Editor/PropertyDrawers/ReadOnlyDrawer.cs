@@ -124,6 +124,7 @@ namespace Kutil.Editor.PropertyDrawers {
             }
             if (recClass == null) {
                 if (visualElement.name == null || visualElement.name == "") {
+                    // todo shouldnt need a name...
                     Debug.LogWarning($"Readonly {visualElement.ToStringBetter()} has no name!");
                 }
                 recClass = $"{readonlyVEClass}-{visualElement.name}";

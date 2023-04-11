@@ -48,6 +48,9 @@ namespace Kutil {
         public static Rect AsRect(this RectInt rectInt) {
             return new Rect(rectInt.position, rectInt.size);
         }
+        public static int Area(this RectInt rectInt) {
+            return rectInt.width * rectInt.height;
+        }
     }
     public static class TransformExtensions {
         /// <summary>
@@ -162,8 +165,19 @@ namespace Kutil {
             ve.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
         }
         public static string ToStringBetter(this VisualElement ve) {
-            if (ve==null) return "null";
+            if (ve == null) return "null";
             return $"({ve.GetType().Name}){ve.name}";
+        }
+        public static bool ValidateExists(this VisualElement ve, string errorMsg = null) {
+            if (ve == null) {
+                if (errorMsg != null) {
+                    Debug.LogError(errorMsg);
+                } else {
+                    Debug.LogError($"{ve.GetType().Name} is null!");
+                }
+                return false;
+            }
+            return true;
         }
     }
 }

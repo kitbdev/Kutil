@@ -15,12 +15,12 @@ namespace Kutil {
     [System.Serializable]
     public class GridMap2D<TCellObject> : IEnumerable<TCellObject> {
 
-        [SerializeField, ReadOnly] protected RectInt rect;
         public Grid grid;
+        [SerializeField] protected RectInt rect;
         [SerializeField] protected TCellObject[] cells;
 
-        [SerializeField] Func<GridMap2D<TCellObject>, Vector2Int, TCellObject> createFunc;
-        [SerializeField] Action<TCellObject, Vector2Int> destroyAction;
+        Func<GridMap2D<TCellObject>, Vector2Int, TCellObject> createFunc;
+        Action<TCellObject, Vector2Int> destroyAction;
 
         /// <summary>
         /// called when any value is set. wont handle internal object modifications
@@ -42,6 +42,7 @@ namespace Kutil {
             cells = new TCellObject[area];
             RecreateCells();
         }
+        [ContextMenu("RecreateCells")]
         /// <summary>destroys and recreates all cells</summary>
         public void RecreateCells() {
             if (destroyAction != null) {
@@ -50,6 +51,9 @@ namespace Kutil {
                         destroyAction(ival, pos);
                     }
                 }, true);
+            }
+            if (cells == null) {
+                cells = new TCellObject[area];
             }
             if (createFunc != null) {
                 SetForEach((coord, ival) => createFunc(this, coord));
@@ -134,13 +138,13 @@ namespace Kutil {
         }
 
         int CoordToGridIndex(Vector2Int coord) => CoordToGridIndex(coord, rect);
-        static int CoordToGridIndex(Vector2Int coord, RectInt rect) {
+        public static int CoordToGridIndex(Vector2Int coord, RectInt rect) {
             // coord -= rect.position;
             // return coord.x + coord.y * rect.size.x;
             return coord.x - rect.x + (coord.y - rect.y) * rect.width;
         }
         Vector2Int IndexToCoord(int gridIndex) => IndexToCoord(gridIndex, rect);
-        static Vector2Int IndexToCoord(int gridIndex, RectInt rect) {
+        public static Vector2Int IndexToCoord(int gridIndex, RectInt rect) {
             var pos = Vector2Int.zero;
             pos.y = gridIndex / rect.size.x;
             pos.x = gridIndex - pos.y;

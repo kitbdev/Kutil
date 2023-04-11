@@ -39,6 +39,7 @@ namespace Kutil.Editor.PropertyDrawers {
         // public VisualElement CreatePropertyGUI(SerializedProperty property) {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
             VisualElement root = new VisualElement();
+            root.name = $"ExtendedSO:{property.propertyPath}";
             root.AddToClassList(extendedSOClass);
             this.fieldProperty = property;
 
@@ -78,11 +79,14 @@ namespace Kutil.Editor.PropertyDrawers {
 
             string fieldName = property.displayName;
             ObjectField hvObjectField = new ObjectField(fieldName);
+            hvObjectField.name = "ESO-has-value-objectfield";
+            hvObjectField.label = preferredLabel;
             hvObjectField.objectType = type;
             hvObjectField.bindingPath = property.propertyPath;
             hvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             hvObjectField.style.paddingLeft = 2;
             hvObjectField.style.flexGrow = 1;
+            hvObjectField.style.flexShrink = 1;
             hvObjectField.style.marginRight = 0;
             hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
             Label label = hvObjectField.Q<Label>();
@@ -101,7 +105,11 @@ namespace Kutil.Editor.PropertyDrawers {
             root.Add(noValueHBox);
 
             ObjectField nvObjectField = new ObjectField(fieldName);
+            nvObjectField.name = "ESO-no-value-objectfield";
+            nvObjectField.label = preferredLabel;
             nvObjectField.bindingPath = property.propertyPath;
+            nvObjectField.style.flexGrow = 1;
+            nvObjectField.style.flexShrink = 1;
             nvObjectField.objectType = type;
             nvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             nvObjectField.Q<Label>().AddToClassList(PropertyField.labelUssClassName);
@@ -110,8 +118,10 @@ namespace Kutil.Editor.PropertyDrawers {
 
             if (allowCreation) {
                 Button addButton = new Button();
+                addButton.name = "ESO-CreateButton";
                 addButton.style.marginLeft = 4;
                 addButton.style.marginRight = 4;
+                addButton.style.flexShrink = 1;
                 addButton.text = "Create";
 
                 lastUsedAssetPath = GetSelectedAssetPath(property);
