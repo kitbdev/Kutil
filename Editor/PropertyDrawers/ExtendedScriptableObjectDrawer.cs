@@ -94,9 +94,9 @@ namespace Kutil.Editor.PropertyDrawers {
             hvObjectField.style.marginRight = 0;
             // hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
             // hvObjectField.TrackPropertyValue
-            hvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
-                UpdateUI(p);
-            }, property);
+            // hvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
+            //     UpdateUI(p);
+            // }, property);
             // hvObjectField.RegisterValueChangedCallback(ce => {
             //     // Debug.Log("hv update " + ce.newValue + " me:" + property.propertyPath + " uh:" + fieldProperty.propertyPath);
             //     UpdateUI(ce.newValue != null);
@@ -132,10 +132,22 @@ namespace Kutil.Editor.PropertyDrawers {
             //     UpdateUI(ce.newValue != null);
             // });
             //me:{fieldProperty.propertyPath} 
-            nvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
-                // Debug.Log($"nv update2 {ce.previousValue}-{ce.newValue} hv:{ce.newValue != null} {property.propertyPath} {p.propertyPath}");
-                UpdateUI(p);
-            }, property);
+            var args = new ESoPassArgs() {
+                esoDrawer = this,
+                property = property,
+                root = root,
+                hasValueFoldout = hasValueFoldout,
+                noValueHBox = noValueHBox,
+
+            };
+            // hvObjectField.RegisterCallback<ChangeEvent<Object>, ESoPassArgs>(UpdateFieldUI, args);
+            // nvObjectField.RegisterCallback<ChangeEvent<Object>, ESoPassArgs>(UpdateFieldUI, args);
+            hvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((c, p) => UpdateUI(p), property);
+            nvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((c, p) => UpdateUI(p), property);
+            // nvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
+            //     // Debug.Log($"nv update2 {ce.previousValue}-{ce.newValue} hv:{ce.newValue != null} {property.propertyPath} {p.propertyPath}");
+            //     UpdateUI(p);
+            // }, property);
 
             noValueHBox.Add(nvObjectField);
 
@@ -231,6 +243,57 @@ namespace Kutil.Editor.PropertyDrawers {
         //     Debug.Log($"Updating ui on {fieldProperty.propertyPath} hasValue:{hasValue}");
         //     UpdateUI(hasValue);
         // }
+        // ! for some reason, the property drawer is reused for some arrays or something and the instance variables get overwritten to the last element in the array propertydrawer instance
+        // ! this means when updating ui, it would only work on the last element and throw errors otherwise
+        struct ESoPassArgs {
+            public SerializedProperty property;
+            public ExtendedScriptableObjectDrawer esoDrawer;
+            public VisualElement root;
+            public Foldout hasValueFoldout;
+            public VisualElement noValueHBox;
+            public SerializedObject hasValueSO;
+            public VisualElement defaultInspector;
+            public Object valueReference;
+            public string lastUsedAssetPath;
+
+            // public ExtendedScriptableObjectDrawer(ExtendedScriptableObjectDrawer esoDrawer, SerializedProperty property) {
+            //     this.esoDrawer = esoDrawer;
+            //     this.property = property;
+            //     this.root = esoDrawer.root;
+            //     // todo 
+            // }
+
+            public override string ToString() {
+                return "ESOARG"
+                + " property:" + property?.propertyPath
+                + " esoDrawer:" + esoDrawer?.ToString()
+                + " root:" + root?.ToStringBetter()
+                + " hasValueFoldout:" + hasValueFoldout?.ToStringBetter()
+                + " noValueHBox:" + noValueHBox?.ToStringBetter()
+                + " hasValueSO:" + hasValueSO?.ToString()
+                + " defaultInspector:" + defaultInspector?.ToString()
+                + " valueReference:" + valueReference?.ToString()
+                + " lastUsedAssetPath:" + lastUsedAssetPath?.ToString()
+                ;
+            }
+        }
+
+        static void UpdateFieldUI(ChangeEvent<Object> evt, ESoPassArgs userArgs) {
+            Debug.Log(userArgs.ToString());
+            UpdateUI(userArgs);
+        }
+
+        static void UpdateUI(ESoPassArgs args) {
+            // args.esoDrawer.UpdateUI(args.property);
+            bool hasValue = args.property.propertyType == SerializedPropertyType.ObjectReference && args.property.objectReferenceValue != null;
+            Debug.Log($"Updating ui2 on {args.property.propertyPath} hasValue:{hasValue} {args.root.ToStringBetter()} p:{args.root.parent?.ToStringBetter()}");
+
+            args.hasValueFoldout.SetDisplay(hasValue);
+            args.noValueHBox.SetDisplay(!hasValue);
+            //todo
+            args.esoDrawer.UpdateAssetPath();
+            args.esoDrawer.AddInspector(args.property);
+        }
         void UpdateUI(SerializedProperty property) {
             if (property == null) {
                 Debug.LogError("update ui property null!");
@@ -238,7 +301,7 @@ namespace Kutil.Editor.PropertyDrawers {
             }
             property.serializedObject.Update();
             bool hasValue = property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue != null;
-            Debug.Log($"Updating ui on {property.propertyPath} hasValue:{hasValue} p:{root.parent?.ToStringBetter()}");
+            Debug.Log($"Updating ui on {property.propertyPath} hasValue:{hasValue} {root.ToStringBetter()} p:{root.parent?.ToStringBetter()}");
             UpdateUI(hasValue);
             AddInspector(property);
         }
@@ -248,7 +311,7 @@ namespace Kutil.Editor.PropertyDrawers {
             // hasValueFoldout.SetDisplay(hasValue);
             hasValueFoldout.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
             noValueHBox.style.display = !hasValue ? DisplayStyle.Flex : DisplayStyle.None;
-            hasValueFoldout.MarkDirtyRepaint();
+            // hasValueFoldout.MarkDirtyRepaint();
             // AddInspector();
             // Debug.Log(hasValueFoldout.style.display+" "+hasValue);
 

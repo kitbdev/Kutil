@@ -44,7 +44,7 @@ namespace Kutil.Editor.PropertyDrawers {
             cellField = new PropertyField(cellsProp);
             root.Add(cellField);
             // cellField.RegisterValueChangeCallback(OnValueChanged);
-            cellField.RegisterCallback<SerializedPropertyChangeEvent>(OnValueChanged);
+            // cellField.RegisterCallback<SerializedPropertyChangeEvent>(OnValueChanged);
 
             // show 2d array editor
             var cellsFoldOut = new Foldout();
