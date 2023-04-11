@@ -53,7 +53,11 @@ namespace Kutil.Editor.PropertyDrawers {
                 return;
             }
             propertyField.RegisterCallback<GeometryChangedEvent>(OnPropGeometryChanged);
-            MakeReadOnly(propertyField);
+            if (readOnlyAttribute.allowArrayScrolling) {
+                MakeReadOnly(propertyField);
+            } else {
+                propertyField.SetEnabled(false);
+            }
 
             //PropDisable(propertyField);
             // PropDisableNew(propertyField);
@@ -84,7 +88,11 @@ namespace Kutil.Editor.PropertyDrawers {
 
             //PropDisable(propertyField);
             // PropDisableNew(propertyField);
-            MakeReadOnly(propertyField);
+            // if (readOnlyAttribute.allowArrayScrolling) {
+            //     MakeReadOnly(propertyField);
+            // } else {
+            //     propertyField.SetEnabled(false);
+            // }
         }
 
 
@@ -130,6 +138,8 @@ namespace Kutil.Editor.PropertyDrawers {
                 recClass = $"{readonlyVEClass}-{visualElement.name}";
                 visualElement.AddToClassList(recClass);
             }
+
+            // todo this throws exceptions when a list is changed during runtime, sometimes
 
             // Debug.Log($"a:make readonly  {visualElement.name} {visualElement.GetType().Name} c:{visualElement.childCount}");
 

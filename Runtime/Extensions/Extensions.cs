@@ -160,6 +160,26 @@ namespace Kutil {
         }
 
     }
+    public static class PhysicsExtensions {
+        public static Collider[] OverlapCollider(this Collider col, Vector3 offset, LayerMask layerMask, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal) {
+            Collider[] overlapColliders;
+            if (col is BoxCollider bcol) {
+                overlapColliders = Physics.OverlapBox(bcol.center + col.transform.position + offset, Vector3.Scale(bcol.size, bcol.transform.lossyScale) / 2, col.transform.rotation, layerMask, queryTriggerInteraction);
+            } else if (col is SphereCollider scol) {
+                overlapColliders = Physics.OverlapSphere(scol.center + col.transform.position + offset, scol.radius * col.transform.lossyScale.MinValue(), layerMask, queryTriggerInteraction);
+            } else if (col is CapsuleCollider ccol) {
+                Vector3 p0 = ccol.center + ccol.transform.up * ccol.height / 2 + col.transform.position + offset;
+                Vector3 p1 = ccol.center - ccol.transform.up * ccol.height / 2 + col.transform.position + offset;
+                overlapColliders = Physics.OverlapCapsule(p0, p1, ccol.radius * col.transform.lossyScale.MinValue(), layerMask, queryTriggerInteraction);
+            } else {
+                Debug.LogError($"Cannot check collider {col.GetType()} {col.name}!");
+                //? do a aabb overlap? then a physics.compute penetration?
+                //physics2D has a collider.overlap method
+                return null;
+            }
+            return overlapColliders;
+        }
+    }
     public static class UIToolkitExtensions {
         public static void SetDisplay(this VisualElement ve, bool shown) {
             ve.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;

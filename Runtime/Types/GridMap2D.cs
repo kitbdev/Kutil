@@ -289,7 +289,7 @@ namespace Kutil {
         /// </summary>
         /// <param name="action"></param>
         /// <param name="triggerSetEvent"></param>
-        public void ForEach(System.Action<Vector2Int, TCellObject> action, bool triggerSetEvent = true) {
+        public void ForEach(System.Action<Vector2Int, TCellObject> action, bool triggerSetEvent = false) {
             // ? try to allow early out
             for (int i = 0; i < area; i++) {
                 action.Invoke(IndexToCoord(i), cells[i]);
