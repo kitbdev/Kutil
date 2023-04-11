@@ -107,14 +107,16 @@ namespace Kutil.Editor.PropertyDrawers {
         internal const string sDictKeyName = nameof(SerializedDictionary<int, int>.KeyVal.key);
         internal const string sDictValueName = nameof(SerializedDictionary<int, int>.KeyVal.value);
 
-        VisualElement root;
-        PropertyField keyPropField;
-        PropertyField valPropField;
-        HelpBox warningMsg;
 
-        // InspectorElement inspectorElement;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+
+            VisualElement root;
+            PropertyField keyPropField;
+            PropertyField valPropField;
+            HelpBox warningMsg;
+            // InspectorElement inspectorElement;
+
             SerializedProperty keyProp = property.FindPropertyRelative(sDictKeyName);
             SerializedProperty valProp = property.FindPropertyRelative(sDictValueName);
 
@@ -199,10 +201,10 @@ namespace Kutil.Editor.PropertyDrawers {
         // }
 
 
-        void SetIsValid(bool isValid) {
-            warningMsg.SetDisplay(!isValid);
-            // todo get reason?
-            // warningMsg.text = "Invalid key ";
-        }
+        // void SetIsValid(bool isValid) {
+        //     warningMsg.SetDisplay(!isValid);
+        //     // todo get reason?
+        //     // warningMsg.text = "Invalid key ";
+        // }
     }
 }

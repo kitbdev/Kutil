@@ -244,6 +244,13 @@ namespace Kutil.Editor {
         public static readonly string boundsEditorToolClass = "kutil-bounds-tool";
         public static readonly string boundsEditorToolButtonClass = "kutil-bounds-tool-button";
 
+
+        // Unity reuses property drawers to draw all items, so any variable in it acts as a sort of static reference
+        // Make sure to store the value locally to the dropdown instead, by saving it in `userData` for example, and get it back in the callback like so `var value = (evt.target as VisualElement)?.userData as SerializedProperty;`
+        // todo move most to editor tool
+        // todo make rest static
+        // todo find out if this applies to decorators?
+
         InspectorElement inspectorElement;
         VisualElement root;
         PropertyField propertyField;

@@ -25,10 +25,6 @@ namespace Kutil {
 
         public virtual bool forceLabelUpdate => true;
 
-
-        protected PropertyField childField;
-
-
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             if (childName == null) {
                 Debug.LogWarning($"ShowAsChildPropertyDrawer failed, make sure to override childName");
@@ -43,6 +39,11 @@ namespace Kutil {
             using (var scope = new EditorGUI.PropertyScope(position, label, property)) {
                 EditorGUI.PropertyField(position, selNameProp, scope.content, false);
             }
+        }
+
+        class ShowAsChildData {
+            public SerializedProperty property;
+            public PropertyField childField;
         }
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
@@ -60,7 +61,7 @@ namespace Kutil {
             root.name = "ShowAsChildPropertyDrawer";
 
             // Debug.Log($"show as child {preferredLabel} {property.displayName}");
-            childField = new PropertyField(selNameProp, property.displayName);
+            PropertyField childField = new PropertyField(selNameProp, property.displayName);
             root.Add(childField);
 
             // childField.name = property.displayName;
@@ -70,25 +71,26 @@ namespace Kutil {
 
             // set the label after the property has been binded, cause sometimes it doesnt work
             if (forceLabelUpdate) {
-                childField.RegisterCallback<GeometryChangedEvent, SerializedProperty>(OnGeoChanged, property);
+                ShowAsChildData userArgs = new ShowAsChildData() { property = property, childField = childField };
+                childField.RegisterCallback<GeometryChangedEvent, ShowAsChildData>(OnGeoChanged, userArgs);
             }
             return root;
         }
-        private void OnGeoChanged(GeometryChangedEvent gce, SerializedProperty property) {
-            childField.UnregisterCallback<GeometryChangedEvent, SerializedProperty>(OnGeoChanged);
-            UpdateLabel(property);
+        private void OnGeoChanged(GeometryChangedEvent gce, ShowAsChildData userArgs) {
+            userArgs.childField.UnregisterCallback<GeometryChangedEvent, ShowAsChildData>(OnGeoChanged);
+            UpdateLabel(userArgs);
         }
 
-        private void UpdateLabel(SerializedProperty property) {
+        private void UpdateLabel(ShowAsChildData userArgs) {
             // fix all fields with a propertyfield label. 
             // unless theyre in another propertyfield?
             // const string labelClass = "unity-property-field__label";
             // const string labelClass = "unity-base-field__label";
-            var labels = childField.Query<Label>(null, PropertyField.labelUssClassName).ToList();
+            var labels = userArgs.childField.Query<Label>(null, PropertyField.labelUssClassName).ToList();
             foreach (var label in labels) {
                 PropertyField propertyField = label.GetFirstAncestorOfType<PropertyField>();
-                if (propertyField != childField) continue;
-                label.text = property.displayName;
+                if (propertyField != userArgs.childField) continue;
+                label.text = userArgs.property.displayName;
             }
             // childField.label = property.displayName;
             // Debug.Log(childField.label + " - " + property.displayName);

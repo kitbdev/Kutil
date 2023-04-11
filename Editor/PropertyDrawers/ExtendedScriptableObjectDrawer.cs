@@ -25,24 +25,41 @@ namespace Kutil.Editor.PropertyDrawers {
     public class ExtendedScriptableObjectDrawer : PropertyDrawer {
 
         public static readonly string extendedSOClass = "kutil-extented-so";
+        public static string lastUsedAssetPath = null;
 
-        VisualElement root;
-        Foldout hasValueFoldout;
-        VisualElement noValueHBox;
-        // SerializedProperty fieldProperty;
+        // Unity reuses property drawers to draw all items, so any variable in it acts as a sort of static reference
+        // Make sure to store the value locally to the dropdown instead, by saving it in `userData` for example, and get it back in the callback like so `var value = (evt.target as VisualElement)?.userData as SerializedProperty;`
+        class ExtendedSOArgs {
+            public SerializedProperty property;
+            public VisualElement root;
+            public Foldout hasValueFoldout;
+            public VisualElement noValueHBox;
+            public SerializedObject hasValueSO;
+            public VisualElement defaultInspector;
+            public Object valueReference;
 
-        SerializedObject hasValueSO;
-        VisualElement defaultInspector;
-        Object valueReference;
 
-        string lastUsedAssetPath = null;
+            public override string ToString() {
+                return "ESOARG"
+                + " property:" + property?.propertyPath
+                + " root:" + root?.ToStringBetter()
+                + " hasValueFoldout:" + hasValueFoldout?.ToStringBetter()
+                + " noValueHBox:" + noValueHBox?.ToStringBetter()
+                + " hasValueSO:" + hasValueSO?.ToString()
+                + " defaultInspector:" + defaultInspector?.ToString()
+                + " valueReference:" + valueReference?.ToString()
+                ;
+            }
+        }
 
-        // public VisualElement CreatePropertyGUI(SerializedProperty property) {
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            root = new VisualElement();
+            ExtendedSOArgs args = new();
+            args.property = property;
+
+            var root = new VisualElement();
+            args.root = root;
             root.name = $"ExtendedSO:{property.propertyPath}";
             root.AddToClassList(extendedSOClass);
-            // this.fieldProperty = property;//.Copy();
 
             var type = GetFieldType();
             ExtendedSOAttribute extendedSOAttribute = type.GetCustomAttribute<ExtendedSOAttribute>(true);
@@ -56,15 +73,15 @@ namespace Kutil.Editor.PropertyDrawers {
 
             bool allowCreation = extendedSOAttribute?.allowCreation ?? true;
 
-            ScriptableObject propertySO = null;
-            if (!property.hasMultipleDifferentValues && property.serializedObject.targetObject != null && property.serializedObject.targetObject is ScriptableObject) {
-                propertySO = (ScriptableObject)property.serializedObject.targetObject;
-            }
-
+            // ScriptableObject propertySO = null;
+            // if (!property.hasMultipleDifferentValues && property.serializedObject.targetObject != null && property.serializedObject.targetObject is ScriptableObject) {
+            //     propertySO = (ScriptableObject)property.serializedObject.targetObject;
+            // }
 
 
             // has value ui
-            hasValueFoldout = new Foldout();
+            var hasValueFoldout = new Foldout();
+            args.hasValueFoldout = hasValueFoldout;
             hasValueFoldout.name = "hasValueFoldout";
             // foldout.text = "test";
             // start closed
@@ -85,22 +102,14 @@ namespace Kutil.Editor.PropertyDrawers {
             ObjectField hvObjectField = new ObjectField(fieldName);
             hvObjectField.name = "ESO-has-value-objectfield";
             hvObjectField.objectType = type;
-            // hvObjectField.bindingPath = property.propertyPath;
-            hvObjectField.BindProperty(property);
+            hvObjectField.bindingPath = property.propertyPath;
+            // hvObjectField.BindProperty(property);
             hvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             hvObjectField.style.paddingLeft = 2;
             hvObjectField.style.flexGrow = 1;
             hvObjectField.style.flexShrink = 1;
             hvObjectField.style.marginRight = 0;
-            // hvObjectField.RegisterValueChangedCallback(ce => UpdateUI());
-            // hvObjectField.TrackPropertyValue
-            // hvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
-            //     UpdateUI(p);
-            // }, property);
-            // hvObjectField.RegisterValueChangedCallback(ce => {
-            //     // Debug.Log("hv update " + ce.newValue + " me:" + property.propertyPath + " uh:" + fieldProperty.propertyPath);
-            //     UpdateUI(ce.newValue != null);
-            // });
+
             Label label = hvObjectField.Q<Label>();
             label.AddToClassList(PropertyField.labelUssClassName);
             label.style.marginRight = 5;
@@ -110,7 +119,8 @@ namespace Kutil.Editor.PropertyDrawers {
             // AddInspector();
 
             // no value ui
-            noValueHBox = new VisualElement();
+            var noValueHBox = new VisualElement();
+            args.noValueHBox = noValueHBox;
             noValueHBox.name = "noValueHBox";
             noValueHBox.style.flexDirection = FlexDirection.Row;
             noValueHBox.style.justifyContent = Justify.SpaceBetween;
@@ -118,36 +128,16 @@ namespace Kutil.Editor.PropertyDrawers {
 
             ObjectField nvObjectField = new ObjectField(fieldName);
             nvObjectField.name = "ESO-no-value-objectfield";
-            // nvObjectField.bindingPath = property.propertyPath;
-            nvObjectField.BindProperty(property);
+            nvObjectField.bindingPath = property.propertyPath;
+            // nvObjectField.BindProperty(property);
             nvObjectField.style.flexGrow = 1;
             nvObjectField.style.flexShrink = 1;
             nvObjectField.objectType = type;
             nvObjectField.AddToClassList(ObjectField.alignedFieldUssClassName);
             nvObjectField.Q<Label>().AddToClassList(PropertyField.labelUssClassName);
-            //? callback not working
-            // nvObjectField.RegisterValueChangedCallback(ce => {
-            //     Debug.Log($"nv update {ce.previousValue}-{ce.newValue} hv:{ce.newValue != null} me:{fieldProperty.propertyPath} {property.propertyPath}");
-            //     // UpdateUI();
-            //     UpdateUI(ce.newValue != null);
-            // });
-            //me:{fieldProperty.propertyPath} 
-            var args = new ESoPassArgs() {
-                esoDrawer = this,
-                property = property,
-                root = root,
-                hasValueFoldout = hasValueFoldout,
-                noValueHBox = noValueHBox,
 
-            };
-            // hvObjectField.RegisterCallback<ChangeEvent<Object>, ESoPassArgs>(UpdateFieldUI, args);
-            // nvObjectField.RegisterCallback<ChangeEvent<Object>, ESoPassArgs>(UpdateFieldUI, args);
-            hvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((c, p) => UpdateUI(p), property);
-            nvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((c, p) => UpdateUI(p), property);
-            // nvObjectField.RegisterCallback<ChangeEvent<Object>, SerializedProperty>((ce, p) => {
-            //     // Debug.Log($"nv update2 {ce.previousValue}-{ce.newValue} hv:{ce.newValue != null} {property.propertyPath} {p.propertyPath}");
-            //     UpdateUI(p);
-            // }, property);
+            hvObjectField.RegisterCallback<ChangeEvent<Object>, ExtendedSOArgs>(UpdateFieldUI, args);
+            nvObjectField.RegisterCallback<ChangeEvent<Object>, ExtendedSOArgs>(UpdateFieldUI, args);
 
             noValueHBox.Add(nvObjectField);
 
@@ -163,14 +153,14 @@ namespace Kutil.Editor.PropertyDrawers {
 
                 IEnumerable<Type> assignableTypes = type.Assembly.GetTypes().Where(t => type.IsAssignableFrom(t));
                 if (type.IsAbstract || assignableTypes.Count() > 1) {
-                    // todo test!
+                    // todo test
                     addButton.AddManipulator(new ContextualMenuManipulator(evt => {
                         foreach (var assignableType in assignableTypes) {
                             if (assignableType.IsAbstract) continue;
                             evt.menu.AppendAction(assignableType.Name, action => {
                                 property.objectReferenceValue = CreateAssetWithSavePrompt(assignableType as Type, lastUsedAssetPath);
                                 property.serializedObject.ApplyModifiedProperties();
-                                UpdateUI(true);
+                                UpdateUI(args);
                             }, DropdownMenuAction.AlwaysEnabled);
                         }
                     }));
@@ -179,33 +169,34 @@ namespace Kutil.Editor.PropertyDrawers {
                         // Debug.Log("create button clicked");
                         property.objectReferenceValue = CreateAssetWithSavePrompt(type, lastUsedAssetPath);
                         property.serializedObject.ApplyModifiedProperties();
-                        UpdateUI(true);
+                        UpdateUI(args);
                     };
                 }
                 noValueHBox.Add(addButton);
             }
 
-            UpdateUI(property);
+            UpdateUI(args);
             return root;
         }
 
-        private void AddInspector(SerializedProperty property) {
-            if (property == null || property.serializedObject.targetObject == null) {
-                ClearValueSO();
+        static void AddInspector(ExtendedSOArgs args) {
+            if (args.property == null || args.property.serializedObject.targetObject == null) {
+                ClearValueSO(args);
                 return;
             }
-            if (property.propertyType != SerializedPropertyType.ObjectReference) return;
-            if (property.objectReferenceValue != null) {
-                if (property.objectReferenceValue == valueReference) {
+            if (args.property.propertyType != SerializedPropertyType.ObjectReference) return;
+            // Debug.Log($"updating {args.property.propertyPath} v:{args.property.objectReferenceValue?.ToString() ?? "null"} vr:{args.valueReference?.ToString() ?? "null"}");
+            if (args.property.objectReferenceValue != null) {
+                if (args.property.objectReferenceValue == args.valueReference) {
                     // already updated
                     return;
                 }
-                if (valueReference != null) {
+                if (args.valueReference != null) {
                     // clear the old SO
-                    ClearValueSO();
+                    ClearValueSO(args);
                 }
-                valueReference = property.objectReferenceValue;
-                hasValueSO = new SerializedObject(property.objectReferenceValue);
+                args.valueReference = args.property.objectReferenceValue;
+                args.hasValueSO = new SerializedObject(args.property.objectReferenceValue);
                 // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Editor/Mono/Inspector/Editor.cs
                 // todo? should be able to use InspectorElement if passed in an Editor wiht OnCreateInspectorGUI overridden to return InspectorElement.FillDefaultInspector()
                 // this uses imgui still
@@ -214,116 +205,50 @@ namespace Kutil.Editor.PropertyDrawers {
                 // InspectorElement inspectorParent = new InspectorElement();
                 // VisualElement defaultInspector = new VisualElement();
                 // FillDefaultInspector(defaultInspector, hasValueSO, true, true);
-                defaultInspector = new InspectorField(hasValueSO);
-                defaultInspector.Bind(hasValueSO);
-                hasValueFoldout.contentContainer.Add(defaultInspector);
+                args.defaultInspector = new InspectorField(args.hasValueSO);
+                args.defaultInspector.Bind(args.hasValueSO);
+                args.hasValueFoldout.contentContainer.Add(args.defaultInspector);
                 // inspectorParent.Add(defaultInspector);
             } else {
                 // remove old one, if there was one
-                ClearValueSO();
+                ClearValueSO(args);
             }
         }
 
-        private void ClearValueSO() {
-            if (hasValueSO != null) {
-                hasValueSO.Dispose();
-                hasValueSO = null;
+        static void ClearValueSO(ExtendedSOArgs args) {
+            if (args.hasValueSO != null) {
+                args.hasValueSO.Dispose();
+                args.hasValueSO = null;
             }
-            if (defaultInspector != null) {
-                hasValueFoldout.Clear();
+            if (args.defaultInspector != null) {
+                args.hasValueFoldout.Clear();
                 // hasValueFoldout.contentContainer.Remove(defaultInspector);
-                defaultInspector = null;
+                args.defaultInspector = null;
             }
-            valueReference = null;
+            args.valueReference = null;
         }
 
-        // void UpdateUI() {
-        //     fieldProperty.serializedObject.Update();
-        //     bool hasValue = fieldProperty.propertyType == SerializedPropertyType.ObjectReference && fieldProperty.objectReferenceValue != null;
-        //     Debug.Log($"Updating ui on {fieldProperty.propertyPath} hasValue:{hasValue}");
-        //     UpdateUI(hasValue);
-        // }
-        // ! for some reason, the property drawer is reused for some arrays or something and the instance variables get overwritten to the last element in the array propertydrawer instance
-        // ! this means when updating ui, it would only work on the last element and throw errors otherwise
-        struct ESoPassArgs {
-            public SerializedProperty property;
-            public ExtendedScriptableObjectDrawer esoDrawer;
-            public VisualElement root;
-            public Foldout hasValueFoldout;
-            public VisualElement noValueHBox;
-            public SerializedObject hasValueSO;
-            public VisualElement defaultInspector;
-            public Object valueReference;
-            public string lastUsedAssetPath;
-
-            // public ExtendedScriptableObjectDrawer(ExtendedScriptableObjectDrawer esoDrawer, SerializedProperty property) {
-            //     this.esoDrawer = esoDrawer;
-            //     this.property = property;
-            //     this.root = esoDrawer.root;
-            //     // todo 
-            // }
-
-            public override string ToString() {
-                return "ESOARG"
-                + " property:" + property?.propertyPath
-                + " esoDrawer:" + esoDrawer?.ToString()
-                + " root:" + root?.ToStringBetter()
-                + " hasValueFoldout:" + hasValueFoldout?.ToStringBetter()
-                + " noValueHBox:" + noValueHBox?.ToStringBetter()
-                + " hasValueSO:" + hasValueSO?.ToString()
-                + " defaultInspector:" + defaultInspector?.ToString()
-                + " valueReference:" + valueReference?.ToString()
-                + " lastUsedAssetPath:" + lastUsedAssetPath?.ToString()
-                ;
-            }
-        }
-
-        static void UpdateFieldUI(ChangeEvent<Object> evt, ESoPassArgs userArgs) {
-            Debug.Log(userArgs.ToString());
+        static void UpdateFieldUI(ChangeEvent<Object> evt, ExtendedSOArgs userArgs) {
+            // Debug.Log(userArgs.ToString());
             UpdateUI(userArgs);
         }
 
-        static void UpdateUI(ESoPassArgs args) {
-            // args.esoDrawer.UpdateUI(args.property);
+        static void UpdateUI(ExtendedSOArgs args) {
+            args.property.serializedObject.UpdateIfRequiredOrScript();
             bool hasValue = args.property.propertyType == SerializedPropertyType.ObjectReference && args.property.objectReferenceValue != null;
-            Debug.Log($"Updating ui2 on {args.property.propertyPath} hasValue:{hasValue} {args.root.ToStringBetter()} p:{args.root.parent?.ToStringBetter()}");
+            // Debug.Log($"Updating ui2 on {args.property.propertyPath} hasValue:{hasValue} {args.root.ToStringBetter()} p:{args.root.parent?.ToStringBetter()}");
 
             args.hasValueFoldout.SetDisplay(hasValue);
             args.noValueHBox.SetDisplay(!hasValue);
-            //todo
-            args.esoDrawer.UpdateAssetPath();
-            args.esoDrawer.AddInspector(args.property);
-        }
-        void UpdateUI(SerializedProperty property) {
-            if (property == null) {
-                Debug.LogError("update ui property null!");
-                return;
-            }
-            property.serializedObject.Update();
-            bool hasValue = property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue != null;
-            Debug.Log($"Updating ui on {property.propertyPath} hasValue:{hasValue} {root.ToStringBetter()} p:{root.parent?.ToStringBetter()}");
-            UpdateUI(hasValue);
-            AddInspector(property);
+            AddInspector(args);
+            UpdateAssetPath(args);
         }
 
-        private void UpdateUI(bool hasValue) {
-            // todo sometimes works, sometimes doesnt
-            // hasValueFoldout.SetDisplay(hasValue);
-            hasValueFoldout.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
-            noValueHBox.style.display = !hasValue ? DisplayStyle.Flex : DisplayStyle.None;
-            // hasValueFoldout.MarkDirtyRepaint();
-            // AddInspector();
-            // Debug.Log(hasValueFoldout.style.display+" "+hasValue);
-
-            UpdateAssetPath();
-        }
-
-        void UpdateAssetPath() {
-            Object so = valueReference;
+        static void UpdateAssetPath(ExtendedSOArgs args) {
+            Object so = args.valueReference;
             if (so == null) return;
             lastUsedAssetPath = AssetDatabase.GetAssetPath(so).Replace($"/{so.name}.asset", "");
         }
-
 
 
         /// old IMGUI way
