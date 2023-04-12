@@ -10,6 +10,10 @@ namespace Kutil {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = true)]
     public class AddNoteAttribute : PropertyAttribute {
 
+        /// <summary>approximate readonly text color as a rich text prefix</summary>
+        public static readonly string readOnlyRichTagPrefix = "<color=#aaa>";
+
+
         public bool useField { get; set; }
         public bool dynamic { get; set; }
         public string noteLabel { get; set; }
