@@ -23,7 +23,7 @@ namespace Kutil {
         [SerializeField] BoundsInt bounds = new BoundsInt();
         public TCellObject defCellValue;
 
-        public event Action OnBoundsUpdateEvent;
+        public Action OnBoundsUpdateEvent;
 
         /// <summary>
         /// bounds that fully encapsulate all cells. Inflated by one to give volume even if there is only one cell
@@ -47,8 +47,8 @@ namespace Kutil {
         // public bool TryGetCellAt(Vector3Int coord, out TCellObject val) => cells.TryGetValue(coord, out val);
         // public TCellObject GetCellAt(Vector3Int coord) => cells.GetValueOrDefault(coord);
         public bool TryGetCellAt(Vector3Int coord, out TCellObject val) {
-            bool hasVal = cells.TryGetValue(coord, out TCellObject valq);
-            val = hasVal ? valq : defCellValue;
+            bool hasVal = cells.TryGetValue(coord, out val);
+            // val = hasVal ? valq : defCellValue;
             return hasVal;
         }
         public TCellObject GetCellAt(Vector3Int coord) => HasCellValueAt(coord) ? cells.GetValueOrDefault(coord) : defCellValue;

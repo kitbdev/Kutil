@@ -9,98 +9,93 @@ using System.Linq;
 
 namespace Kutil.Editor.PropertyDrawers {
 
-    // [CustomPropertyDrawer(typeof(SerializedDictionary1<,>))]
-    // public class SerializedDictionaryDrawer1 : PropertyDrawer {
+    // dont need
+    // // [CustomPropertyDrawer(typeof(SerializedDictionary<,>))]
+    // public class SerializedDictionaryDrawer : PropertyDrawer {
 
-    //     // public List<KeyVal> serializedDict = new List<KeyVal>();
+    //     private const string sDictName = nameof(SerializedDictionary<int, int>.serializedDict);
+    //     public static readonly string serializedDictClass = "kutil-serialized-dict";
+
+    //     VisualElement root;
+    //     PropertyField propField;
+
+    //     SerializedProperty property;
+    //     SerializedProperty sDictProp;
+
+    //     // todo warnings
+    //     // todo custom binding onvaluechange to properly set the right field
+
+    //     // todo keep values that are unable to be added to dictionary?
+
+    //     public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+    //         this.property = property;
+    //         sDictProp = property.FindPropertyRelative(sDictName);
+    //         if (sDictProp == null || !sDictProp.isArray) {
+    //             Debug.LogError($"Serialized dict {property.propertyPath} invalid serialized dict prop");
+    //             return null;
+    //         }
+    //         // var sdictRawVal = sDictProp.GetValue();
+    //         // if (sdictRawVal == null || sdictRawVal is not IList list) {
+    //         //     Debug.LogError($"Serialized dict {property.propertyPath} invalid serialized dict prop not list! val: {sdictRawVal?.GetType().Name} {sdictRawVal?.ToString() ?? "null"}.");
+    //         //     return null;
+    //         // }
+
+    //         // property.GetArrayElementAtIndex()
+
+    //         root = new VisualElement();
+    //         root.AddToClassList(serializedDictClass);
+
+    //         // ListView listView = new ListView(list,);
+    //         // listView.AddToClassList();
+    //         propField = new PropertyField(property);
+    //         root.Add(propField);
+    //         root.RegisterCallback<AttachToPanelEvent>(OnAttach);
+
+    //         return root;
+    //     }
+
+    //     private void OnAttach(AttachToPanelEvent evt) {
+    //         root.UnregisterCallback<AttachToPanelEvent>(OnAttach);
+    //         if (property == null) return;
+    //         // setup here
+    //         ListView listView = propField.Q<ListView>();
+    //         if (listView == null) {
+    //             Debug.LogError($"SerializedDictionaryDrawer failed to find listview on {propField.name}");
+    //             return;
+    //         }
+    //         Debug.Log("listview " + listView?.name);
+
+    //         // todo
+    //         // listView.makeItem
+    //         // listView.bindItem = (ve, i) => {
+    //         // ve. sDictProp.GetArrayElementAtIndex(i));
+    //         // ve.Bind(sDictProp.GetArrayElementAtIndex(i));
+    //         // };
+    //         // listView.itemsAdded += (l) => {
+    //         //     Debug.Log("item added! " + l.ToStringFull(null, true));
+    //         //     foreach (var li in l) {
+    //         //         object v = listView.itemsSource[li];
+    //         //         Debug.Log($"val: {v?.GetType().Name} {v?.ToString() ?? "null"}");
+    //         //     }
+    //         // };
+    //     }
+
+    //     void OnUpdate() {
+    //         // check if all elements in the list are valid
+    //         // keys are unique
+    //         List<uint> contents = new();
+    //         for (int i = 0; i < sDictProp.arraySize; i++) {
+    //             SerializedProperty kvProp = sDictProp.GetArrayElementAtIndex(i);
+    //             SerializedProperty keyProp = kvProp.FindPropertyRelative(SerializedDictionaryKeyValDrawer.sDictKeyName);
+    //             if (contents.Contains(keyProp.contentHash)) {
+    //                 // set both keys to show warning... somehow
+    //             }
+    //             contents.Add(keyProp.contentHash);
+    //         }
+
+    //     }
     // }
-    // [CustomPropertyDrawer(typeof(SerializedDictionary<,>))]
-    public class SerializedDictionaryDrawer : PropertyDrawer {
 
-        private const string sDictName = nameof(SerializedDictionary<int, int>.serializedDict);
-        public static readonly string serializedDictClass = "kutil-serialized-dict";
-
-        VisualElement root;
-        PropertyField propField;
-
-        SerializedProperty property;
-        SerializedProperty sDictProp;
-
-        // todo warnings
-        // todo custom binding onvaluechange to properly set the right field
-
-        // todo keep values that are unable to be added to dictionary?
-
-        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-            this.property = property;
-            sDictProp = property.FindPropertyRelative(sDictName);
-            if (sDictProp == null || !sDictProp.isArray) {
-                Debug.LogError($"Serialized dict {property.propertyPath} invalid serialized dict prop");
-                return null;
-            }
-            // var sdictRawVal = sDictProp.GetValue();
-            // if (sdictRawVal == null || sdictRawVal is not IList list) {
-            //     Debug.LogError($"Serialized dict {property.propertyPath} invalid serialized dict prop not list! val: {sdictRawVal?.GetType().Name} {sdictRawVal?.ToString() ?? "null"}.");
-            //     return null;
-            // }
-
-            // property.GetArrayElementAtIndex()
-
-            root = new VisualElement();
-            root.AddToClassList(serializedDictClass);
-
-            // ListView listView = new ListView(list,);
-            // listView.AddToClassList();
-            propField = new PropertyField(property);
-            root.Add(propField);
-            root.RegisterCallback<AttachToPanelEvent>(OnAttach);
-
-            return root;
-        }
-
-        private void OnAttach(AttachToPanelEvent evt) {
-            root.UnregisterCallback<AttachToPanelEvent>(OnAttach);
-            if (property == null) return;
-            // setup here
-            ListView listView = propField.Q<ListView>();
-            if (listView == null) {
-                Debug.LogError($"SerializedDictionaryDrawer failed to find listview on {propField.name}");
-                return;
-            }
-            Debug.Log("listview " + listView?.name);
-
-            // todo
-            // listView.makeItem
-            // listView.bindItem = (ve, i) => {
-            // ve. sDictProp.GetArrayElementAtIndex(i));
-            // ve.Bind(sDictProp.GetArrayElementAtIndex(i));
-            // };
-            // listView.itemsAdded += (l) => {
-            //     Debug.Log("item added! " + l.ToStringFull(null, true));
-            //     foreach (var li in l) {
-            //         object v = listView.itemsSource[li];
-            //         Debug.Log($"val: {v?.GetType().Name} {v?.ToString() ?? "null"}");
-            //     }
-            // };
-        }
-
-        void OnUpdate() {
-            // check if all elements in the list are valid
-            // keys are unique
-            List<uint> contents = new();
-            for (int i = 0; i < sDictProp.arraySize; i++) {
-                SerializedProperty kvProp = sDictProp.GetArrayElementAtIndex(i);
-                SerializedProperty keyProp = kvProp.FindPropertyRelative(SerializedDictionaryKeyValDrawer.sDictKeyName);
-                if (contents.Contains(keyProp.contentHash)) {
-                    // set both keys to show warning... somehow
-                }
-                contents.Add(keyProp.contentHash);
-            }
-
-        }
-
-
-    }
     [CustomPropertyDrawer(typeof(SerializedDictionary<,>.KeyVal))]
     public class SerializedDictionaryKeyValDrawer : PropertyDrawer {
         public static readonly string serializedDictKeyValClass = "kutil-serialized-dict-keyval";
@@ -108,26 +103,26 @@ namespace Kutil.Editor.PropertyDrawers {
         internal const string sDictValueName = nameof(SerializedDictionary<int, int>.KeyVal.value);
 
 
+        class SerializedDictionaryKeyValDrawerData {
+            public VisualElement root;
+            public SerializedProperty property;
+            public HelpBox warningMsg;
+        }
+
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property) {
-
-            VisualElement root;
-            PropertyField keyPropField;
-            PropertyField valPropField;
-            HelpBox warningMsg;
-            // InspectorElement inspectorElement;
 
             SerializedProperty keyProp = property.FindPropertyRelative(sDictKeyName);
             SerializedProperty valProp = property.FindPropertyRelative(sDictValueName);
 
-            root = new VisualElement();
+            VisualElement root = new VisualElement();
             root.name = $"SDictKV:{property.displayName}";
             root.AddToClassList(serializedDictKeyValClass);
 
-            // todo validation and show msg
-            warningMsg = new HelpBox("Invalid Key!", HelpBoxMessageType.Warning);
-            root.Add(warningMsg);
-            warningMsg.SetDisplay(false);
+            // warning done with a decorator drawer instead
+            // HelpBox warningMsg = new HelpBox("Invalid Key!", HelpBoxMessageType.Warning);
+            // root.Add(warningMsg);
+            // warningMsg.SetDisplay(false);
 
 
             var container = new VisualElement();
@@ -142,7 +137,7 @@ namespace Kutil.Editor.PropertyDrawers {
                 SerializedPropertyType.Float,
                 SerializedPropertyType.ObjectReference,
                 SerializedPropertyType.Character,
-                SerializedPropertyType.String,// only if not multiline
+                SerializedPropertyType.String,// only if not multiline?
             };
             bool singleLineMode = singleLineTypes.Contains(keyProp.propertyType)
                     && singleLineTypes.Contains(valProp.propertyType);
@@ -156,12 +151,14 @@ namespace Kutil.Editor.PropertyDrawers {
             string keyLabel = singleLineMode ? property.displayName : property.displayName + " Key";
             string valueLabel = singleLineMode ? " " : "Value";
 
-            keyPropField = new PropertyField(keyProp, keyLabel);
-            valPropField = new PropertyField(valProp, valueLabel);
+            PropertyField keyPropField = new PropertyField(keyProp, keyLabel);
+            PropertyField valPropField = new PropertyField(valProp, valueLabel);
             keyPropField.name = $"{property.displayName}-Key";
             valPropField.name = $"{property.displayName}-Value";
             keyPropField.style.flexGrow = 1;
             valPropField.style.flexGrow = 1;
+            keyPropField.style.width = new Length(50f, LengthUnit.Percent);
+            valPropField.style.width = new Length(50f, LengthUnit.Percent);
             container.Add(keyPropField);
             container.Add(valPropField);
 
@@ -170,29 +167,35 @@ namespace Kutil.Editor.PropertyDrawers {
                 container.style.justifyContent = Justify.FlexStart;
             }
 
+            // SerializedDictionaryKeyValDrawerData args = new(){
+            //     root = root,
+            //     property = property,
+            //     warningMsg = warningMsg,
+            // };
+
             // root.RegisterCallback<AttachToPanelEvent>(OnAttach);
             // root.RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
             return root;
         }
 
-        // private void OnAttach(AttachToPanelEvent evt) {
-        //     root.UnregisterCallback<AttachToPanelEvent>(OnAttach);
-        //     inspectorElement = root.GetFirstAncestorOfType<InspectorElement>();
-        //     if (inspectorElement == null) {
-        //         // Debug.LogWarning("serialized dict failed to find inspector!");
-        //         return;
-        //     }
-        //     inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+        // private void OnAttach(AttachToPanelEvent evt,SerializedDictionaryKeyValDrawerData args) {
+        //     args.root.UnregisterCallback<AttachToPanelEvent,SerializedDictionaryKeyValDrawerData>(OnAttach);
+        //     // inspectorElement = args.root.GetFirstAncestorOfType<InspectorElement>();
+        //     // if (inspectorElement == null) {
+        //     //     // Debug.LogWarning("serialized dict failed to find inspector!");
+        //     //     return;
+        //     // }
+        //     // inspectorElement.RegisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
 
         // }
 
-        // private void OnDetach(DetachFromPanelEvent evt) {
-        //     root.UnregisterCallback<DetachFromPanelEvent>(OnDetach);
-        //     if (inspectorElement == null) {
-        //         return;
-        //     }
-        //     inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
+        // private void OnDetach(DetachFromPanelEvent evt,SerializedDictionaryKeyValDrawerData args) {
+        //     args.root.UnregisterCallback<DetachFromPanelEvent,SerializedDictionaryKeyValDrawerData>(OnDetach);
+        //     // if (inspectorElement == null) {
+        //     //     return;
+        //     // }
+        //     // inspectorElement.UnregisterCallback<SerializedPropertyChangeEvent>(OnUpdate);
         // }
 
         // private void OnUpdate(SerializedPropertyChangeEvent evt) {
@@ -200,9 +203,9 @@ namespace Kutil.Editor.PropertyDrawers {
 
         // }
 
-
-        // void SetIsValid(bool isValid) {
-        //     warningMsg.SetDisplay(!isValid);
+        // void UpdateWarning(SerializedDictionaryKeyValDrawerData args) {
+        //     bool isValid = true;
+        //     args.warningMsg.SetDisplay(!isValid);
         //     // todo get reason?
         //     // warningMsg.text = "Invalid key ";
         // }
