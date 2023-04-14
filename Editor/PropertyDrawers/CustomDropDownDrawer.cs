@@ -20,15 +20,15 @@ namespace Kutil.Editor.PropertyDrawers {
         public static readonly string cdddRawToggleClass = cdddBaseClass + "__raw-edt-toggle";
 
 
-        [NonSerialized]
-        public int numLines = 1;
+        // [NonSerialized]
+        // public int numLines = 1;
 
 
         class CDDDrawerData {
 
             [NonSerialized]
             public CustomDropDownData customDropDownData;
-            public string lastSelValStr;
+            // public string lastSelValStr;
             public bool rawEditModeToggle = false;
             // [NonSerialized]
             // public // object value;

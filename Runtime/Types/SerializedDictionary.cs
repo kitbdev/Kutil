@@ -67,6 +67,7 @@ namespace Kutil {
             public static bool operator !=(KeyVal a, KeyVal b) => !a.key.Equals(b.key) || !a.value.Equals(b.value);
         }
         [ConditionalHide(nameof(editInEditor), true, readonlyInstead = true)]
+        // [ConditionalHide(nameof(editInEditor), true)]
         [SerializeField]
         List<KeyVal> serializedDict = new List<KeyVal>();
 

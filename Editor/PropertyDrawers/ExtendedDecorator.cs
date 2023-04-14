@@ -14,6 +14,11 @@ namespace Kutil.Editor.PropertyDrawers {
     /// </summary>
     public abstract class ExtendedDecoratorDrawer : ExtendedDecoratorDrawer<ExtendedDecoratorDrawer.ExtendedDecoratorData> {
 
+        /// <summary>
+        /// Used to hold useful data in extended decorators.
+        /// has getters to automatically find from the decorator:
+        /// PropertyField, InspectorElement, SerializedProperty, and FieldInfo
+        /// </summary>
         public class ExtendedDecoratorData {
 
             public VisualElement decorator;
@@ -24,6 +29,10 @@ namespace Kutil.Editor.PropertyDrawers {
             public PropertyField propertyField {
                 get {
                     if (_propertyField == null) {
+                        if (decorator == null) {
+                            Debug.LogError($"{GetType().Name} failed to get decorator's PropertyField! make sure data.decorator is set!");
+                            return null;
+                        }
                         _propertyField = decorator?.GetFirstAncestorOfType<PropertyField>();
                         if (_propertyField == null) {
                             Debug.LogError($"{GetType().Name} failed to get decorator PropertyField! Make sure this is called after first GeometryChange");
@@ -103,6 +112,10 @@ namespace Kutil.Editor.PropertyDrawers {
 
         }
     }
+    /// <summary>
+    /// ExtendedDecorator drawer with custom data inheriting from ExtendedDecoratorDrawer.ExtendedDecoratorData
+    /// </summary>
+    /// <typeparam name="TData">must inherit ExtendedDecoratorDrawer.ExtendedDecoratorData</typeparam>
     public abstract class ExtendedDecoratorDrawer<TData> : DecoratorDrawer where TData : ExtendedDecoratorDrawer.ExtendedDecoratorData, new() {
 
         public static readonly string extendedDecoratorClass = "kutil-extended-decorator";
@@ -168,8 +181,11 @@ namespace Kutil.Editor.PropertyDrawers {
                 // decorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
                 // propertyField.RegisterCallback<DetachFromPanelEvent>(OnDetach);
                 if (registerUpdateCall) {
-                    // this properly responds to all changes
+                    // this properly responds to all changes in the component
+                    // ! bug with unity, ObjectDisposedException on SerializedProperty for arrays sometimes when callback is called
                     data.inspectorElement.RegisterCallback<SerializedPropertyChangeEvent, TData>(OnUpdate, data);
+                    // this has same issue
+                    // data.propertyField.TrackSerializedObjectValue(data.serializedProperty.serializedObject, (so) => OnUpdate(so, data));
                 }
 
                 //     FirstSetup();
@@ -187,8 +203,20 @@ namespace Kutil.Editor.PropertyDrawers {
 
 
         // protected virtual void FirstSetup() { }
+        /// <summary>
+        /// Setup triggers once after the decorator is attached.
+        /// property field and other values can be accessed here
+        /// </summary>
+        /// <param name="data"></param>
         protected virtual void Setup(TData data) { }
+
+        /// <summary>
+        /// Update triggers when any property on the SO (the component) updates
+        /// </summary>
+        /// <param name="changeEvent"></param>
+        /// <param name="data"></param>
         protected virtual void OnUpdate(SerializedPropertyChangeEvent changeEvent, TData data) { }
+        // protected virtual void OnUpdate(SerializedObject serializedObject, TData data) { }
         // protected virtual void OnDetach() { }
     }
 }

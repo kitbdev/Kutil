@@ -34,5 +34,6 @@ namespace Kutil {
             this.enumIndices = enumIndices;
             this.showIfTrue = showIfTrue;
         }
+        
     }
 }

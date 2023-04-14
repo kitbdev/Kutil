@@ -34,18 +34,33 @@ namespace Kutil.Editor.PropertyDrawers {
             UpdateField(data);
         }
 
-        protected override void OnUpdate(SerializedPropertyChangeEvent ce,ExtendedDecoratorData data) => UpdateField(data);
+        protected override void OnUpdate(SerializedPropertyChangeEvent ce, ExtendedDecoratorData data) {
+        // Debug.Log($"upfield {ce.changedProperty.propertyPath} pf:{data.propertyField.ToStringBetter()}");
+        // if (ce.changedProperty.propertyType == SerializedPropertyType.ObjectReference && ce.changedProperty.objectReferenceValue == null) {
+        //     Debug.Log("ex");
+        //     // prevent ObjectDisposedException
+        //     return;
+        // }
+        // try {
+        // } catch (System.ObjectDisposedException e) {
+        //     Debug.LogError("c:" + e.ToString());
+        // }
+        UpdateField(data);
+        }
+        // protected override void OnUpdate(SerializedObject serializedObject, ExtendedDecoratorData data) {
+        //     UpdateField(data);
+        // }
+
         void UpdateField(ExtendedDecoratorData data) {
             if (!data.HasSerializedProperty()) return;
-            // Debug.Log($"update chide {serializedProperty?.propertyPath??"null"}");
 
-            // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
+            // Debug.Log($"Updating field! p: {data.serializedProperty.propertyPath} o:{data.serializedProperty.serializedObject.targetObject.name} pf:{data.propertyField.ToStringBetter()}");
             bool enabled = GetConditionalHideAttributeResult(conditionalHide, data.serializedProperty) == conditionalHide.showIfTrue;
             if (conditionalHide.readonlyInstead) {
                 // propertyField.SetEnabled(enabled);
                 ReadOnlyDrawer.MakeReadOnly(data.propertyField, enabled);
             } else {
-                data.propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+                data.propertyField.SetDisplay(enabled);
             }
         }
 
