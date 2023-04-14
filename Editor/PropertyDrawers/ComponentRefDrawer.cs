@@ -22,7 +22,7 @@ namespace Kutil.Editor.Ref {
     [CustomPropertyDrawer(typeof(GetOnParentAttribute))]
     [CustomPropertyDrawer(typeof(GetInSceneAttribute))]
     // use a decorator to work on top level arrays
-    public class ComponentRefAttributeDrawer : ExtendedDecoratorDrawer {
+    public class ComponentRefAttributeDrawer : ExtendedDecoratorDrawer<ComponentRefAttributeDrawer.ComponentRefDrawerData> {
 
         public static readonly string componentRefPropFieldClass = "kutil-component-ref-attribute";
         public static readonly string componentRefDecoratorClass = "kutil-component-ref-decorator";
@@ -32,228 +32,234 @@ namespace Kutil.Editor.Ref {
         public override bool needSetupCall => true;
         public override bool registerUpdateCall => true;
 
-        VisualElement refField;
-        VisualElement refFieldContainer;
-        Button refreshButton;
-        HelpBox missingRefBox;
 
-        bool isValidFieldType;
-        bool isArrayOrList;
-        // bool isArray;
-        // bool isList;
-        Type elementType;
-        Component component;
-        string typeName;
-        bool hasValue = false;
+        public class ComponentRefDrawerData : ExtendedDecoratorDrawer.ExtendedDecoratorData {
+            public VisualElement refField;
+            public VisualElement refFieldContainer;
+            public Button refreshButton;
+            public HelpBox missingRefBox;
 
-        // todo ISerializableRef support
+            public bool isValidFieldType;
+            public bool isArrayOrList;
+            // public // bool isArray;
+            // public // bool isList;
+            public Type elementType;
+            public Component component;
+            public string typeName;
+            public bool hasValue = false;
 
-        // todo is runtime option possible?
+            // todo ISerializableRef support
 
-        bool isSatisfied => componentRefAttribute.HasFlags(ComponentRefFlag.Optional) || hasValue;
+            // todo is runtime option possible?
 
+            public bool isSatisfied => componentRefAttribute.HasFlags(ComponentRefFlag.Optional) || hasValue;
+            public ComponentRefAttribute componentRefAttribute;
+        }
         ComponentRefAttribute componentRefAttribute => (ComponentRefAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
+            ComponentRefDrawerData data = new ComponentRefDrawerData();
+            data.componentRefAttribute = componentRefAttribute;
 
-            decorator = new VisualElement();
-            decorator.name = "ComponentRefDecorator";
-            decorator.AddToClassList(componentRefDecoratorClass);
+            data.decorator = new VisualElement();
+            data.decorator.name = "ComponentRefDecorator";
+            data.decorator.AddToClassList(componentRefDecoratorClass);
 
-            missingRefBox = new HelpBox("Missing Reference!", HelpBoxMessageType.Error);
-            missingRefBox.AddToClassList(componentRefHelpBoxClass);
-            missingRefBox.style.display = DisplayStyle.None;
-            decorator.Add(missingRefBox);
+            data.missingRefBox = new HelpBox("Missing Reference!", HelpBoxMessageType.Error);
+            data.missingRefBox.AddToClassList(componentRefHelpBoxClass);
+            data.missingRefBox.style.display = DisplayStyle.None;
+            data.decorator.Add(data.missingRefBox);
 
             // base.CreatePropertyGUI();
-            RegisterSetup();
-            return decorator;
+            RegisterSetup(data);
+            return data.decorator;
         }
-        protected override void Setup() {
+        protected override void Setup(ComponentRefDrawerData data) {
             //     Debug.Log("s1");
             // }
             // protected override void FirstSetup() {
             //     Debug.Log("s2");
 
             // setup property field
-            if (propertyField == null) {
+            if (data.propertyField == null) {
                 Debug.LogError($"{this.GetType().Name} failed to find containing property!");
                 return;
             }
 
-            propertyField.AddToClassList(componentRefPropFieldClass);
-            if (propertyField.tooltip == null || propertyField.tooltip == "") {
-                propertyField.tooltip = $"Reference on [{componentRefAttribute.Loc.ToString()}]";
+            data.propertyField.AddToClassList(componentRefPropFieldClass);
+            if (data.propertyField.tooltip == null || data.propertyField.tooltip == "") {
+                data.propertyField.tooltip = $"Reference on [{componentRefAttribute.Loc.ToString()}]";
             }
-            propertyField.RegisterValueChangeCallback(ce => UpdateField());
+            data.propertyField.RegisterValueChangeCallback(ce => UpdateField(data));
+            // data.propertyField.RegisterCallback<SerializedPropertyChangeEvent, ComponentRefDrawerData>((ce, data) => UpdateField(data), data);
 
-            refField = propertyField;
-            if (propertyField.childCount > 1) {
+            data.refField = data.propertyField;
+            if (data.propertyField.childCount > 1) {
                 // the field is the first child after the decorator drawers container
-                refField = propertyField[1];
+                data.refField = data.propertyField[1];
             }
 
             // create refresh button
             // refFieldContainer = new VisualElement();
             // refFieldContainer.AddToClassList(componentRefContainerClass);
             // refFieldContainer.layout = 
-            // propertyField.Add(refFieldContainer);
+            // data.propertyField.Add(refFieldContainer);
             // refFieldContainer.Add(refField);
             // refreshButton = new Button();
             // refFieldContainer.Add(refreshButton);
 
-            if (isArrayOrList || componentRefAttribute.HasFlags(ComponentRefFlag.Optional)) {
+            if (data.isArrayOrList || componentRefAttribute.HasFlags(ComponentRefFlag.Optional)) {
                 // todo append to context menu instead of overriding
                 //? property in attribute to control?
-                propertyField.AddManipulator(new ContextualMenuManipulator(cmpe => {
-                    cmpe.menu.AppendAction("Force Update Ref", dda => { ForceUpdateRef(); });
+                data.propertyField.AddManipulator(new ContextualMenuManipulator(cmpe => {
+                    cmpe.menu.AppendAction("Force Update Ref", dda => { ForceUpdateRef(data); });
                 }));
             }
 
 
             if (!componentRefAttribute.HasFlags(ComponentRefFlag.Editable)) {
                 // disable the property
-                refField.SetEnabled(false);
+                data.refField.SetEnabled(false);
             }
             if (componentRefAttribute.HasFlags(ComponentRefFlag.Hidden)) {
-                refField.style.display = DisplayStyle.None;
+                data.refField.style.display = DisplayStyle.None;
             }
 
 
 
             // Debug.Log($"{Application.isPlaying} setup ");
-            if (!HasSerializedProperty()
-                || serializedProperty.serializedObject.targetObject is not Component) {
+            if (!data.HasSerializedProperty()
+                || data.serializedProperty.serializedObject.targetObject is not Component) {
                 return;
             }
             // Debug.Log($"setup p2");
 
             // setup ref
 
-            component = serializedProperty.serializedObject.targetObject as Component;
+            data.component = data.serializedProperty.serializedObject.targetObject as Component;
 
-            isArrayOrList = serializedProperty.isArray;
+            data.isArrayOrList = data.serializedProperty.isArray;
             // isArray = false;
             // isList = false;
-            elementType = fieldInfo.FieldType;
-            if (isArrayOrList) {
-                if (elementType.IsArray) {
+            data.elementType = data.fieldInfo.FieldType;
+            if (data.isArrayOrList) {
+                if (data.elementType.IsArray) {
                     // isArray = true;
-                    elementType = elementType.GetElementType();
-                } else if (elementType.IsGenericType) {
-                    if (elementType.GetGenericTypeDefinition() == typeof(List<>)
-                        && elementType.GenericTypeArguments.Length == 1) {
+                    data.elementType = data.elementType.GetElementType();
+                } else if (data.elementType.IsGenericType) {
+                    if (data.elementType.GetGenericTypeDefinition() == typeof(List<>)
+                        && data.elementType.GenericTypeArguments.Length == 1) {
                         // list
                         // isList = true;
-                        elementType = elementType.GenericTypeArguments[0];
+                        data.elementType = data.elementType.GenericTypeArguments[0];
                     } else {
-                        elementType = null;
+                        data.elementType = null;
                     }
                 } else {
                     // multiparameter array?
-                    elementType = null;
+                    data.elementType = null;
                 }
-                // if (typeof(ISerializableRef).IsAssignableFrom(elementType)) {
-                //     var interfaceType = elementType.GetInterfaces().FirstOrDefault(type =>
+                // if (typeof(ISerializableRef).IsAssignableFrom(data.elementType)) {
+                //     var interfaceType = data.elementType.GetInterfaces().FirstOrDefault(type =>
                 //         type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ISerializableRef<>));
                 //     if (interfaceType != null) {
-                //         elementType = interfaceType.GetGenericArguments()[0];
+                //         data.elementType = interfaceType.GetGenericArguments()[0];
                 //     }
                 // }
             }
-            isValidFieldType = typeof(Component).IsAssignableFrom(elementType)
-                && (serializedProperty.propertyType == SerializedPropertyType.ObjectReference || isArrayOrList);
+            data.isValidFieldType = typeof(Component).IsAssignableFrom(data.elementType)
+                && (data.serializedProperty.propertyType == SerializedPropertyType.ObjectReference || data.isArrayOrList);
 
-            // string typeName = serializedProperty.type;
-            if (fieldInfo == null) {
+            // string typeName = data.serializedProperty.type;
+            if (data.fieldInfo == null) {
                 Debug.LogError("no field info!");
                 return;
             }
-            typeName = fieldInfo.FieldType.Name;
-            if (fieldInfo.FieldType.IsGenericType && fieldInfo.FieldType.GenericTypeArguments.Length >= 1) {
-                typeName = typeName.Replace("`1", $"<{fieldInfo.FieldType.GenericTypeArguments[0].Name}>");
+            data.typeName = data.fieldInfo.FieldType.Name;
+            if (data.fieldInfo.FieldType.IsGenericType && data.fieldInfo.FieldType.GenericTypeArguments.Length >= 1) {
+                data.typeName = data.typeName.Replace("`1", $"<{data.fieldInfo.FieldType.GenericTypeArguments[0].Name}>");
             }
 
-            UpdateField();
+            UpdateField(data);
         }
 
 
-        void OnEnable() {
-            // EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
-        }
-        void OnDisable() {
-            // EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
-        }
-        void OnPlaymodeStateChanged(PlayModeStateChange playModeStateChange) {
-            // todo force references to be set before entering playmode
-            //             if (playModeStateChange == PlayModeStateChange.ExitingEditMode) {
-            //                 if (!isSatisfied) {
-            // // EditorUtility.DisplayDialog()
-            //                     EditorApplication.ExitPlaymode();
-            //                 }
-            //             }
-        }
+        // void OnEnable() {
+        //     // EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
+        // }
+        // void OnDisable() {
+        //     // EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
+        // }
+        // void OnPlaymodeStateChanged(PlayModeStateChange playModeStateChange) {
+        // todo force references to be set before entering playmode
+        //             if (playModeStateChange == PlayModeStateChange.ExitingEditMode) {
+        //                 if (!isSatisfied) {
+        // // EditorUtility.DisplayDialog()
+        //                     EditorApplication.ExitPlaymode();
+        //                 }
+        //             }
+        // }
 
-        protected override void OnUpdate(SerializedPropertyChangeEvent changeEvent) {
+        protected override void OnUpdate(SerializedPropertyChangeEvent changeEvent, ComponentRefDrawerData data) {
             // Debug.Log("test");
-            if (!HasSerializedProperty()) return;
-            if (changeEvent.changedProperty == serializedProperty) {
-                UpdateField();
+            if (!data.HasSerializedProperty()) return;
+            if (changeEvent.changedProperty == data.serializedProperty) {
+                UpdateField(data);
             }
         }
 
-        void UpdateField() {
-            if (serializedProperty == null) {
-                Debug.LogError($"sprop null for {propertyField?.name}!");
+        void UpdateField(ComponentRefDrawerData data) {
+            if (data.serializedProperty == null) {
+                Debug.LogError($"sprop null for {data.propertyField?.name}!");
                 return;
             }
-            if (propertyField == null) {
+            if (data.propertyField == null) {
                 Debug.LogError("no property field !");
                 return;
             }
 
 
-            if (!isValidFieldType) {
-                string typeName = fieldInfo.FieldType.Name;
-                Debug.LogError($"{typeName} '{serializedProperty.propertyPath}' is not a Component reference!");
+            if (!data.isValidFieldType) {
+                string typeName = data.fieldInfo.FieldType.Name;
+                Debug.LogError($"{typeName} '{data.serializedProperty.propertyPath}' is not a Component reference!");
                 return;
             }
 
-            // Debug.Log("Updating " + propertyField.name);
-            UpdateRef(component);
-            UpdateUI();
+            // Debug.Log("Updating " + data.propertyField.name);
+            UpdateRef(data, data.component);
+            UpdateUI(data);
         }
 
-        void UpdateUI() {
-            // Debug.Log("update ui! " + propertyField.name);
+        void UpdateUI(ComponentRefDrawerData data) {
+            // Debug.Log("update ui! " + data.propertyField.name);
 
             // update helpbox
-            // Debug.Log($"sceneref {propertyFieldVE.name} has:{hasRef} opt{sceneRefAttribute.HasFlags(Flag.Optional)} val:{value?.ToString() ?? "none"}");
-            missingRefBox.style.display = isSatisfied ? DisplayStyle.None : DisplayStyle.Flex;
+            // Debug.Log($"sceneref {data.propertyFieldVE.name} has:{hasRef} opt{sceneRefAttribute.HasFlags(Flag.Optional)} val:{value?.ToString() ?? "none"}");
+            data.missingRefBox.style.display = data.isSatisfied ? DisplayStyle.None : DisplayStyle.Flex;
 
             // update text
-            missingRefBox.text = $"{serializedProperty.propertyPath} missing {typeName} reference on {componentRefAttribute.Loc}!";
+            data.missingRefBox.text = $"{data.serializedProperty.propertyPath} missing {data.typeName} reference on {componentRefAttribute.Loc}!";
         }
 
-        void ForceUpdateRef() {
-            UpdateRef(component, true);
+        void ForceUpdateRef(ComponentRefDrawerData data) {
+            UpdateRef(data, data.component, true);
         }
 
-        void UpdateRef(Component component, bool forceUpdate = false) {
-            // Debug.Log("update ref!" + component.name + " " + propertyField.name);
+        void UpdateRef(ComponentRefDrawerData data, Component component, bool forceUpdate = false) {
+            // Debug.Log("update ref!" + component.name + " " + data.propertyField.name);
 
-            serializedProperty.serializedObject.UpdateIfRequiredOrScript();
-            CheckHasValue();
+            data.serializedProperty.serializedObject.UpdateIfRequiredOrScript();
+            CheckHasValue(data);
 
             // arrays need to update more often
-            bool needUpdate = false;// = isArrayOrList && !componentRefAttribute.HasFlags(ComponentRefFlag.Optional);
+            bool needUpdate = false;// = data.isArrayOrList && !componentRefAttribute.HasFlags(ComponentRefFlag.Optional);
 
-            if (!forceUpdate && hasValue && !needUpdate) {
+            if (!forceUpdate && data.hasValue && !needUpdate) {
                 // no need to set
                 return;
             }
 
-            // Debug.Log("Updating sprop " + serializedProperty.propertyType);
+            // Debug.Log("Updating sprop " + data.serializedProperty.propertyType);
 
             bool includeInactive = componentRefAttribute.HasFlags(ComponentRefFlag.IncludeInactive);
             FindObjectsInactive includeInactiveObjects = includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;
@@ -264,48 +270,48 @@ namespace Kutil.Editor.Ref {
                 case RefLoc.Anywhere:
                     break;
                 case RefLoc.Self:
-                    if (isArrayOrList) {
-                        values = component.GetComponents(elementType);
+                    if (data.isArrayOrList) {
+                        values = component.GetComponents(data.elementType);
                     } else {
-                        value = component.GetComponent(elementType);
+                        value = component.GetComponent(data.elementType);
                     }
                     break;
                 case RefLoc.Parent:
-                    if (isArrayOrList) {
-                        values = component.GetComponentsInParent(elementType, includeInactive);
+                    if (data.isArrayOrList) {
+                        values = component.GetComponentsInParent(data.elementType, includeInactive);
                     } else {
-                        value = component.GetComponentInParent(elementType, includeInactive);
+                        value = component.GetComponentInParent(data.elementType, includeInactive);
                     }
                     break;
                 case RefLoc.Child:
-                    if (isArrayOrList) {
-                        values = component.GetComponentsInChildren(elementType, includeInactive);
+                    if (data.isArrayOrList) {
+                        values = component.GetComponentsInChildren(data.elementType, includeInactive);
                     } else {
-                        value = component.GetComponentInChildren(elementType, includeInactive);
+                        value = component.GetComponentInChildren(data.elementType, includeInactive);
                     }
                     break;
                 case RefLoc.Scene:
                     FindObjectsSortMode findObjectsSortMode = FindObjectsSortMode.None;
-                    if (isArrayOrList) {
-                        values = GameObject.FindObjectsByType(elementType, includeInactiveObjects, findObjectsSortMode) as Component[];
+                    if (data.isArrayOrList) {
+                        values = GameObject.FindObjectsByType(data.elementType, includeInactiveObjects, findObjectsSortMode) as Component[];
                     } else {
-                        value = GameObject.FindAnyObjectByType(elementType, includeInactiveObjects) as Component;
+                        value = GameObject.FindAnyObjectByType(data.elementType, includeInactiveObjects) as Component;
                     }
                     break;
                 default:
                     throw new NotSupportedException($"Unhandled Loc={componentRefAttribute.Loc}");
             }
 
-            // Debug.Log($"{serializedProperty.propertyPath} assigning {value} or {values?.ToStringFull(v => v.name, true)}");
+            // Debug.Log($"{data.serializedProperty.propertyPath} assigning {value} or {values?.ToStringFull(v => v.name, true)}");
 
-            if (isArrayOrList) {
+            if (data.isArrayOrList) {
                 if (values == null || values.Length == 0) {
                     return;
                 }
-                if (serializedProperty.arraySize == values.Length) {
+                if (data.serializedProperty.arraySize == values.Length) {
                     bool isSame = true;
-                    for (int i = 0; i < serializedProperty.arraySize; i++) {
-                        if (serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue != values[i]) {
+                    for (int i = 0; i < data.serializedProperty.arraySize; i++) {
+                        if (data.serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue != values[i]) {
                             isSame = false;
                             break;
                         }
@@ -315,56 +321,56 @@ namespace Kutil.Editor.Ref {
                         return;
                     }
                 }
-                // serializedProperty.ClearArray();
-                serializedProperty.arraySize = values.Length;
-                for (int i = 0; i < serializedProperty.arraySize; i++) {
-                    serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+                // data.serializedProperty.ClearArray();
+                data.serializedProperty.arraySize = values.Length;
+                for (int i = 0; i < data.serializedProperty.arraySize; i++) {
+                    data.serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
                 }
             } else {
                 if (value == null) {
                     return;
                 }
-                if (serializedProperty.objectReferenceValue == value) {
+                if (data.serializedProperty.objectReferenceValue == value) {
                     // no update
                     return;
                 }
-                serializedProperty.objectReferenceValue = value;
+                data.serializedProperty.objectReferenceValue = value;
             }
-            // serializedProperty.SetValue(value);
-            EditorUtility.SetDirty(serializedProperty.serializedObject.targetObject);
-            serializedProperty.serializedObject.ApplyModifiedProperties();
+            // data.serializedProperty.SetValue(value);
+            EditorUtility.SetDirty(data.serializedProperty.serializedObject.targetObject);
+            data.serializedProperty.serializedObject.ApplyModifiedProperties();
 
-            hasValue = true;
+            data.hasValue = true;
         }
 
-        private void CheckHasValue() {
-            if (isArrayOrList) {
-                // serializedProperty.ClearArray();
-                hasValue = serializedProperty.arraySize > 0;
-                for (int i = 0; i < serializedProperty.arraySize; i++) {
+        private void CheckHasValue(ComponentRefDrawerData data) {
+            if (data.isArrayOrList) {
+                // data.serializedProperty.ClearArray();
+                data.hasValue = data.serializedProperty.arraySize > 0;
+                for (int i = 0; i < data.serializedProperty.arraySize; i++) {
                     // all array elements need to have a value
-                    hasValue &= serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue != null;
-                    // if (hasValue) return;
+                    data.hasValue &= data.serializedProperty.GetArrayElementAtIndex(i).objectReferenceValue != null;
+                    // if (data.hasValue) return;
                 }
             } else {
-                hasValue = serializedProperty.objectReferenceValue != null;
+                data.hasValue = data.serializedProperty.objectReferenceValue != null;
             }
         }
 
-        void ClearRef(Component component) {
-            serializedProperty.serializedObject.UpdateIfRequiredOrScript();
-            CheckHasValue();
-            if (!hasValue) return;
+        void ClearRef(ComponentRefDrawerData data, Component component) {
+            data.serializedProperty.serializedObject.UpdateIfRequiredOrScript();
+            CheckHasValue(data);
+            if (!data.hasValue) return;
 
-            if (isArrayOrList) {
-                serializedProperty.ClearArray();
+            if (data.isArrayOrList) {
+                data.serializedProperty.ClearArray();
             } else {
-                serializedProperty.objectReferenceValue = null;
+                data.serializedProperty.objectReferenceValue = null;
             }
 
-            EditorUtility.SetDirty(serializedProperty.serializedObject.targetObject);
-            serializedProperty.serializedObject.ApplyModifiedProperties();
-            hasValue = false;
+            EditorUtility.SetDirty(data.serializedProperty.serializedObject.targetObject);
+            data.serializedProperty.serializedObject.ApplyModifiedProperties();
+            data.hasValue = false;
         }
 
 

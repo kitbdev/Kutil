@@ -17,59 +17,60 @@ namespace Kutil.Editor.PropertyDrawers {
 
         public override bool registerUpdateCall => showWarning.isDynamic;
 
-        HelpBox helpBox;
-
         ShowWarningAttribute showWarning => (ShowWarningAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
-            helpBox = new HelpBox(showWarning.warningText ?? "", showWarning.helpBoxMessageType);
-            decorator = helpBox;
+            ExtendedDecoratorData data = new ExtendedDecoratorData();
+
+            var helpBox = new HelpBox(showWarning.warningText ?? "", showWarning.helpBoxMessageType);
+            data.decorator = helpBox;
             if (decoratorName != null) {
-                decorator.name = decoratorName;
+                data.decorator.name = decoratorName;
             }
             if (decoratorClass != null) {
-                decorator.AddToClassList(decoratorClass);
+                data.decorator.AddToClassList(decoratorClass);
             }
-            decorator.AddToClassList(extendedDecoratorClass);
+            data.decorator.AddToClassList(extendedDecoratorClass);
             if (needSetupCall) {
-                RegisterSetup();
+                RegisterSetup(data);
             }
-            return decorator;
+            return data.decorator;
         }
 
-        protected override void Setup() {
-            base.Setup();
+        protected override void Setup(ExtendedDecoratorData data) {
+            base.Setup(data);
             // Debug.Log("Setting up c hide decorator...");
 
             if (showWarning.isDynamic) {
-                UpdateField();
+                UpdateField(data);
             }
         }
 
-        protected override void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
-        void UpdateField() {
+        protected override void OnUpdate(SerializedPropertyChangeEvent ce, ExtendedDecoratorData data) => UpdateField(data);
+        void UpdateField(ExtendedDecoratorData data) {
+            HelpBox helpBox = (HelpBox)data.decorator;
             // todo this updates multiple times even when only one change happens?
-            if (!HasSerializedProperty()) {
+            if (!data.HasSerializedProperty()) {
                 return;
             }
             // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
-            bool enabled = ShouldShowWarning(showWarning, serializedProperty) == showWarning.showIfTrue;
+            bool enabled = ShouldShowWarning(showWarning, data.serializedProperty) == showWarning.showIfTrue;
             helpBox.SetDisplay(enabled);
 
             if (enabled && showWarning.useTextAsSourceField) {
                 string newText = null;
                 if (newText == null) {
-                    SerializedProperty warningSprop = serializedProperty.GetNeighborProperty(showWarning.warningText);
+                    SerializedProperty warningSprop = data.serializedProperty.GetNeighborProperty(showWarning.warningText);
                     if (warningSprop != null && warningSprop.propertyType == SerializedPropertyType.String) {
                         newText = warningSprop.stringValue;
                     }
                     // Debug.Log("utsf1 " + warningSprop?.propertyPath + " " + warningSprop?.displayName);
                 }
-                if (newText == null && serializedProperty.TryGetValueOnPropRefl<string>(showWarning.warningText, out var propStr)) {
+                if (newText == null && data.serializedProperty.TryGetValueOnPropRefl<string>(showWarning.warningText, out var propStr)) {
                     newText = propStr;
                     // Debug.Log("utsf2 "+propStr);
                 }
-                if (newText == null && serializedProperty.TryGetValueOnPropRefl<object>(showWarning.warningText, out var propObj)) {
+                if (newText == null && data.serializedProperty.TryGetValueOnPropRefl<object>(showWarning.warningText, out var propObj)) {
                     newText = propObj.ToString();
                 }
                 if (newText == null) newText = "";
@@ -78,7 +79,7 @@ namespace Kutil.Editor.PropertyDrawers {
         }
 
 
-        private bool ShouldShowWarning(ShowWarningAttribute att, SerializedProperty property) {
+        private static bool ShouldShowWarning(ShowWarningAttribute att, SerializedProperty property) {
             return ConditionalHideDrawer.GetPropertyConditionalValue(property, att.conditionalSourceField, att.enumIndices);
         }
 

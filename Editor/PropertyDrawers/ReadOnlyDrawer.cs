@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 using System;
+using static Kutil.Editor.PropertyDrawers.ExtendedDecoratorDrawer;
 
 namespace Kutil.Editor.PropertyDrawers {
     // [DefaultExecutionOrder(10)]// after other drawers
@@ -25,38 +26,35 @@ namespace Kutil.Editor.PropertyDrawers {
         public static string unityFoldoutContentClass => Foldout.contentUssClassName;
         public static string unityScrollViewContentClass => ScrollView.contentUssClassName;
 
-        VisualElement readOnlyDecorator;
-        PropertyField propertyField;
-        // SerializedProperty property;
-
         ReadOnlyAttribute readOnlyAttribute => (ReadOnlyAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
+            ExtendedDecoratorData data = new ExtendedDecoratorData();
             // property = null;
-            readOnlyDecorator = new VisualElement();
-            readOnlyDecorator.name = "ReadOnly";
-            readOnlyDecorator.AddToClassList(readonlyDecoratorClass);
+            data.decorator = new VisualElement();
+            data.decorator.name = "ReadOnly";
+            data.decorator.AddToClassList(readonlyDecoratorClass);
 
+            // RegisterSetup(data);
             // readOnlyDecorator.RegisterCallback<GeometryChangedEvent>(OnDecoratorGeometryChanged);
-            readOnlyDecorator.RegisterCallback<AttachToPanelEvent>(OnAttach);
-            readOnlyDecorator.RegisterCallback<DetachFromPanelEvent>(OnDetach);
-            return readOnlyDecorator;
+            data.decorator.RegisterCallback<AttachToPanelEvent, ExtendedDecoratorData>(OnAttach, data);
+            data.decorator.RegisterCallback<DetachFromPanelEvent, ExtendedDecoratorData>(OnDetach, data);
+            return data.decorator;
         }
 
-        private void OnAttach(AttachToPanelEvent evt) {
-            readOnlyDecorator.UnregisterCallback<AttachToPanelEvent>(OnAttach);
+        private void OnAttach(AttachToPanelEvent evt, ExtendedDecoratorData data) {
+            data.decorator.UnregisterCallback<AttachToPanelEvent, ExtendedDecoratorData>(OnAttach);
             // use a changed event so we can access other VisualElements
 
-            propertyField = readOnlyDecorator.GetFirstAncestorOfType<PropertyField>();
-            if (propertyField == null) {
-                Debug.LogError($"ReadOnly failed to find containing property! {readOnlyDecorator.name}");
+            if (data.propertyField == null) {
+                Debug.LogError($"ReadOnly failed to find containing property! {data.decorator.name}");
                 return;
             }
-            propertyField.RegisterCallback<GeometryChangedEvent>(OnPropGeometryChanged);
+            data.propertyField.RegisterCallback<GeometryChangedEvent, ExtendedDecoratorData>(OnPropGeometryChanged, data);
             if (readOnlyAttribute.allowArrayScrolling) {
-                MakeReadOnly(propertyField);
+                MakeReadOnly(data.propertyField);
             } else {
-                propertyField.SetEnabled(false);
+                data.propertyField.SetEnabled(false);
             }
 
             //PropDisable(propertyField);
@@ -66,48 +64,43 @@ namespace Kutil.Editor.PropertyDrawers {
             // MakeReadOnly(propertyField);
         }
 
-        private void OnDetach(DetachFromPanelEvent evt) {
-            readOnlyDecorator.UnregisterCallback<DetachFromPanelEvent>(OnDetach);
-            propertyField.UnregisterCallback<GeometryChangedEvent>(OnPropGeometryChanged);
+        private void OnDetach(DetachFromPanelEvent evt, ExtendedDecoratorData data) {
+            data.decorator.UnregisterCallback<DetachFromPanelEvent, ExtendedDecoratorData>(OnDetach);
+            data.propertyField.UnregisterCallback<GeometryChangedEvent, ExtendedDecoratorData>(OnPropGeometryChanged);
 
         }
 
-        private void OnDecoratorGeometryChanged(GeometryChangedEvent changedEvent) {
-            // only need to do once?
-            readOnlyDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecoratorGeometryChanged);
+        // private void OnDecoratorGeometryChanged(GeometryChangedEvent changedEvent, ExtendedDecoratorData data) {
+        //     // only need to do once?
+        //     data.decorator.UnregisterCallback<GeometryChangedEvent, ExtendedDecoratorData>(OnDecoratorGeometryChanged);
 
-            // use a changed event so we can access other VisualElements
-            PropertyField propertyField = readOnlyDecorator.GetFirstAncestorOfType<PropertyField>();
-            if (propertyField == null) {
-                Debug.LogError($"ReadOnly failed to find containing property! {readOnlyDecorator.name}");
-                return;
-            }
+        //     // use a changed event so we can access other VisualElements
 
-            propertyField.RegisterCallback<GeometryChangedEvent>(OnPropGeometryChanged);
+        //     data.propertyField.RegisterCallback<GeometryChangedEvent, ExtendedDecoratorData>(OnPropGeometryChanged, data);
 
 
-            //PropDisable(propertyField);
-            // PropDisableNew(propertyField);
-            // if (readOnlyAttribute.allowArrayScrolling) {
-            //     MakeReadOnly(propertyField);
-            // } else {
-            //     propertyField.SetEnabled(false);
-            // }
-        }
+        //     //PropDisable(propertyField);
+        //     // PropDisableNew(propertyField);
+        //     // if (readOnlyAttribute.allowArrayScrolling) {
+        //     //     MakeReadOnly(propertyField);
+        //     // } else {
+        //     //     propertyField.SetEnabled(false);
+        //     // }
+        // }
 
 
-        private void OnPropGeometryChanged(GeometryChangedEvent changedEvent) {
+        private void OnPropGeometryChanged(GeometryChangedEvent changedEvent, ExtendedDecoratorData data) {
             if (!readOnlyAttribute.updateOften) {
-                propertyField.UnregisterCallback<GeometryChangedEvent>(OnPropGeometryChanged);
+                data.propertyField.UnregisterCallback<GeometryChangedEvent, ExtendedDecoratorData>(OnPropGeometryChanged);
             }
             // Debug.Log("PropGeoChanged update");
             // todo not on every geo changed event...
             // need to keep calling because may not have a scrollview, then might get one
             // and only update for that is GeoChanged...
             if (readOnlyAttribute.allowArrayScrolling) {
-                MakeReadOnly(propertyField);
+                MakeReadOnly(data.propertyField);
             } else {
-                propertyField.SetEnabled(false);
+                data.propertyField.SetEnabled(false);
             }
         }
         // void OnUpdate(SerializedPropertyChangeEvent changeEvent) {

@@ -19,22 +19,22 @@ namespace Kutil.Editor.PropertyDrawers {
         public static readonly string decoratorClass = "kutil-decorator-group";
         public static readonly string decoratorEndClass = "kutil-decorator-drawer-group-end";
 
-        VisualElement decorator;
 
         DecoratorGroupAttribute decoratorGroupAttribute => (DecoratorGroupAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
+            VisualElement decorator = new();
             decorator = new VisualElement();
             decorator.name = "decorator-group";
             decorator.AddToClassList(DecoratorGroupDrawer.decoratorClass);
-            decorator.RegisterCallback<GeometryChangedEvent>(OnDecGeoChange);
+            decorator.RegisterCallback<GeometryChangedEvent, VisualElement>(OnDecGeoChange, decorator);
             return decorator;
         }
-        private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
-            decorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
-            MoveDecorators();
+        private void OnDecGeoChange(GeometryChangedEvent changedEvent, VisualElement decorator) {
+            decorator.UnregisterCallback<GeometryChangedEvent, VisualElement>(OnDecGeoChange);
+            MoveDecorators(decorator);
         }
-        private void MoveDecorators() {
+        private void MoveDecorators(VisualElement decorator) {
             VisualElement decoratorContainer = decorator.parent;
             if (decoratorContainer == null) {
                 Debug.LogError($"{GetType().Name} {decorator.name} missing decorator container!");

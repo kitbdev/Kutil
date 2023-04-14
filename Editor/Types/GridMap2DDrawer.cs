@@ -124,7 +124,7 @@ namespace Kutil.Editor.PropertyDrawers {
             //? only valid array element types?
 
             bool showAs2D = args.gridmapRect.width <= maxColumns && args.gridmapRect.height <= maxRows;
-            bool showInPlace = true;
+            // bool showInPlace = true;
 
             if (!showAs2D) {
                 args.cellsContainer.SetDisplay(false);

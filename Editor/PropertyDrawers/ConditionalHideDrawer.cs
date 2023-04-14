@@ -26,26 +26,26 @@ namespace Kutil.Editor.PropertyDrawers {
 
         public override bool registerUpdateCall => true;
 
-        protected override void Setup() {
-            base.Setup();
+        protected override void Setup(ExtendedDecoratorData data) {
+            base.Setup(data);
             // Debug.Log("Setting up c hide decorator...");
-            propertyField.AddToClassList(conditionalHideClass);
+            data.propertyField.AddToClassList(conditionalHideClass);
 
-            UpdateField();
+            UpdateField(data);
         }
 
-        protected override void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
-        void UpdateField() {
-            if (!HasSerializedProperty()) return;
+        protected override void OnUpdate(SerializedPropertyChangeEvent ce,ExtendedDecoratorData data) => UpdateField(data);
+        void UpdateField(ExtendedDecoratorData data) {
+            if (!data.HasSerializedProperty()) return;
             // Debug.Log($"update chide {serializedProperty?.propertyPath??"null"}");
 
             // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
-            bool enabled = GetConditionalHideAttributeResult(conditionalHide, serializedProperty) == conditionalHide.showIfTrue;
+            bool enabled = GetConditionalHideAttributeResult(conditionalHide, data.serializedProperty) == conditionalHide.showIfTrue;
             if (conditionalHide.readonlyInstead) {
                 // propertyField.SetEnabled(enabled);
-                ReadOnlyDrawer.MakeReadOnly(propertyField, enabled);
+                ReadOnlyDrawer.MakeReadOnly(data.propertyField, enabled);
             } else {
-                propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+                data.propertyField.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
             }
         }
 
@@ -76,7 +76,7 @@ namespace Kutil.Editor.PropertyDrawers {
         }
 #endif
 
-        private bool GetConditionalHideAttributeResult(ConditionalHideAttribute condHAtt, SerializedProperty property) {
+        private static bool GetConditionalHideAttributeResult(ConditionalHideAttribute condHAtt, SerializedProperty property) {
             return GetPropertyConditionalValue(property, condHAtt.conditionalSourceField, condHAtt.enumIndices);
         }
 

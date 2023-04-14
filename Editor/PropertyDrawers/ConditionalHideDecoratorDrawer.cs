@@ -23,29 +23,29 @@ namespace Kutil.Editor.PropertyDrawers {
 
         public override bool registerUpdateCall => true;
 
-        protected override void Setup() {
-            base.Setup();
+        protected override void Setup(ExtendedDecoratorData data) {
+            base.Setup(data);
             // Debug.Log("Setting up c hide decorator...");
             // propertyField.AddToClassList(conditionalHideClass);
 
-            UpdateField();
+            UpdateField(data);
         }
 
-        protected override void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
-        void UpdateField() {
-            if (!HasSerializedProperty()) return;
+        protected override void OnUpdate(SerializedPropertyChangeEvent ce, ExtendedDecoratorData data) => UpdateField(data);
+        void UpdateField(ExtendedDecoratorData data) {
+            if (!data.HasSerializedProperty()) return;
             // todo? any way to update more often? or trigger manually
 
-            VisualElement decoratorContainer = decorator.parent;
+            VisualElement decoratorContainer = data.decorator.parent;
             if (decoratorContainer == null) {
-                Debug.LogError($"{GetType().Name} {decorator.name} missing decorator container!");
+                Debug.LogError($"{GetType().Name} {data.decorator.name} missing decorator container!");
                 return;
             }
             if (decoratorContainer.childCount <= 1 || conditionalHide.numToHide <= 0) {
                 // no other decorators
                 return;
             }
-            int myDecIndex = decoratorContainer.IndexOf(decorator);
+            int myDecIndex = decoratorContainer.IndexOf(data.decorator);
             // Debug.Log($"{myDecIndex} / {decoratorContainer.childCount}");
             if (myDecIndex < 0 || myDecIndex >= decoratorContainer.childCount - 1) {
                 // no need to move 
@@ -55,7 +55,7 @@ namespace Kutil.Editor.PropertyDrawers {
             IEnumerable<VisualElement> decoratorsToAffect = decoratorContainer.Children().Skip(myDecIndex + 1);
 
             // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
-            bool enabled = GetConditionalHideAttributeResult(conditionalHide, serializedProperty) == conditionalHide.showIfTrue;
+            bool enabled = GetConditionalHideAttributeResult(conditionalHide, data.serializedProperty) == conditionalHide.showIfTrue;
             foreach (var dec in decoratorsToAffect) {
                 if (conditionalHide.readonlyInstead) {
                     // propertyField.SetEnabled(enabled);

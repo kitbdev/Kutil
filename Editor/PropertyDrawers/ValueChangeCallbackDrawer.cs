@@ -17,16 +17,16 @@ namespace Kutil.Editor.PropertyDrawers {
 
         protected override string decoratorName => "kutil-value-change-callback-decorator";
 
-        protected override void Setup() {
+        protected override void Setup(ExtendedDecoratorData data) {
             // todo causes inf loop
             // propertyField.RegisterValueChangeCallback(CallCallback);
         }
-        protected override void OnDetach(DetachFromPanelEvent detachFromPanelEvent) {
-            base.OnDetach(detachFromPanelEvent);
+        protected override void OnDetach(DetachFromPanelEvent detachFromPanelEvent, ExtendedDecoratorData data) {
+            base.OnDetach(detachFromPanelEvent, data);
             // propertyField.unr(CallCallback);
         }
 
-        void CallCallback(SerializedPropertyChangeEvent changeEvent) {
+        void CallCallback(SerializedPropertyChangeEvent changeEvent, ExtendedDecoratorData data) {
             // use reflection to support arrays and nesting too
             var property = changeEvent.changedProperty;
             string path = property.propertyPath.Replace(property.name, valueChange.callbackMethodName);

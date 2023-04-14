@@ -16,38 +16,38 @@ namespace Kutil.Editor.PropertyDrawers {
         public static readonly string decoratorClass = "kutil-post-field-decorator";
         public static readonly string decoratorPostContainerClass = "kutil-post-decorator-drawer-container";
 
-        VisualElement postFieldDecorator;
 
         PostFieldDecoratorAttribute postFieldDecoratorAttribute => (PostFieldDecoratorAttribute)attribute;
 
         public override VisualElement CreatePropertyGUI() {
+            VisualElement postFieldDecorator;
             postFieldDecorator = new VisualElement();
             postFieldDecorator.name = "post-field-decorator";
             postFieldDecorator.AddToClassList(decoratorClass);
 
-            postFieldDecorator.RegisterCallback<GeometryChangedEvent>(OnDecGeoChange);
+            postFieldDecorator.RegisterCallback<GeometryChangedEvent,VisualElement>(OnDecGeoChange, postFieldDecorator);
             return postFieldDecorator;
         }
-        private void OnDecGeoChange(GeometryChangedEvent changedEvent) {
-            postFieldDecorator.UnregisterCallback<GeometryChangedEvent>(OnDecGeoChange);
-            PropertyField propertyField = postFieldDecorator.GetFirstAncestorOfType<PropertyField>();
-            if (propertyField == null) {
-                Debug.LogError($"{GetType().Name} failed to find containing property! {postFieldDecorator.name}");
-                return;
-            }
+        private void OnDecGeoChange(GeometryChangedEvent changedEvent,VisualElement postFieldDecorator) {
+            postFieldDecorator.UnregisterCallback<GeometryChangedEvent,VisualElement>(OnDecGeoChange);
+            // PropertyField propertyField = postFieldDecorator.GetFirstAncestorOfType<PropertyField>();
+            // if (propertyField == null) {
+            //     Debug.LogError($"{GetType().Name} failed to find containing property! {postFieldDecorator.name}");
+            //     return;
+            // }
             // Debug.Log("MoveDecorators once "+propertyField.name);
-            MoveDecorators(propertyField);
+            MoveDecorators(postFieldDecorator);
         }
 
         // ! note this modifies the inspector's visual tree hierarchy. hopefully it doesnt cause any problems
-        private void MoveDecorators(VisualElement root) {
-            if (root == null) {
+        private void MoveDecorators(VisualElement postFieldDecorator) {
+            if (postFieldDecorator == null) {
                 Debug.LogError("MoveDecorators null");
                 return;
             }
             VisualElement decoratorContainer = postFieldDecorator.parent;
             if (decoratorContainer == null) {
-                Debug.LogError($"{GetType().Name} root {root.name} {postFieldDecorator.name} missing decorator container!");
+                Debug.LogError($"{GetType().Name} root {postFieldDecorator.name} missing decorator container!");
                 return;
             }
             if (decoratorContainer.childCount <= 1) {

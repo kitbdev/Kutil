@@ -11,22 +11,21 @@ namespace Kutil.Editor.PropertyDrawers {
     /// Adds a button above the field
     /// </summary>
     [CustomPropertyDrawer(typeof(AddButtonAttribute))]
-    public class AddButtonDrawer : DecoratorDrawer {
+    public class AddButtonDrawer : ExtendedDecoratorDrawer {
 
         public static readonly string addButtonClass = "kutil-add-button";
         AddButtonAttribute addButton => (AddButtonAttribute)attribute;
 
-        SerializedProperty serializedProperty;
-        Button btn;
 
         // todo color
 
         // todo option to add button to the right of the field, instead of on top
 
         public override VisualElement CreatePropertyGUI() {
-            serializedProperty = null;
+            ExtendedDecoratorData data = new();
 
-            btn = new Button();
+            Button btn = new Button();
+            data.decorator = btn;
             btn.AddToClassList(addButtonClass);
             btn.text = addButton.buttonLabel ?? addButton.buttonMethodName;
             btn.name = $"{btn.text} Button";
@@ -35,23 +34,17 @@ namespace Kutil.Editor.PropertyDrawers {
             }
             btn.enableRichText = addButton.richText;
             btn.clicked += () => {
-                // decorators dont have access to the property...
-                serializedProperty ??= SerializedPropertyExtensions.GetBindedPropertyFromDecorator(btn);
-                if (serializedProperty == null) {
-                    Debug.LogWarning($"Cannot call method on button {btn.name} cannot find prop");
-                    return;
-                }
-                CallButtonMethod(serializedProperty);
+                CallButtonMethod(data.serializedProperty);
             };
-            btn.RegisterCallback<GeometryChangedEvent>(OnSetup);
+            RegisterSetup(data);
             return btn;
         }
-        void OnSetup(GeometryChangedEvent changedEvent) {
-            btn.UnregisterCallback<GeometryChangedEvent>(OnSetup);
+        void OnSetup(GeometryChangedEvent changedEvent, ExtendedDecoratorData data) {
+            Button btn = (Button)data.decorator;
             if (addButton.hideProperty) {
                 PropertyField propertyField = btn.GetFirstAncestorOfType<PropertyField>();
                 if (propertyField != null && propertyField.childCount > 1) {
-                    propertyField[1].style.display = DisplayStyle.None;
+                    propertyField[1].SetDisplay(false);
                 }
             }
         }
