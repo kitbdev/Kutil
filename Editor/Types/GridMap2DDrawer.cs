@@ -19,7 +19,12 @@ namespace Kutil.Editor.PropertyDrawers {
             public PropertyField cellField;
             public HelpBox invalidSizeWarning;
             public PropertyField[] cellsPropertyFields;
+            
+            public PropertyField dynamicCellField;
+            public VisualElement[] cellsVEs;
+            
             public RectInt gridmapRect;
+
             public SerializedProperty property;
             public SerializedProperty gridProp;
             public SerializedProperty rectProp;
@@ -105,28 +110,30 @@ namespace Kutil.Editor.PropertyDrawers {
         }
 
         void FillCellsContainer(GridMap2DData args) {
+            // check size
+            if (args.gridmapRect.Area() != args.cellsProp.arraySize) {
+                args.invalidSizeWarning.SetDisplay(true);
+                //? RecreateGrid(property);
+                return;
+            }
+            args.invalidSizeWarning.SetDisplay(false);
+
+
             int maxColumns = 5;
             int maxRows = 10;
             //? only valid array element types?
 
             bool showAs2D = args.gridmapRect.width <= maxColumns && args.gridmapRect.height <= maxRows;
+            bool showInPlace = true;
 
-            if (args.gridmapRect.Area() != args.cellsProp.arraySize) {
-                // todo?
-                // RecreateGrid(property);
-            }
             if (!showAs2D) {
                 args.cellsContainer.SetDisplay(false);
                 return;
             }
             args.cellsContainer.SetDisplay(true);
 
-            if (args.gridmapRect.Area() != args.cellsProp.arraySize) {
-                args.invalidSizeWarning.SetDisplay(true);
-                return;
-            }
+            // fill cells with propertyfields
             // Debug.Log($"filling {cellsProp.arraySize} cells!");
-            args.invalidSizeWarning.SetDisplay(false);
             args.cellsPropertyFields = new PropertyField[args.cellsProp.arraySize];
             for (int i = 0; i < args.cellsProp.arraySize; i++) {
                 Vector2Int gridPos = GridMap2D<int>.IndexToCoord(i, args.gridmapRect);

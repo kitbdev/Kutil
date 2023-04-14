@@ -119,27 +119,39 @@ namespace Kutil.Editor.PropertyDrawers {
         //         return;
         //     }
         // }
-        public static void PropDisableNew(PropertyField propertyField) {
+        static void PropDisableNew(PropertyField propertyField) {
             // dont need to not disable foldouts anymore...
             propertyField.AddToClassList(readonlyPropertyClass);
             propertyField.SetEnabled(false);
             // maybe still remove list stuff?
         }
 
+        /// <summary>
+        /// Make a visual element read only.
+        /// does not disable scrollbars.
+        /// </summary>
+        /// <param name="visualElement">the visual element target</param>
+        /// <param name="enabled">set to false to make read only. set to true to undo, make writable</param>
+        /// <param name="recClass">used to class all disabled elements, 
+        /// prevents making visualelement children not readonly when made readonly by another element
+        /// set to null to generate one from the name automatically.
+        /// </param>
         public static void MakeReadOnly(VisualElement visualElement, bool enabled = false, string recClass = null) {
             if (visualElement == null) {
                 return;
             }
             if (recClass == null) {
-                if (visualElement.name == null || visualElement.name == "") {
-                    // todo shouldnt need a name...
-                    Debug.LogWarning($"Readonly {visualElement.ToStringBetter()} has no name!");
-                }
                 recClass = $"{readonlyVEClass}-{visualElement.name}";
+                if (visualElement.name == null || visualElement.name == "") {
+                    // Debug.LogWarning($"Readonly {visualElement.ToStringBetter()} has no name!");
+                    // use class list instead
+                    recClass += visualElement.GetClasses().ToStringFull(seperator: "---", includeBraces: false);
+                }
                 visualElement.AddToClassList(recClass);
             }
 
-            // todo this throws exceptions when a list is changed during runtime, sometimes
+            // todo this throws exceptions when a list is changed during runtime, sometimes?
+            // maybe not?
 
             // Debug.Log($"a:make readonly  {visualElement.name} {visualElement.GetType().Name} c:{visualElement.childCount}");
 

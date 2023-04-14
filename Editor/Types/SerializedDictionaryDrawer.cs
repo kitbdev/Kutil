@@ -8,7 +8,38 @@ using System;
 using System.Linq;
 
 namespace Kutil.Editor.PropertyDrawers {
+    /// <summary>
+    /// Show the serialized dict, with inline edit in editor property
+    /// </summary>
+    // [CustomPropertyDrawer(typeof(SerializedDictionary<,>))]
+    public class SerializedDictionaryDrawer : PropertyDrawer {
+        public static readonly string serializedDictClass = "kutil-serialized-dict";
+        public override VisualElement CreatePropertyGUI(SerializedProperty property) {
+            VisualElement root = new VisualElement();
+            root.name = "SerializedDictionaryDrawer";
+            root.AddToClassList(serializedDictClass);
+            // Kutil.SerializedDictionary<int,int>.serializedDict
+            SerializedProperty editorProp = property.FindPropertyRelative("editInEditor");
+            SerializedProperty sDictProp = property.FindPropertyRelative("serializedDict");
+            PropertyField editField = new PropertyField(editorProp);
+            PropertyField sDictField = new PropertyField(sDictProp, preferredLabel);
+            // propertyField.AddToClassList(serializedDictClass);
+            root.Add(editField);
+            root.Add(sDictField);
+            // ListView.l
+            // sDictField.RegisterCallback<AttachToPanelEvent>(OnAttach);
+            return root;
+        }
 
+        void InsertEditField() {
+            // listview uses absolute position for text field
+            // todo
+
+            // place edit button between toggle and list content? 
+
+        }
+
+    }
     // dont need
     // // [CustomPropertyDrawer(typeof(SerializedDictionary<,>))]
     // public class SerializedDictionaryDrawer : PropertyDrawer {
@@ -157,14 +188,15 @@ namespace Kutil.Editor.PropertyDrawers {
             valPropField.name = $"{property.displayName}-Value";
             keyPropField.style.flexGrow = 1;
             valPropField.style.flexGrow = 1;
-            keyPropField.style.width = new Length(50f, LengthUnit.Percent);
-            valPropField.style.width = new Length(50f, LengthUnit.Percent);
             container.Add(keyPropField);
             container.Add(valPropField);
 
             if (singleLineMode) {
                 container.style.flexDirection = FlexDirection.Row;
                 container.style.justifyContent = Justify.FlexStart;
+
+                keyPropField.style.width = new Length(50f, LengthUnit.Percent);
+                valPropField.style.width = new Length(50f, LengthUnit.Percent);
             }
 
             // SerializedDictionaryKeyValDrawerData args = new(){

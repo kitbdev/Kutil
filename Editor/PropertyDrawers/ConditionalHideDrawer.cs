@@ -37,6 +37,7 @@ namespace Kutil.Editor.PropertyDrawers {
         protected override void OnUpdate(SerializedPropertyChangeEvent ce) => UpdateField();
         void UpdateField() {
             if (!HasSerializedProperty()) return;
+            // Debug.Log($"update chide {serializedProperty?.propertyPath??"null"}");
 
             // Debug.Log($"Updating field! on {serializedProperty.propertyPath} o:{serializedProperty.serializedObject.targetObject.name}");
             bool enabled = GetConditionalHideAttributeResult(conditionalHide, serializedProperty) == conditionalHide.showIfTrue;

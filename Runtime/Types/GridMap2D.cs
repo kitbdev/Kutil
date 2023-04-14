@@ -178,6 +178,13 @@ namespace Kutil {
         public TCellObject[] GetAllCells() {
             return cells;
         }
+        public (Vector2Int, TCellObject)[] GetAllCellsWithPos() {
+            (Vector2Int, TCellObject)[] cellWithPos = new (Vector2Int, TCellObject)[area];
+            for (int i = 0; i < area; i++) {
+                cellWithPos[i] = (IndexToCoord(i), cells[i]);
+            }
+            return cellWithPos;
+        }
         /// <summary>
         /// get the cells in each of the neighbor offset directions
         /// </summary>
@@ -358,6 +365,12 @@ namespace Kutil {
         //     // re set the map var
         // }
 
+        
+        public IEnumerator<(Vector2Int, TCellObject)> GetAllCellsWithPosEnumerator() {
+            for (int i = 0; i < area; i++) {
+                yield return (IndexToCoord(i), cells[i]);
+            }
+        }
         public IEnumerator<TCellObject> GetEnumerator() {
             return cells.AsEnumerable().GetEnumerator();
         }

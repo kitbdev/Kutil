@@ -57,6 +57,14 @@ namespace Kutil {
         }
         public IEnumerable<TCellObject> GetAllCells() => cells.Select(kvp => kvp.Value);
 
+        public bool HasCellValue(TCellObject cellObject) {
+            return cells.Any((kvp) => kvp.Value.Equals(cellObject));
+        }
+        public Vector3Int GetCellPos(TCellObject cellObject) {
+            return cells.FirstOrDefault((kvp) => kvp.Value.Equals(cellObject)).Key;
+        }
+
+
         public bool AtBoundEdge(Vector3Int coord) {
             return bounds.IsOnBorder(coord);
         }
@@ -68,6 +76,11 @@ namespace Kutil {
         public void RecalculateBounds() {
             if (bounds == null) {
                 bounds = new BoundsInt();
+            }
+            if (cells.Count == 0) {
+                bounds = new BoundsInt(Vector3Int.zero, Vector3Int.zero);
+                TriggerBoundsUpdateEvent();
+                return;
             }
             // from scratch
             // Bounds b = new Bounds();
