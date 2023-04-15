@@ -365,8 +365,7 @@ namespace Kutil {
         //     // re set the map var
         // }
 
-        
-        public IEnumerator<(Vector2Int, TCellObject)> GetAllCellsWithPosEnumerator() {
+        public IEnumerable<(Vector2Int, TCellObject)> AllCells() {
             for (int i = 0; i < area; i++) {
                 yield return (IndexToCoord(i), cells[i]);
             }

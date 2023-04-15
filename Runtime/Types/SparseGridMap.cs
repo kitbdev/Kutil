@@ -143,12 +143,14 @@ namespace Kutil {
         }
 
         /// <summary>
-        /// Sets value at the coord
+        /// Sets value at the coord.
+        /// newvalue must not be null
         /// </summary>
         /// <param name="coord"></param>
         /// <param name="newValue"></param>
         /// <param name="skipBounds"></param>
         public void SetCell(Vector3Int coord, TCellObject newValue, bool skipBounds = false) {
+            // if (newValue==null){}
             // ? could do null checks but this method needs to be done fast
             if (HasCellValueAt(coord)) {
                 cells[coord] = newValue;

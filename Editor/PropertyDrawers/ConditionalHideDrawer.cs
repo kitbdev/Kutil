@@ -35,17 +35,17 @@ namespace Kutil.Editor.PropertyDrawers {
         }
 
         protected override void OnUpdate(SerializedPropertyChangeEvent ce, ExtendedDecoratorData data) {
-        // Debug.Log($"upfield {ce.changedProperty.propertyPath} pf:{data.propertyField.ToStringBetter()}");
-        // if (ce.changedProperty.propertyType == SerializedPropertyType.ObjectReference && ce.changedProperty.objectReferenceValue == null) {
-        //     Debug.Log("ex");
-        //     // prevent ObjectDisposedException
-        //     return;
-        // }
-        // try {
-        // } catch (System.ObjectDisposedException e) {
-        //     Debug.LogError("c:" + e.ToString());
-        // }
-        UpdateField(data);
+            // Debug.Log($"upfield {ce.changedProperty.propertyPath} pf:{data.propertyField.ToStringBetter()}");
+            // if (ce.changedProperty.propertyType == SerializedPropertyType.ObjectReference && ce.changedProperty.objectReferenceValue == null) {
+            //     Debug.Log("ex");
+            //     // prevent ObjectDisposedException
+            //     return;
+            // }
+            // try {
+            // } catch (System.ObjectDisposedException e) {
+            //     Debug.LogError("c:" + e.ToString());
+            // }
+            UpdateField(data);
         }
         // protected override void OnUpdate(SerializedObject serializedObject, ExtendedDecoratorData data) {
         //     UpdateField(data);

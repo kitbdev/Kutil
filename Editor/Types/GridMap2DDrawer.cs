@@ -8,6 +8,7 @@ using System;
 namespace Kutil.Editor.PropertyDrawers {
     [CustomPropertyDrawer(typeof(GridMap2D<>))]
     public class GridMap2DDrawer : PropertyDrawer {
+        public static readonly string gridmap2dClass = "kutil-gridmap2d";
         public static readonly string cellsContainerClass = "kutil-gridmap2d-cells-container";
         public static readonly string cellsElementClassName = "kutil-gridmap2d-cells-element";
         public static readonly string gridmapClass = "kutil-gridmap-2d";
@@ -43,8 +44,14 @@ namespace Kutil.Editor.PropertyDrawers {
             args.cellsProp = cellsProp;
 
 
-            VisualElement root = new VisualElement();
+            Foldout root = new Foldout();
             args.root = root;
+            root.name = "GridMap2DDrawer";
+            root.AddToClassList(gridmap2dClass);
+            root.viewDataKey = property.propertyPath+" griddrawer vdk";
+            root.text = preferredLabel;
+            root.value = true;
+
             var gridField = new PropertyField(gridProp);
             gridField.name = "PropertyField:GridMap2d-Grid";
             var rectField = new PropertyField(rectProp);
