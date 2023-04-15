@@ -145,10 +145,11 @@ namespace Kutil {
         }
         Vector2Int IndexToCoord(int gridIndex) => IndexToCoord(gridIndex, rect);
         public static Vector2Int IndexToCoord(int gridIndex, RectInt rect) {
-            var pos = Vector2Int.zero;
-            pos.y = gridIndex / rect.size.x;
-            pos.x = gridIndex - pos.y;
-            return pos + rect.position;
+            // var pos = Vector2Int.zero;
+            // pos.y = gridIndex / rect.width;
+            // pos.x = gridIndex - pos.y * rect.width;
+            // return pos + rect.position;
+            return rect.position + new Vector2Int(gridIndex % rect.width, gridIndex / rect.width);
         }
         public Rect GetBounds() => rect.AsRect();
         public bool IsCoordInBounds(Vector2Int coord) => IsCoordInBounds(coord, rect);

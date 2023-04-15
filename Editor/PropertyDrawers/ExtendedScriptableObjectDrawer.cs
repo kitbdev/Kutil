@@ -244,6 +244,7 @@ namespace Kutil.Editor.PropertyDrawers {
 
             args.hasValueFoldout.SetDisplay(hasValue);
             args.noValueHBox.SetDisplay(!hasValue);
+            args.hasValueFoldout.value = false;
             AddInspector(args);
             UpdateAssetPath(args);
         }
