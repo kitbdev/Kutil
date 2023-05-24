@@ -36,15 +36,8 @@ namespace Kutil.Editor.PropertyDrawers {
 
         protected override void OnUpdate(SerializedPropertyChangeEvent ce, ExtendedDecoratorData data) {
             // Debug.Log($"upfield {ce.changedProperty.propertyPath} pf:{data.propertyField.ToStringBetter()}");
-            // if (ce.changedProperty.propertyType == SerializedPropertyType.ObjectReference && ce.changedProperty.objectReferenceValue == null) {
-            //     Debug.Log("ex");
-            //     // prevent ObjectDisposedException
-            //     return;
-            // }
-            // try {
-            // } catch (System.ObjectDisposedException e) {
-            //     Debug.LogError("c:" + e.ToString());
-            // }
+
+            // data._serializedProperty = ce.changedProperty;
             UpdateField(data);
         }
         // protected override void OnUpdate(SerializedObject serializedObject, ExtendedDecoratorData data) {
@@ -96,7 +89,7 @@ namespace Kutil.Editor.PropertyDrawers {
         }
 
         public static bool GetPropertyConditionalValue(SerializedProperty property, string conditionalSourceField, int[] enumIndices = null) {
-            if (property == null || conditionalSourceField == null) {
+            if (property == null || conditionalSourceField == null || property.serializedObject == null) {
                 Debug.LogError("GetPropertyConditionalValue failed, null sourceProp or sourcefield!");
                 return false;
             }

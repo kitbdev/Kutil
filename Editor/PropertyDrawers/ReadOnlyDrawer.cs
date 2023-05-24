@@ -133,109 +133,114 @@ namespace Kutil.Editor.PropertyDrawers {
             if (visualElement == null) {
                 return;
             }
-            if (recClass == null) {
-                recClass = $"{readonlyVEClass}-{visualElement.name}";
-                if (visualElement.name == null || visualElement.name == "") {
-                    // Debug.LogWarning($"Readonly {visualElement.ToStringBetter()} has no name!");
-                    // use class list instead
-                    recClass += visualElement.GetClasses().ToStringFull(seperator: "---", includeBraces: false);
-                }
-                visualElement.AddToClassList(recClass);
-            }
+            // lists work now...
+            // visualElement.AddToClassList(readonlyPropertyClass);
+            visualElement.SetEnabled(enabled);
+            return;
 
-            // todo this throws exceptions when a list is changed during runtime, sometimes?
-            // maybe not?
+            // if (recClass == null) {
+            //     recClass = $"{readonlyVEClass}-{visualElement.name}";
+            //     if (visualElement.name == null || visualElement.name == "") {
+            //         // Debug.LogWarning($"Readonly {visualElement.ToStringBetter()} has no name!");
+            //         // use class list instead
+            //         recClass += visualElement.GetClasses().ToStringFull(seperator: "---", includeBraces: false);
+            //     }
+            //     visualElement.AddToClassList(recClass);
+            // }
 
-            // Debug.Log($"a:make readonly  {visualElement.name} {visualElement.GetType().Name} c:{visualElement.childCount}");
+            // // todo this throws exceptions when a list is changed during runtime, sometimes?
+            // // maybe not?
 
-            // dont check cause we might want to make enabled
-            // if (visualElement.enabledSelf == false) {
-            //     // fully disabled already
-            //     Debug.Log($"ES make readonly {visualElement.ToStringBetter()} p:{visualElement.parent.ToStringBetter()} c:{visualElement.Children().ToStringFull(v => v.ToStringBetter(), true)}");
+            // // Debug.Log($"a:make readonly  {visualElement.name} {visualElement.GetType().Name} c:{visualElement.childCount}");
+
+            // // dont check cause we might want to make enabled
+            // // if (visualElement.enabledSelf == false) {
+            // //     // fully disabled already
+            // //     Debug.Log($"ES make readonly {visualElement.ToStringBetter()} p:{visualElement.parent.ToStringBetter()} c:{visualElement.Children().ToStringFull(v => v.ToStringBetter(), true)}");
+            // //     return;
+            // // }
+            // if (!enabled && visualElement.enabledInHierarchy == false) {
+            //     // dont need to do anything if were already disabled
+            //     // probably, unless that changes...
+            //     // Debug.Log($"EIH make readonly {visualElement.ToStringBetter()} c:{visualElement.childCount} p:{visualElement.parent.ToStringBetter()}");
             //     return;
             // }
-            if (!enabled && visualElement.enabledInHierarchy == false) {
-                // dont need to do anything if were already disabled
-                // probably, unless that changes...
-                // Debug.Log($"EIH make readonly {visualElement.ToStringBetter()} c:{visualElement.childCount} p:{visualElement.parent.ToStringBetter()}");
-                return;
-            }
 
-            // dont disable if has any scroll views
-            List<ScrollView> scrollViews = visualElement.Query<ScrollView>().ToList();
-            bool canDisable = scrollViews == null || scrollViews.Count == 0;
-            // Debug.Log($"make readonly {canDisable} {visualElement.ToStringBetter()} c:{visualElement.childCount} {visualElement.Children().ToStringFull(v => v.ToStringBetter())})");
-            if (canDisable) {
-                // just disable self
-                if (!visualElement.ClassListContains(recClass)) {
-                    visualElement.AddToClassList(recClass);
-                }
-                visualElement.SetEnabled(enabled);
-                return;
-            } else {
-                if (!visualElement.enabledSelf) {
-                    // only if we disabled previously
-                    // can multiple use?
-                    if (visualElement.ClassListContains(recClass)) {
-                        // cant just force to be enabled, maybe someone else wants it disabled
-                        visualElement.SetEnabled(true);
-                    } else {
-                        // someone else disabled, return
-                        return;
-                    }
-                }
-            }
-            // make readonly on children
-            IEnumerable<VisualElement> allChildren = visualElement.Children();
+            // // dont disable if has any scroll views
+            // List<ScrollView> scrollViews = visualElement.Query<ScrollView>().ToList();
+            // bool canDisable = scrollViews == null || scrollViews.Count == 0;
+            // // Debug.Log($"make readonly {canDisable} {visualElement.ToStringBetter()} c:{visualElement.childCount} {visualElement.Children().ToStringFull(v => v.ToStringBetter())})");
+            // if (canDisable) {
+            //     // just disable self
+            //     if (!visualElement.ClassListContains(recClass)) {
+            //         visualElement.AddToClassList(recClass);
+            //     }
+            //     visualElement.SetEnabled(enabled);
+            //     return;
+            // } else {
+            //     if (!visualElement.enabledSelf) {
+            //         // only if we disabled previously
+            //         // can multiple use?
+            //         if (visualElement.ClassListContains(recClass)) {
+            //             // cant just force to be enabled, maybe someone else wants it disabled
+            //             visualElement.SetEnabled(true);
+            //         } else {
+            //             // someone else disabled, return
+            //             return;
+            //         }
+            //     }
+            // }
+            // // make readonly on children
+            // IEnumerable<VisualElement> allChildren = visualElement.Children();
 
-            // handle certain elements
-            if (visualElement is ListView listView) {
-                // disable controls and children
-                Label foldoutLabel = listView.Q<Label>();
-                if (foldoutLabel == null) {
-                    Debug.LogError($"MakeReadOnly listView Label missing {visualElement.name} {listView.name}!");
-                    return;
-                }
-                foldoutLabel.SetEnabled(enabled);
-                listView.reorderable = enabled;
-                listView.showAddRemoveFooter = enabled;
-                var listSize = listView.Query(null, unityListViewSizeFieldClass).Last();
-                if (listSize == null) {
-                    // ? could this happen if nonreorderable is true?
-                    Debug.LogError($"MakeReadOnly {visualElement.name} listview {listView.name} has no listsizefield!");
-                    return;
-                }
-                listSize.SetEnabled(enabled);
+            // // handle certain elements
+            // if (visualElement is ListView listView) {
+            //     // disable controls and children
+            //     Label foldoutLabel = listView.Q<Label>();
+            //     if (foldoutLabel == null) {
+            //         Debug.LogError($"MakeReadOnly listView Label missing {visualElement.name} {listView.name}!");
+            //         return;
+            //     }
+            //     foldoutLabel.SetEnabled(enabled);
+            //     listView.reorderable = enabled;
+            //     listView.showAddRemoveFooter = enabled;
+            //     var listSize = listView.Query(null, unityListViewSizeFieldClass).Last();
+            //     if (listSize == null) {
+            //         // ? could this happen if nonreorderable is true?
+            //         Debug.LogError($"MakeReadOnly {visualElement.name} listview {listView.name} has no listsizefield!");
+            //         return;
+            //     }
+            //     listSize.SetEnabled(enabled);
 
-                // get list children, cause .children() doesnt work
-                // const string ClassName = "unity-list-view__item";
-                allChildren = listView.Query<VisualElement>(className: ListView.itemUssClassName).ToList();
-            } else if (visualElement is ScrollView scrollView) {
-                // disable children
-                // todo check
-                // allChildren = scrollView.Query<VisualElement>(className: "unity-list-view__item").ToList();
-                // pass
-            } else if (visualElement is Foldout foldout) {
-                Label foldoutLabel = foldout.Q<Label>();
-                if (foldoutLabel == null) {
-                    Debug.LogError($"MakeReadOnly foldout Label missing {visualElement.name} {foldout.name}!");
-                    return;
-                }
-                foldoutLabel.SetEnabled(enabled);
+            //     // get list children, cause .children() doesnt work
+            //     // const string ClassName = "unity-list-view__item";
+            //     allChildren = listView.Query<VisualElement>(className: ListView.itemUssClassName).ToList();
+            // } else if (visualElement is ScrollView scrollView) {
+            //     // disable children
+            //     // todo check
+            //     // allChildren = scrollView.Query<VisualElement>(className: "unity-list-view__item").ToList();
+            //     // pass
+            // } else if (visualElement is Foldout foldout) {
+            //     Label foldoutLabel = foldout.Q<Label>();
+            //     if (foldoutLabel == null) {
+            //         Debug.LogError($"MakeReadOnly foldout Label missing {visualElement.name} {foldout.name}!");
+            //         return;
+            //     }
+            //     foldoutLabel.SetEnabled(enabled);
 
-                // Toggle toggle = foldout.Q<Toggle>();
-                // if (toggle == null) {
-                //     Debug.LogError($"MakeReadOnly foldout toggle missing {visualElement.name} {foldout.name}!");
-                //     return;
-                // }
-                // toggle.RegisterCallback<ClickEvent, Foldout>(FoldoutToggleClickEventHandler, foldout);
+            //     // Toggle toggle = foldout.Q<Toggle>();
+            //     // if (toggle == null) {
+            //     //     Debug.LogError($"MakeReadOnly foldout toggle missing {visualElement.name} {foldout.name}!");
+            //     //     return;
+            //     // }
+            //     // toggle.RegisterCallback<ClickEvent, Foldout>(FoldoutToggleClickEventHandler, foldout);
 
-            }
+            // }
 
-            // note children returns content container children, not actual children, how to disable labels?
-            foreach (var child in allChildren) {
-                MakeReadOnly(child, enabled, recClass);
-            }
+            // // note children returns content container children, not actual children, how to disable labels?
+            // foreach (var child in allChildren) {
+            //     MakeReadOnly(child, enabled, recClass);
+            // }
         }
 
 

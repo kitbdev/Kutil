@@ -314,5 +314,16 @@ namespace Kutil {
         public static int ManhattanDistance(this Vector2Int vec) {
             return Mathf.Abs(vec.x) + Mathf.Abs(vec.y);
         }
+
+         /// <summary>
+        /// Projects a direction vector onto a plane. 
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="normal"></param>
+        /// <returns></returns>
+        public static Vector2 ProjectDirectionOnPlane(Vector2 direction, Vector2 normal) {
+            // return direction * Vector2.Perpendicular(normal)
+            return (direction - normal * Vector2.Dot(direction, normal)).normalized;
+        }
     }
 }

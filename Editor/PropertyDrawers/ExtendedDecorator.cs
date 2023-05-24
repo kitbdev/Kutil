@@ -75,14 +75,18 @@ namespace Kutil.Editor.PropertyDrawers {
             /// </summary>
             /// <returns>true if the serialized property is valid</returns>
             public bool HasSerializedProperty() {
-                // try {
-                //     _ = _serializedProperty;
-                // } catch (System.Exception) {
-                //     _serializedProperty = null;
-                // }
-                if (_serializedProperty != null && serializedProperty.serializedObject.targetObject == null) {
+                try {
+                    _ = _serializedProperty;
+                    if (_serializedProperty != null)
+                        _ = _serializedProperty.serializedObject;
+                } catch (System.Exception ex) when (ex is System.ArgumentNullException ||
+                                                    ex is System.NullReferenceException) {
+                    // Debug.LogWarning($"Caught SerializedProperty null on {decorator?.ToStringBetter()}! {ex.ToString()}");
                     _serializedProperty = null;
                 }
+                // if (_serializedProperty != null && serializedProperty.serializedObject.targetObject == null) {
+                //     _serializedProperty = null;
+                // }
                 if (_serializedProperty == null) {
                     // _inspectorElement = null;
                     // todo sometimes this will fail, not being able to find inspector element

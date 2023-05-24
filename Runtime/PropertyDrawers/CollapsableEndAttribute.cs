@@ -9,6 +9,11 @@ namespace Kutil {
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public class CollapsableEndAttribute : PropertyAttribute {
+        public string connectedFieldName { get; set; } = null;
+
         public CollapsableEndAttribute() { }
+        public CollapsableEndAttribute(string connectedFieldName) {
+            this.connectedFieldName = connectedFieldName;
+        }
     }
 }
