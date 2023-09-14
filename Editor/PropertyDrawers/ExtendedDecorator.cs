@@ -77,8 +77,9 @@ namespace Kutil.Editor.PropertyDrawers {
             public bool HasSerializedProperty() {
                 try {
                     _ = _serializedProperty;
-                    if (_serializedProperty != null)
-                        _ = _serializedProperty.serializedObject;
+                    // if (_serializedProperty != null)
+                    _ = _serializedProperty.serializedObject;
+                    _ = _serializedProperty.propertyPath;
                 } catch (System.Exception ex) when (ex is System.ArgumentNullException ||
                                                     ex is System.NullReferenceException) {
                     // Debug.LogWarning($"Caught SerializedProperty null on {decorator?.ToStringBetter()}! {ex.ToString()}");
